@@ -1,0 +1,17 @@
+{
+  "name": "aetlan",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "lerna run build"
+  },
+  "workspaces": [
+    "packages/*"
+  ],
+  "dependencies": {},
+  "devDependencies": {
+    "@types/node": "20.11.30",
+    "lerna": "^8.1.2",
+    "typescript": "^4.6.0"
+  }
+}

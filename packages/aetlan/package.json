@@ -1,0 +1,25 @@
+{
+  "name": "@aetlan/aetlan",
+  "version": "0.1.0",
+  "private": true,
+  "description": "",
+  "type": "module",
+  "scripts": {
+    "build": "tsc",
+    "lint": "eslint --cache --ext .js,.ts src/",
+    "start": "node ./dist/index.js"
+  },
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "author": "Björn Andersson",
+  "license": "MIT",
+  "publishConfig": {
+    "access": "public"
+  },
+  "dependencies": {
+    "@tashmet/mingo": "^1.0.2",
+    "@tashmet/nabu": "^1.0.2",
+    "@tashmet/tashmet": "^1.0.2",
+    "@tashmet/terminal": "^1.0.2"
+  }
+}
