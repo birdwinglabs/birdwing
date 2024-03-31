@@ -6,6 +6,7 @@ import { Logger } from '@tashmet/core';
 import { terminal } from '@tashmet/terminal';
 import path from 'path';
 import { extractLinks, slugify } from './util.js';
+import markdoc from './markdoc.js';
 
 
 export class Aetlan {
@@ -16,6 +17,7 @@ export class Aetlan {
         logFormat: terminal(),
       })
       .use(mingo())
+      .use(markdoc())
       .bootstrap();
 
     const tashmet = await Tashmet.connect(store.proxy());
@@ -25,7 +27,9 @@ export class Aetlan {
         glob: {
           pattern: path.join(srcPath, '**/*.md'),
           format: {
-            frontmatter: 'yaml',
+            frontmatter: {
+              format: 'yaml',
+            }
           },
           construct: {
             path: {
@@ -33,7 +37,7 @@ export class Aetlan {
             }
           },
           default: {
-            slug: { $function: { body: (id: string) => slugify(id, srcPath), args: [ '$_id' ], lang: 'js' } },
+            'frontmatter.slug': { $function: { body: (id: string) => slugify(id, srcPath), args: [ '$_id' ], lang: 'js' } },
           }
         }
       }
@@ -62,7 +66,7 @@ export class Aetlan {
 
   async slugMap() {
     const result = await this.docs.aggregate([
-      { $project: { _id: 0, k: '$path', v: '$slug' } },
+      { $project: { _id: 0, k: '$path', v: '$frontmatter.slug' } },
       { $group: { _id: 1, items: { $push: '$$ROOT' } } },
       { $project: { _id: 0, map: { $arrayToObject: '$items' } } },
     ]).next();
@@ -121,10 +125,16 @@ export class Aetlan {
       {
         $project: {
           path: 0,
-          topic: { $function: { body: topic, args: [ '$slug' ], lang: 'js' } },
-          prev: { $function: { body: prev, args: [ '$slug' ], lang: 'js' } },
-          next: { $function: { body: next, args: [ '$slug' ], lang: 'js' } },
+          topic: { $function: { body: topic, args: [ '$frontmatter.slug' ], lang: 'js' } },
+          prev: { $function: { body: prev, args: [ '$frontmatter.slug' ], lang: 'js' } },
+          next: { $function: { body: next, args: [ '$frontmatter.slug' ], lang: 'js' } },
           headings: { $function: { body: headings, args: [{ $markdownToObject: '$body' }], lang: 'js' } },
+          ast: { $markdocToAst: '$body' },
+        }
+      },
+      {
+        $set: {
+          renderable: { $markdocAstToRenderable: ['$ast', {}] }
         }
       },
       ...pipeline
