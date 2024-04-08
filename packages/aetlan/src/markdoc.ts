@@ -57,6 +57,12 @@ export class MarkdocOperators {
     return Markdoc.transform(ctx.compute(obj, expr[0]), ctx.compute(obj, expr[1]));
   }
 
+  @op.expression('$markdocRenderableToHtml')
+  public markdocRenderableToHtml(obj: any, expr: any, ctx: OperatorContext) {
+    const renderable = ctx.compute(obj, expr) as any;
+    return Markdoc.renderers.html(renderable);
+  }
+
   //@op.expression('$toObject')
   //public toObject(obj: any, expr: any, ctx: OperatorContext) {
     //return toPlainObject(ctx.compute(obj, expr));

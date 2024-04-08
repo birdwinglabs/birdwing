@@ -6,7 +6,30 @@ import { Logger } from '@tashmet/core';
 import { terminal } from '@tashmet/terminal';
 import path from 'path';
 import { extractLinks, slugify } from './util.js';
-import markdoc from './markdoc.js';
+import markdocPlugin from './markdoc.js';
+import mustache from './mustache.js';
+import markdoc from '@markdoc/markdoc';
+import { compile, render } from './renderer.js';
+
+const summaryConfig: any = {
+  nodes: {
+    document: {
+      render: 'SideNav',
+      attributes: {
+        slug: 'String',
+      },
+      transform(node: any, config: any) {
+        return new markdoc.Tag(this.render, { slug: "/docs/slug" }, node.transformChildren(config));
+      }
+    },
+    list: {
+      render: 'Menu',
+    },
+    item: {
+      render: 'MenuItem',
+    }
+  },
+}
 
 
 export class Aetlan {
@@ -17,8 +40,43 @@ export class Aetlan {
         logFormat: terminal(),
       })
       .use(mingo())
-      .use(markdoc())
+      .use(markdocPlugin())
+      .use(mustache())
       .bootstrap();
+
+
+    const config: any = {
+      tags: {
+        hint: {
+          render: 'Hint',
+          attributes: {
+            style: {
+              type: 'String'
+            }
+          },
+        }
+      },
+      nodes: {
+        fence: {
+          render: 'Fence',
+          attributes: {
+            content: {
+              type: 'String'
+            },
+            language: {
+              type: 'String'
+            },
+            process: {
+              type: 'Boolean'
+            }
+          },
+          //transform(node: any, config: any) {
+            //return new markdoc.Tag(this.render, { content: node }, []);
+          //}
+        }
+      },
+    }
+
 
     const tashmet = await Tashmet.connect(store.proxy());
 
@@ -43,7 +101,7 @@ export class Aetlan {
       }
     });
 
-    return new Aetlan(tashmet, store.logger, srcPath);
+    return new Aetlan(tashmet, store.logger, srcPath, config);
   }
 
   private docs: Collection;
@@ -51,10 +109,12 @@ export class Aetlan {
   constructor(
     public readonly tashmet: Tashmet,
     public readonly logger: Logger,
-    public readonly srcPath: string
+    public readonly srcPath: string,
+    public readonly config: any,
   ) {
     this.docs = tashmet.db('source').collection('docs');
   }
+
 
   async summary() {
     return this.docs.aggregate([
@@ -81,6 +141,11 @@ export class Aetlan {
   async documents(pipeline: Document[] = []) {
     const slugMap = await this.slugMap();
     const summary = await this.summary();
+
+    const t: any = {
+      Hint: await compile('/home/bander10/Documents/code/svelte-docs/src/lib/components/Hint.svelte'),
+      Fence: await compile('/home/bander10/Documents/code/svelte-docs/src/lib/components/Fence.svelte'),
+    }
 
     if (!summary) {
       throw Error('no summary');
@@ -120,11 +185,36 @@ export class Aetlan {
       return headings;
     }
 
+    const tags = (node: any) => {
+      let result: Set<string> = new Set();
+      if (node['$$mdtype'] === 'Tag') {
+        result.add(node.name);
+      }
+      for (const child of node.children || []) {
+        if (child['$$mdtype'] === 'Tag') {
+          result.add(child.name);
+        }
+        if (child.children) {
+          result = new Set([...Array.from(result), ...tags(child)]);
+        }
+      }
+      return Array.from(result);
+    }
+
+    const customTags = (tags: string[]) => {
+      const custom = ['Hint', 'Fence', 'SideNav', 'Menu', 'MenuItem'];
+
+      return tags.filter(value => custom.includes(value));
+    }
+
     return this.docs.aggregate([
-      { $match: { path: { $nin: [ 'SUMMARY.md' ] } } },
+      //{ $match: { path: { $nin: [ 'SUMMARY.md' ] } } },
       {
         $project: {
-          path: 0,
+          _id: 1,
+          path: 1,
+          body: 1,
+          frontmatter: 1,
           topic: { $function: { body: topic, args: [ '$frontmatter.slug' ], lang: 'js' } },
           prev: { $function: { body: prev, args: [ '$frontmatter.slug' ], lang: 'js' } },
           next: { $function: { body: next, args: [ '$frontmatter.slug' ], lang: 'js' } },
@@ -134,7 +224,30 @@ export class Aetlan {
       },
       {
         $set: {
-          renderable: { $markdocAstToRenderable: ['$ast', {}] }
+          renderable: {
+            $markdocAstToRenderable: ['$ast', {
+              $cond: {
+                if: { $eq: ['$path', 'SUMMARY.md']},
+                then: summaryConfig,
+                else: this.config
+              }
+            }]
+          }
+        }
+      },
+      {
+        $set: {
+          html: { $function: { body: render, args: ['$renderable', t], lang: 'js' } }
+        }
+      },
+      {
+        $set: {
+          tags: { $function: { body: tags, args: [ '$renderable' ], lang: 'js' } },
+        }
+      },
+      {
+        $set: {
+          customTags: { $function: { body: customTags, args: [ '$tags' ], lang: 'js' }}
         }
       },
       ...pipeline
