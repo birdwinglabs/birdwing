@@ -1,3 +1,3 @@
 export { Aetlan } from './db.js';
 
-export { compile, render } from './renderer.js';
+export { compile, render } from '../../sveltekit/src/renderer.js';

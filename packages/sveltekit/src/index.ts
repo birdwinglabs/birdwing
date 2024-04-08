@@ -1,6 +1,6 @@
 import { program } from 'commander';
 import { Aetlan } from '@aetlan/aetlan';
-import prettify from 'html-prettify';
+import { compile, render } from './renderer.js';
 
 const pageTemplate = `
 <script>
@@ -24,6 +24,8 @@ const sidenavTemplate = `
 
   export let slug;
 </script>
+
+{{{body}}}
 `;
 
 function pruneFence(node: any) {
@@ -59,6 +61,11 @@ export async function build(src: string, dst: string) {
   return Aetlan
     .connect(src)
     .then(async aetlan => {
+      const tags: any = {
+        Hint: await compile('/home/bander10/Documents/code/svelte-docs/src/lib/components/Hint.svelte'),
+        Fence: await compile('/home/bander10/Documents/code/svelte-docs/src/lib/components/Fence.svelte'),
+      }
+
       const docs = await aetlan.documents([
         {
           $facet: {
@@ -91,10 +98,11 @@ export async function build(src: string, dst: string) {
             ],
             '+page.svelte': [
               { $match: { path: { $nin: [ 'SUMMARY.md' ] } } },
-              //{ $dump: '$html' },
-              //{ $set: { renderable: { $function: { body: pruneFence, args: ['$renderable'], lang: 'js' } }} },
-              //{ $set: { svelteBody: { $markdocRenderableToHtml: '$renderable'} } },
-              { $set: { svelteBody: '$html' }},
+              {
+                $set: {
+                  svelteBody: { $function: { body: render, args: ['$renderable', tags], lang: 'js' } }
+                }
+              },
               { $set: { svelteBody: { $replaceAll: { input: '$svelteBody', find: '{', replacement: '&lcub;' } } } },
               { $set: { svelteBody: { $replaceAll: { input: '$svelteBody', find: '}', replacement: '&rcub;' } } } },
               {
@@ -105,7 +113,8 @@ export async function build(src: string, dst: string) {
                       pageTemplate,
                       {
                         customTags: '$customTags',
-                        body: { $function: { body: prettifyHtml, args: ['$svelteBody'], lang: 'js' } },
+                        //body: { $function: { body: prettifyHtml, args: ['$svelteBody'], lang: 'js' } },
+                        body: '$svelteBody'
                       }
                     ]
                   },
@@ -125,19 +134,16 @@ export async function build(src: string, dst: string) {
               { $set: { svelteBody: { $markdocRenderableToHtml: '$renderable'} } },
               { $set: { svelteBody: { $replaceAll: { input: '$svelteBody', find: '{', replacement: '&lcub;' } } } },
               { $set: { svelteBody: { $replaceAll: { input: '$svelteBody', find: '}', replacement: '&rcub;' } } } },
-              //{ $dump: '$renderable' },
               {
                 $project: {
                   _id: { $joinPaths: [dst, 'src/lib/components/sidenav.svelte'] },
                   content: {
-                    $concat: [
-                      { $mustache: [
-                        sidenavTemplate,
-                        {
-                          customTags: '$customTags',
-                          //body: { $function: { body: prettify, args: ['$svelteBody'], lang: 'js' } },
-                        }
-                      ] }, { $function: { body: prettifyHtml, args: ['$svelteBody'], lang: 'js' } }
+                    $mustache: [
+                      sidenavTemplate,
+                      {
+                        customTags: '$customTags',
+                        body: { $function: { body: prettifyHtml, args: ['$svelteBody'], lang: 'js' } },
+                      }
                     ]
                   },
                 },
@@ -150,22 +156,6 @@ export async function build(src: string, dst: string) {
                 }
               }
             ]
-            //'+page.mdoc': [
-              //{ $log: { scope: '+page.mdoc', message: '$_id' } },
-              ////{ $dump: '$$ROOT' },
-              //{
-                //$set: {
-                  //_id: { $joinPaths: [dst, 'src/routes', '$frontmatter.slug', '+page.mdoc'] },
-                  //frontmatter: { $objectToYaml: '$frontmatter' },
-                //},
-              //},
-              //{
-                //$project: {
-                  //_id: '$_id',
-                  //content: { $objectToFrontmatter: '$$ROOT' }
-                //}
-              //},
-            //]
           }
         },
       ]);

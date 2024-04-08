@@ -9,7 +9,7 @@ import { extractLinks, slugify } from './util.js';
 import markdocPlugin from './markdoc.js';
 import mustache from './mustache.js';
 import markdoc from '@markdoc/markdoc';
-import { compile, render } from './renderer.js';
+//import { compile, render } from '../../sveltekit/src/renderer.js';
 
 const summaryConfig: any = {
   nodes: {
@@ -142,11 +142,6 @@ export class Aetlan {
     const slugMap = await this.slugMap();
     const summary = await this.summary();
 
-    const t: any = {
-      Hint: await compile('/home/bander10/Documents/code/svelte-docs/src/lib/components/Hint.svelte'),
-      Fence: await compile('/home/bander10/Documents/code/svelte-docs/src/lib/components/Fence.svelte'),
-    }
-
     if (!summary) {
       throw Error('no summary');
     }
@@ -233,11 +228,6 @@ export class Aetlan {
               }
             }]
           }
-        }
-      },
-      {
-        $set: {
-          html: { $function: { body: render, args: ['$renderable', t], lang: 'js' } }
         }
       },
       {

@@ -46,12 +46,6 @@ export async function compile(filepath: string) {
 
     return html;
   }
-  //const minifiedHTML = minify(html, {
-    //collapseWhitespace: true,
-    //conservativeCollapse: true,
-    //preserveLineBreaks: true,
-  //});
-
 }
 
 // HTML elements that do not have a matching close tag
