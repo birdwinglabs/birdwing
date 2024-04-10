@@ -4,28 +4,34 @@ import { compile, render } from './renderer.js';
 
 const pageTemplate = `
 <script>
+  import Layout from '$lib/layouts/Docs.svelte';
+  import SideNav from '$lib/components/SideNav.svelte';
+  import Menu from '$lib/components/Menu.svelte';
+  import MenuItem from '$lib/components/MenuItem.svelte';
+  import Route from '$lib/components/Route.svelte';
 {{#customTags}}
   import {{.}} from '$lib/components/{{.}}.svelte';
 {{/customTags}}
 
   export let data;
 
-  const { frontmatter } = data;
+  const { title, description, topic, slug, next, prev, headings } = data;
 </script>
 
-{{{body}}}
+<Layout title={title} description={description} topic={topic} slug={slug} next={next} prev={prev} headings={headings}>
+  <div slot="nav">
+    {{{sidenav}}}
+  </div>
+
+  {{{svelteBody}}}
+</Layout>
 `;
 
-const sidenavTemplate = `
-<script>
-{{#customTags}}
-  import {{.}} from '$lib/components/{{.}}.svelte';
-{{/customTags}}
-
-  export let slug;
-</script>
-
-{{{body}}}
+const pageServerTemplate = `
+/** @type {import('./$types').PageServerLoad} */
+export async function load() {
+  return {{{data}}}
+}
 `;
 
 function pruneFence(node: any) {
@@ -64,31 +70,36 @@ export async function build(src: string, dst: string) {
       const tags: any = {
         Hint: await compile('/home/bander10/Documents/code/svelte-docs/src/lib/components/Hint.svelte'),
         Fence: await compile('/home/bander10/Documents/code/svelte-docs/src/lib/components/Fence.svelte'),
+        SideNav: await compile('/home/bander10/Documents/code/svelte-docs/src/lib/components/SideNav.svelte'),
+        Menu: await compile('/home/bander10/Documents/code/svelte-docs/src/lib/components/Menu.svelte'),
+        MenuItem: await compile('/home/bander10/Documents/code/svelte-docs/src/lib/components/MenuItem.svelte'),
+        //Route: await compile('/home/bander10/Documents/code/svelte-docs/src/lib/components/Route.svelte'),
       }
+
+      const sideNavRender = await aetlan.createSideNavRenderer((node: any) => render(node, tags));
 
       const docs = await aetlan.documents([
         {
           $facet: {
-            'data.json': [
+            '+page.server.js': [
               { $match: { path: { $nin: [ 'SUMMARY.md' ] } } },
               {
-                $group: {
-                  _id: { $joinPaths: [dst, 'src/routes/docs/data.json'] },
-                  items: {
-                    $push: {
-                      k: '$frontmatter.slug',
-                      v: { $mergeObjects: ['$frontmatter', { topic: '$topic', headings: '$headings', next: '$next', prev: '$prev' }] }
-                    },
-                  }
-                },
-              },
-              {
                 $project: {
-                  _id: 1,
-                  content: { $objectToJson: { $arrayToObject: '$items' } },
+                  _id: { $joinPaths: [dst, 'src/routes', '$frontmatter.slug', '+page.server.js'] },
+                  content: {
+                    $mustache: [
+                      pageServerTemplate, {
+                        data: {
+                          $objectToJson:  {
+                            $mergeObjects: ['$frontmatter', { topic: '$topic', headings: '$headings', next: '$next', prev: '$prev' }]
+                          }
+                        }
+                      }
+                    ]
+                  },
                 },
               },
-              { $log: { scope: 'data.json', message: '$_id' } },
+              { $log: { scope: '+page.server.js', message: '$_id' } },
               {
                 $writeFile: {
                   content: '$content',
@@ -106,16 +117,22 @@ export async function build(src: string, dst: string) {
               { $set: { svelteBody: { $replaceAll: { input: '$svelteBody', find: '{', replacement: '&lcub;' } } } },
               { $set: { svelteBody: { $replaceAll: { input: '$svelteBody', find: '}', replacement: '&rcub;' } } } },
               {
+                $set: {
+                  sidenav: {
+                    $function: {
+                      body: sideNavRender,
+                      args: [ '$frontmatter.slug' ],
+                      lang: 'js',
+                    }
+                  }
+                } 
+              },
+              {
                 $project: {
                   _id: { $joinPaths: [dst, 'src/routes', '$frontmatter.slug', '+page.svelte'] },
                   content: {
                     $mustache: [
-                      pageTemplate,
-                      {
-                        customTags: '$customTags',
-                        //body: { $function: { body: prettifyHtml, args: ['$svelteBody'], lang: 'js' } },
-                        body: '$svelteBody'
-                      }
+                      pageTemplate, '$$ROOT'
                     ]
                   },
                 },
@@ -128,34 +145,6 @@ export async function build(src: string, dst: string) {
                 }
               }
             ],
-            'sidenav.svelte': [
-              { $match: { path: 'SUMMARY.md' } },
-              { $set: { renderable: { $function: { body: pruneFence, args: ['$renderable'], lang: 'js' } }} },
-              { $set: { svelteBody: { $markdocRenderableToHtml: '$renderable'} } },
-              { $set: { svelteBody: { $replaceAll: { input: '$svelteBody', find: '{', replacement: '&lcub;' } } } },
-              { $set: { svelteBody: { $replaceAll: { input: '$svelteBody', find: '}', replacement: '&rcub;' } } } },
-              {
-                $project: {
-                  _id: { $joinPaths: [dst, 'src/lib/components/sidenav.svelte'] },
-                  content: {
-                    $mustache: [
-                      sidenavTemplate,
-                      {
-                        customTags: '$customTags',
-                        body: { $function: { body: prettifyHtml, args: ['$svelteBody'], lang: 'js' } },
-                      }
-                    ]
-                  },
-                },
-              },
-              { $log: { scope: 'sidenav.svelte', message: '$_id' } },
-              {
-                $writeFile: {
-                  content: '$content',
-                  to: '$_id',
-                }
-              }
-            ]
           }
         },
       ]);

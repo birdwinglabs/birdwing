@@ -9,24 +9,33 @@ import { extractLinks, slugify } from './util.js';
 import markdocPlugin from './markdoc.js';
 import mustache from './mustache.js';
 import markdoc from '@markdoc/markdoc';
-//import { compile, render } from '../../sveltekit/src/renderer.js';
 
-const summaryConfig: any = {
+export const summaryConfig: any = {
   nodes: {
     document: {
       render: 'SideNav',
-      attributes: {
-        slug: 'String',
-      },
-      transform(node: any, config: any) {
-        return new markdoc.Tag(this.render, { slug: "/docs/slug" }, node.transformChildren(config));
-      }
     },
     list: {
       render: 'Menu',
     },
     item: {
       render: 'MenuItem',
+    },
+    link: {
+      //attributes: {
+        //selected: 'Boolean',
+      //},
+      transform(node: any, config: any) {
+        const { slug, slugMap } = config.variables || {};
+
+        if (slug && slugMap) {
+          if (node.attributes.href in slugMap) {
+            const href = slugMap[node.attributes.href];
+            return new markdoc.Tag('Route', { href, selected: href === slug }, node.transformChildren(config));
+          }
+        }
+        return new markdoc.Tag('a', node.attributes, node.transformChildren(config));
+      }
     }
   },
 }
@@ -115,13 +124,29 @@ export class Aetlan {
     this.docs = tashmet.db('source').collection('docs');
   }
 
-
   async summary() {
     return this.docs.aggregate([
       { $match: { path: 'SUMMARY.md' } },
       { $set: { ast: { $markdownToObject: '$body' } } },
       { $unset: ['slug'] },
     ]).next();
+  }
+
+  async createSideNavRenderer(render: (node: any) => string) {
+    const slugMap = await this.slugMap();
+    const summary = await this.docs.findOne({ path: 'SUMMARY.md' });
+
+    if (!summary) {
+      throw Error('Summary not found');
+    }
+
+    return (slug: string) => {
+      const ast = markdoc.parse(summary.body);
+      const renderable = markdoc.transform(ast, {...summaryConfig, variables: { slug, slugMap } });
+
+      const html = render(renderable);
+      return html;
+    }
   }
 
   async slugMap() {
