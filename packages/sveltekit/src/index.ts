@@ -1,17 +1,14 @@
 import { program } from 'commander';
 import { Aetlan } from '@aetlan/aetlan';
 import { compile, render } from './renderer.js';
+import path from 'path';
 
 const pageTemplate = `
 <script>
   import Layout from '$lib/layouts/Docs.svelte';
-  import SideNav from '$lib/components/SideNav.svelte';
-  import Menu from '$lib/components/Menu.svelte';
-  import MenuItem from '$lib/components/MenuItem.svelte';
-  import Route from '$lib/components/Route.svelte';
-{{#customTags}}
+{{#imports}}
   import {{.}} from '$lib/components/{{.}}.svelte';
-{{/customTags}}
+{{/imports}}
 
   export let data;
 
@@ -34,15 +31,6 @@ export async function load() {
 }
 `;
 
-function pruneFence(node: any) {
-  for (const child of node.children) {
-    if (child.name === 'Fence') {
-      child.children = [];
-    }
-  }
-  return node;
-}
-
 function prettifyHtml(html: string) {
   var tab = '\t';
   var result = '';
@@ -64,16 +52,17 @@ function prettifyHtml(html: string) {
 }
 
 export async function build(src: string, dst: string) {
+  const componentsPath = path.join(dst, 'src/lib/components');
+  const sideNavTags = ['SideNav', 'Menu', 'MenuItem', 'Route'];
+  const serverComponents = ['Hint', 'Fence', 'SideNav', 'Menu', 'MenuItem', 'Route'];
+
   return Aetlan
     .connect(src)
     .then(async aetlan => {
-      const tags: any = {
-        Hint: await compile('/home/bander10/Documents/code/svelte-docs/src/lib/components/Hint.svelte'),
-        Fence: await compile('/home/bander10/Documents/code/svelte-docs/src/lib/components/Fence.svelte'),
-        SideNav: await compile('/home/bander10/Documents/code/svelte-docs/src/lib/components/SideNav.svelte'),
-        Menu: await compile('/home/bander10/Documents/code/svelte-docs/src/lib/components/Menu.svelte'),
-        MenuItem: await compile('/home/bander10/Documents/code/svelte-docs/src/lib/components/MenuItem.svelte'),
-        //Route: await compile('/home/bander10/Documents/code/svelte-docs/src/lib/components/Route.svelte'),
+      const tags: any = {};
+
+      for (const name of serverComponents) {
+        tags[name] = await compile(path.join(componentsPath, `${name}.svelte`));
       }
 
       const sideNavRender = await aetlan.createSideNavRenderer((node: any) => render(node, tags));
@@ -127,6 +116,8 @@ export async function build(src: string, dst: string) {
                   }
                 } 
               },
+              { $set: { customTags: { $concatArrays: ['$customTags', sideNavTags] } } },
+              { $set: { imports: { $setDifference: ['$customTags', serverComponents] } } },
               {
                 $project: {
                   _id: { $joinPaths: [dst, 'src/routes', '$frontmatter.slug', '+page.svelte'] },
