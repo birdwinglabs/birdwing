@@ -54,7 +54,7 @@ function prettifyHtml(html: string) {
 export async function build(src: string, dst: string) {
   const componentsPath = path.join(dst, 'src/lib/components');
   const sideNavTags = ['SideNav', 'Menu', 'MenuItem', 'Route'];
-  const serverComponents = ['Hint', 'Fence', 'SideNav', 'Menu', 'MenuItem', 'Route'];
+  const serverComponents = ['Hint', 'Fence', 'SideNav', 'Menu', 'MenuItem'];
 
   return Aetlan
     .connect(src)
@@ -65,7 +65,7 @@ export async function build(src: string, dst: string) {
         tags[name] = await compile(path.join(componentsPath, `${name}.svelte`));
       }
 
-      const sideNavRender = await aetlan.createSideNavRenderer((node: any) => render(node, tags));
+      const sideNavRender = await aetlan.createSideNavRenderer((node: any) => render(node, tags, ['Route']));
 
       const docs = await aetlan.documents([
         {
@@ -100,7 +100,7 @@ export async function build(src: string, dst: string) {
               { $match: { path: { $nin: [ 'SUMMARY.md' ] } } },
               {
                 $set: {
-                  svelteBody: { $function: { body: render, args: ['$renderable', tags], lang: 'js' } }
+                  svelteBody: { $function: { body: render, args: ['$renderable', tags, []], lang: 'js' } }
                 }
               },
               { $set: { svelteBody: { $replaceAll: { input: '$svelteBody', find: '{', replacement: '&lcub;' } } } },
