@@ -2,6 +2,7 @@ import { program } from 'commander';
 import { Aetlan } from '@aetlan/aetlan';
 import { compile, render } from './renderer.js';
 import path from 'path';
+import fs from 'fs';
 
 const pageTemplate = `
 <script>
@@ -31,41 +32,28 @@ export async function load() {
 }
 `;
 
-function prettifyHtml(html: string) {
-  var tab = '\t';
-  var result = '';
-  var indent= '';
-
-  html.split(/>\s*</).forEach(function(element) {
-      if (element.match( /^\/\w/ )) {
-          indent = indent.substring(tab.length);
-      }
-
-      result += indent + '<' + element + '>\r\n';
-
-      if (element.match( /^<?\w[^>]*[^\/]$/ ) && !element.startsWith("input")  ) { 
-          indent += tab;              
-      }
-  });
-
-  return result.substring(1, result.length-3);
-}
+const sideNavTags = ['SideNav', 'Menu', 'MenuItem', 'Route'];
 
 export async function build(src: string, dst: string) {
+  const config: any = {
+    postrender: ['Route'],
+  }
+
   const componentsPath = path.join(dst, 'src/lib/components');
-  const sideNavTags = ['SideNav', 'Menu', 'MenuItem', 'Route'];
-  const serverComponents = ['Hint', 'Fence', 'SideNav', 'Menu', 'MenuItem'];
+  const components = fs.readdirSync(componentsPath).map(file => path.basename(file, '.svelte'));
+
+  const serverComponents = components.filter(x => !config.postrender.includes(x));
 
   return Aetlan
     .connect(src)
     .then(async aetlan => {
-      const tags: any = {};
+      const tagsPrerender: any = {};
 
       for (const name of serverComponents) {
-        tags[name] = await compile(path.join(componentsPath, `${name}.svelte`));
+        tagsPrerender[name] = await compile(path.join(componentsPath, `${name}.svelte`));
       }
 
-      const sideNavRender = await aetlan.createSideNavRenderer((node: any) => render(node, tags, ['Route']));
+      const sideNavRender = await aetlan.createSideNavRenderer((node: any) => render(node, tagsPrerender, config.postrender));
 
       const docs = await aetlan.documents([
         {
@@ -100,7 +88,7 @@ export async function build(src: string, dst: string) {
               { $match: { path: { $nin: [ 'SUMMARY.md' ] } } },
               {
                 $set: {
-                  svelteBody: { $function: { body: render, args: ['$renderable', tags, []], lang: 'js' } }
+                  svelteBody: { $function: { body: render, args: ['$renderable', tagsPrerender, config.postrender], lang: 'js' } }
                 }
               },
               { $set: { svelteBody: { $replaceAll: { input: '$svelteBody', find: '{', replacement: '&lcub;' } } } },
@@ -117,7 +105,7 @@ export async function build(src: string, dst: string) {
                 } 
               },
               { $set: { customTags: { $concatArrays: ['$customTags', sideNavTags] } } },
-              { $set: { imports: { $setDifference: ['$customTags', serverComponents] } } },
+              { $set: { imports: { $setIntersection: ['$customTags', config.postrender] } } },
               {
                 $project: {
                   _id: { $joinPaths: [dst, 'src/routes', '$frontmatter.slug', '+page.svelte'] },
