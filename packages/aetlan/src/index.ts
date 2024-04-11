@@ -1,1 +1,1 @@
-export { Aetlan, summaryConfig } from './db.js';
+export { Aetlan } from './db.js';

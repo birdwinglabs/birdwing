@@ -18,7 +18,7 @@ const pageTemplate = `
 
 <Layout title={title} description={description} topic={topic} slug={slug} next={next} prev={prev} headings={headings}>
   <div slot="nav">
-    {{{sidenav}}}
+    {{{summary.body}}}
   </div>
 
   {{{svelteBody}}}
@@ -32,8 +32,6 @@ export async function load() {
 }
 `;
 
-const sideNavTags = ['SideNav', 'Menu', 'MenuItem', 'Route'];
-
 export async function build(src: string, dst: string) {
   const config: any = {
     postrender: ['Route'],
@@ -45,7 +43,7 @@ export async function build(src: string, dst: string) {
   const serverComponents = components.filter(x => !config.postrender.includes(x));
 
   return Aetlan
-    .connect(src)
+    .connect(src, components)
     .then(async aetlan => {
       const tagsPrerender: any = {};
 
@@ -95,7 +93,7 @@ export async function build(src: string, dst: string) {
               { $set: { svelteBody: { $replaceAll: { input: '$svelteBody', find: '}', replacement: '&rcub;' } } } },
               {
                 $set: {
-                  sidenav: {
+                  summary: {
                     $function: {
                       body: sideNavRender,
                       args: [ '$frontmatter.slug' ],
@@ -104,7 +102,7 @@ export async function build(src: string, dst: string) {
                   }
                 } 
               },
-              { $set: { customTags: { $concatArrays: ['$customTags', sideNavTags] } } },
+              { $set: { customTags: { $concatArrays: ['$customTags', '$summary.customTags'] } } },
               { $set: { imports: { $setIntersection: ['$customTags', config.postrender] } } },
               {
                 $project: {

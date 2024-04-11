@@ -9,40 +9,11 @@ import { extractLinks, slugify } from './util.js';
 import markdocPlugin from './markdoc.js';
 import mustache from './mustache.js';
 import markdoc from '@markdoc/markdoc';
-
-export const summaryConfig: any = {
-  nodes: {
-    document: {
-      render: 'SideNav',
-    },
-    list: {
-      render: 'Menu',
-    },
-    item: {
-      render: 'MenuItem',
-    },
-    link: {
-      //attributes: {
-        //selected: 'Boolean',
-      //},
-      transform(node: any, config: any) {
-        const { slug, slugMap } = config.variables || {};
-
-        if (slug && slugMap) {
-          if (node.attributes.href in slugMap) {
-            const href = slugMap[node.attributes.href];
-            return new markdoc.Tag('Route', { href, selected: href === slug }, node.transformChildren(config));
-          }
-        }
-        return new markdoc.Tag('a', node.attributes, node.transformChildren(config));
-      }
-    }
-  },
-}
-
+import { makeNodes } from './nodes/index.js';
+import { makeTags } from './tags/index.js';
 
 export class Aetlan {
-  static async connect(srcPath: string) {
+  static async connect(srcPath: string, customTags: string[] = []) {
     const store = Nabu
       .configure({
         logLevel: LogLevel.Info,
@@ -53,39 +24,10 @@ export class Aetlan {
       .use(mustache())
       .bootstrap();
 
-
     const config: any = {
-      tags: {
-        hint: {
-          render: 'Hint',
-          attributes: {
-            style: {
-              type: 'String'
-            }
-          },
-        }
-      },
-      nodes: {
-        fence: {
-          render: 'Fence',
-          attributes: {
-            content: {
-              type: 'String'
-            },
-            language: {
-              type: 'String'
-            },
-            process: {
-              type: 'Boolean'
-            }
-          },
-          //transform(node: any, config: any) {
-            //return new markdoc.Tag(this.render, { content: node }, []);
-          //}
-        }
-      },
-    }
-
+      tags: makeTags(customTags),
+      nodes: makeNodes(customTags),
+    };
 
     const tashmet = await Tashmet.connect(store.proxy());
 
@@ -110,7 +52,7 @@ export class Aetlan {
       }
     });
 
-    return new Aetlan(tashmet, store.logger, srcPath, config);
+    return new Aetlan(tashmet, store.logger, srcPath, config, customTags);
   }
 
   private docs: Collection;
@@ -120,6 +62,7 @@ export class Aetlan {
     public readonly logger: Logger,
     public readonly srcPath: string,
     public readonly config: any,
+    public readonly customTags: string[],
   ) {
     this.docs = tashmet.db('source').collection('docs');
   }
@@ -142,11 +85,32 @@ export class Aetlan {
 
     return (slug: string) => {
       const ast = markdoc.parse(summary.body);
-      const renderable = markdoc.transform(ast, {...summaryConfig, variables: { slug, slugMap } });
+      const renderable = markdoc.transform(ast, {
+        tags: makeTags(this.customTags, true),
+        nodes: makeNodes(this.customTags, true),
+        variables: { slug, slugMap }
+      });
 
-      const html = render(renderable);
-      return html;
+      const body = render(renderable);
+      const tags = this.tags(renderable);
+      return { body, tags: this.tags(renderable), customTags: tags.filter(t => this.customTags.includes(t)) };
     }
+  }
+
+  tags(node: any) {
+    let result: Set<string> = new Set();
+    if (node['$$mdtype'] === 'Tag') {
+      result.add(node.name);
+    }
+    for (const child of node.children || []) {
+      if (child['$$mdtype'] === 'Tag') {
+        result.add(child.name);
+      }
+      if (child.children) {
+        result = new Set([...Array.from(result), ...this.tags(child)]);
+      }
+    }
+    return Array.from(result);
   }
 
   async slugMap() {
@@ -205,28 +169,6 @@ export class Aetlan {
       return headings;
     }
 
-    const tags = (node: any) => {
-      let result: Set<string> = new Set();
-      if (node['$$mdtype'] === 'Tag') {
-        result.add(node.name);
-      }
-      for (const child of node.children || []) {
-        if (child['$$mdtype'] === 'Tag') {
-          result.add(child.name);
-        }
-        if (child.children) {
-          result = new Set([...Array.from(result), ...tags(child)]);
-        }
-      }
-      return Array.from(result);
-    }
-
-    const customTags = (tags: string[]) => {
-      const custom = ['Hint', 'Fence', 'SideNav', 'Menu', 'MenuItem'];
-
-      return tags.filter(value => custom.includes(value));
-    }
-
     return this.docs.aggregate([
       //{ $match: { path: { $nin: [ 'SUMMARY.md' ] } } },
       {
@@ -245,24 +187,18 @@ export class Aetlan {
       {
         $set: {
           renderable: {
-            $markdocAstToRenderable: ['$ast', {
-              $cond: {
-                if: { $eq: ['$path', 'SUMMARY.md']},
-                then: summaryConfig,
-                else: this.config
-              }
-            }]
+            $markdocAstToRenderable: ['$ast', this.config]
           }
         }
       },
       {
         $set: {
-          tags: { $function: { body: tags, args: [ '$renderable' ], lang: 'js' } },
+          tags: { $function: { body: (node: any) => this.tags(node), args: [ '$renderable' ], lang: 'js' } },
         }
       },
       {
         $set: {
-          customTags: { $function: { body: customTags, args: [ '$tags' ], lang: 'js' }}
+          customTags: { $setIntersection: ['$tags', this.customTags] }
         }
       },
       ...pipeline
