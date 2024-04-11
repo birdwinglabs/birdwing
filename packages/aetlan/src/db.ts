@@ -141,7 +141,8 @@ export class Aetlan {
   }
 
   async watch() {
-    this.output = await this.tashmet.db('docs').createCollection('output');
+    await this.build();
+
     const watcher = chokidar.watch(path.join(this.srcPath, '**/*.md'));
 
     watcher.on('change', async filePath => {
