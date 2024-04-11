@@ -14,7 +14,7 @@ function generateID(children: any[], attributes: any) {
     .toLowerCase();
 }
 
-export function makeHeading(customTag: boolean) {
+export function makeHeading(customTags: string[], summary: boolean) {
   return {
     children: ['inline'],
     attributes: {
@@ -25,13 +25,21 @@ export function makeHeading(customTag: boolean) {
       const attributes = node.transformAttributes(config);
       const children = node.transformChildren(config);
 
-      const id = generateID(children, attributes);
+      if (summary) {
+        return new Tag(
+          customTags.includes('SummaryHeading') ? 'SummaryHeading' : `h${node.attributes['level']}`,
+          attributes,
+          children
+        );
+      } else {
+        const id = generateID(children, attributes);
 
-      return new Tag(
-        customTag ? 'Heading' : `h${node.attributes['level']}`,
-        { ...attributes, id },
-        children
-      );
+        return new Tag(
+          customTags.includes('Heading') ? 'Heading' : `h${node.attributes['level']}`,
+          { ...attributes, id },
+          children
+        );
+      }
     }
   };
 }

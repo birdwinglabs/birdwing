@@ -2,11 +2,11 @@ import markdoc from '@markdoc/markdoc';
 import { makeHeading } from "./heading.js";
 
 export function makeNodes(customTags: string[], summary: boolean = false) {
-  const nodes: any = {};
+  const nodes: any = {
+    heading: makeHeading(customTags, summary),
+  }
 
   if (!summary) {
-    nodes.heading = makeHeading(customTags.includes('Heading'));
-
     if (customTags.includes('Paragraph')) {
       nodes.paragraph = {
         render: 'Paragraph',
