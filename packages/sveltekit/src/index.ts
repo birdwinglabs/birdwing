@@ -33,7 +33,7 @@ export async function load() {
 }
 `;
 
-export async function build(src: string, dst: string) {
+export function svelteKitCompiler(src: string, dst: string, fn: (aetlan: Aetlan) => Promise<void>) {
   const config: any = {
     postrender: ['Route'],
   }
@@ -76,7 +76,7 @@ export async function build(src: string, dst: string) {
         }
       });
 
-      await aetlan.build();
+      await fn(aetlan);
     });
 }
 
@@ -86,7 +86,15 @@ export function cli() {
     .argument('<src>', 'documentation folder')
     .argument('<dst>', 'destination project folder')
     .action(async (src: string, dst: string) => {
-      await build(src, dst);
+      await svelteKitCompiler(src, dst, aetlan => aetlan.build());
+    });
+
+  program
+    .command('watch')
+    .argument('<src>', 'documentation folder')
+    .argument('<dst>', 'destination project folder')
+    .action(async (src: string, dst: string) => {
+      await svelteKitCompiler(src, dst, aetlan => aetlan.watch());
     });
 
   program.parse();

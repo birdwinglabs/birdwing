@@ -11,6 +11,7 @@ import mustache from './mustache.js';
 import markdoc from '@markdoc/markdoc';
 import { makeNodes } from './nodes/index.js';
 import { makeTags } from './tags/index.js';
+import chokidar from 'chokidar';
 
 export class Aetlan {
   static async connect(srcPath: string, customTags: string[] = []) {
@@ -114,6 +115,11 @@ export class Aetlan {
   async build() {
     this.output = await this.tashmet.db('docs').createCollection('output');
     const docs = await this.documents();
+    await this.transform(docs);
+  }
+
+  async transform(docs: Document[]) {
+    await this.output.deleteMany({});
 
     for (const [name, t] of Object.entries(this.transforms)) {
       for (const doc of docs) {
@@ -134,7 +140,18 @@ export class Aetlan {
     ]).toArray();
   }
 
-  async documents(pipeline: Document[] = []) {
+  async watch() {
+    this.output = await this.tashmet.db('docs').createCollection('output');
+    const watcher = chokidar.watch(path.join(this.srcPath, '**/*.md'));
+
+    watcher.on('change', async filePath => {
+      const relPath = path.relative(this.srcPath, filePath);
+      const docs = await this.documents(relPath);
+      await this.transform(docs);
+    });
+  }
+
+  async documents(filePath?: string) {
     const slugMap = await this.slugMap();
     const summary = await this.summary();
 
@@ -183,9 +200,14 @@ export class Aetlan {
     }
 
     const summaryAst = markdoc.parse(summary.body);
+    const pathMatch = filePath
+      ? filePath
+      : { $nin: [ 'SUMMARY.md' ] }
 
     return this.docs.aggregate([
-      { $match: { path: { $nin: [ 'SUMMARY.md' ] } } },
+      {
+        $match: { path: pathMatch }
+      },
       {
         $project: {
           _id: 1,
@@ -235,7 +257,6 @@ export class Aetlan {
           customTags: { $setIntersection: ['$tags', this.customTags] }
         }
       },
-      ...pipeline
     ]).toArray();
   }
 }
