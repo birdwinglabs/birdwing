@@ -1,9 +1,10 @@
-import markdoc from '@markdoc/markdoc';
 import { makeHeading } from "./heading.js";
+import { makeLink } from './link.js';
 
 export function makeNodes(customTags: string[], summary: boolean = false) {
   const nodes: any = {
     heading: makeHeading(customTags, summary),
+    link: makeLink(customTags, summary),
   }
 
   if (!summary) {
@@ -70,30 +71,6 @@ export function makeNodes(customTags: string[], summary: boolean = false) {
     if (customTags.includes('SummaryItem')) {
       nodes.item = {
         render: 'SummaryItem'
-      }
-    }
-
-    nodes.link = {
-      transform(node: any, config: any) {
-        const { slug, slugMap } = config.variables || {};
-
-        let tag = 'a';
-
-        if (summary && customTags.includes('SummaryLink')) {
-          tag = 'SummaryLink';
-        }
-
-        if (!summary && customTags.includes('Link')) {
-          tag = 'Link';
-        }
-
-        if (slug && slugMap) {
-          if (node.attributes.href in slugMap) {
-            const href = slugMap[node.attributes.href];
-            return new markdoc.Tag(tag, { href, selected: href === slug }, node.transformChildren(config));
-          }
-        }
-        return new markdoc.Tag(tag, node.attributes, node.transformChildren(config));
       }
     }
   }
