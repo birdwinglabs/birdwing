@@ -31,7 +31,7 @@ export class Aetlan {
 
     const tashmet = await Tashmet.connect(store.proxy());
 
-    await tashmet.db('source').createCollection('docs', {
+    await tashmet.db('docs').createCollection('source', {
       storageEngine: {
         glob: {
           pattern: path.join(srcPath, '**/*.md'),
@@ -56,6 +56,8 @@ export class Aetlan {
   }
 
   private docs: Collection;
+  private output: Collection;
+  private transforms: Record<string, (doc: Document) => Promise<Document>> = {};
 
   constructor(
     public readonly tashmet: Tashmet,
@@ -64,7 +66,7 @@ export class Aetlan {
     public readonly config: any,
     public readonly customTags: string[],
   ) {
-    this.docs = tashmet.db('source').collection('docs');
+    this.docs = tashmet.db('docs').collection('source');
   }
 
   async summary() {
@@ -73,28 +75,6 @@ export class Aetlan {
       { $set: { ast: { $markdownToObject: '$body' } } },
       { $unset: ['slug'] },
     ]).next();
-  }
-
-  async createSideNavRenderer(render: (node: any) => string) {
-    const slugMap = await this.slugMap();
-    const summary = await this.docs.findOne({ path: 'SUMMARY.md' });
-
-    if (!summary) {
-      throw Error('Summary not found');
-    }
-
-    return (slug: string) => {
-      const ast = markdoc.parse(summary.body);
-      const renderable = markdoc.transform(ast, {
-        tags: makeTags(this.customTags, true),
-        nodes: makeNodes(this.customTags, true),
-        variables: { slug, slugMap }
-      });
-
-      const body = render(renderable);
-      const tags = this.tags(renderable);
-      return { body, tags: this.tags(renderable), customTags: tags.filter(t => this.customTags.includes(t)) };
-    }
   }
 
   tags(node: any) {
@@ -125,6 +105,33 @@ export class Aetlan {
     }
 
     return result.map;
+  }
+
+  transformDocument(name: string, transformer: (doc: Document) => Promise<Document>) {
+    this.transforms[name] = transformer;
+  }
+
+  async build() {
+    this.output = await this.tashmet.db('docs').createCollection('output');
+    const docs = await this.documents();
+
+    for (const [name, t] of Object.entries(this.transforms)) {
+      for (const doc of docs) {
+        const res = await t(doc);
+        await this.output.insertOne({...res, scope: name});
+      }
+    }
+
+    await this.output.aggregate([
+      { $sort: { scope: 1 } },
+      { $log: { scope: '$scope', message: '$_id' } },
+      {
+        $writeFile: {
+          content: '$content',
+          to: '$_id',
+        }
+      }
+    ]).toArray();
   }
 
   async documents(pipeline: Document[] = []) {
@@ -169,8 +176,16 @@ export class Aetlan {
       return headings;
     }
 
+    const summaryDoc = await this.docs.findOne({ path: 'SUMMARY.md' });
+
+    if (!summaryDoc) {
+      throw Error('Summary not found');
+    }
+
+    const summaryAst = markdoc.parse(summary.body);
+
     return this.docs.aggregate([
-      //{ $match: { path: { $nin: [ 'SUMMARY.md' ] } } },
+      { $match: { path: { $nin: [ 'SUMMARY.md' ] } } },
       {
         $project: {
           _id: 1,
@@ -186,6 +201,20 @@ export class Aetlan {
       },
       {
         $set: {
+          summary: {
+            ast: summaryAst,
+            renderable: {
+              $markdocAstToRenderable: [summaryAst, {
+                tags: makeTags(this.customTags, true),
+                nodes: makeNodes(this.customTags, true),
+                variables: { slug: '$frontmatter.slug', slugMap },
+              }]
+            }
+          }
+        }
+      },
+      {
+        $set: {
           renderable: {
             $markdocAstToRenderable: ['$ast', this.config]
           }
@@ -193,7 +222,12 @@ export class Aetlan {
       },
       {
         $set: {
-          tags: { $function: { body: (node: any) => this.tags(node), args: [ '$renderable' ], lang: 'js' } },
+          tags: { 
+            $concatArrays: [
+              { $function: { body: (node: any) => this.tags(node), args: [ '$renderable' ], lang: 'js' } },
+              { $function: { body: (node: any) => this.tags(node), args: [ '$summary.renderable' ], lang: 'js' } },
+            ]
+          },
         }
       },
       {

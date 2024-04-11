@@ -68,8 +68,20 @@ const voidElements = new Set([
 ]);
 
 export function render(node: any, tagsPrerender: any, tagsPostrender: string[]): string {
-  if (typeof node === 'string' || typeof node === 'number')
-    return escapeHtml(String(node));
+  const uc_map: Record<string, string> = {
+    '{': '&lcub;',
+    '}': '&rcub;',
+  };
+
+  const uc_regular_expression = new RegExp(Object.keys(uc_map).join('|'), 'gi');
+
+  if (typeof node === 'string' || typeof node === 'number') {
+    return escapeHtml(String(node))
+      .replace(
+        uc_regular_expression,
+        (matched) => uc_map[matched.toLowerCase()],
+      );
+  }
 
   if (Array.isArray(node)) return node.map(n => render(n, tagsPrerender, tagsPostrender)).join('');
 

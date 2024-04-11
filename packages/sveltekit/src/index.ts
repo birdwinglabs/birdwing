@@ -3,6 +3,7 @@ import { Aetlan } from '@aetlan/aetlan';
 import { compile, render } from './renderer.js';
 import path from 'path';
 import fs from 'fs';
+import mustache from 'mustache';
 
 const pageTemplate = `
 <script>
@@ -18,10 +19,10 @@ const pageTemplate = `
 
 <Layout title={title} description={description} topic={topic} slug={slug} next={next} prev={prev} headings={headings}>
   <div slot="nav">
-    {{{summary.body}}}
+    {{{summary}}}
   </div>
 
-  {{{svelteBody}}}
+  {{{body}}}
 </Layout>
 `;
 
@@ -51,80 +52,31 @@ export async function build(src: string, dst: string) {
         tagsPrerender[name] = await compile(path.join(componentsPath, `${name}.svelte`));
       }
 
-      const sideNavRender = await aetlan.createSideNavRenderer((node: any) => render(node, tagsPrerender, config.postrender));
+      aetlan.transformDocument('+page.server.js', async doc => {
+        const { frontmatter, topic, headings, next, prev } = doc;
 
-      const docs = await aetlan.documents([
-        {
-          $facet: {
-            '+page.server.js': [
-              { $match: { path: { $nin: [ 'SUMMARY.md' ] } } },
-              {
-                $project: {
-                  _id: { $joinPaths: [dst, 'src/routes', '$frontmatter.slug', '+page.server.js'] },
-                  content: {
-                    $mustache: [
-                      pageServerTemplate, {
-                        data: {
-                          $objectToJson:  {
-                            $mergeObjects: ['$frontmatter', { topic: '$topic', headings: '$headings', next: '$next', prev: '$prev' }]
-                          }
-                        }
-                      }
-                    ]
-                  },
-                },
-              },
-              { $log: { scope: '+page.server.js', message: '$_id' } },
-              {
-                $writeFile: {
-                  content: '$content',
-                  to: '$_id',
-                }
-              }
-            ],
-            '+page.svelte': [
-              { $match: { path: { $nin: [ 'SUMMARY.md' ] } } },
-              {
-                $set: {
-                  svelteBody: { $function: { body: render, args: ['$renderable', tagsPrerender, config.postrender], lang: 'js' } }
-                }
-              },
-              { $set: { svelteBody: { $replaceAll: { input: '$svelteBody', find: '{', replacement: '&lcub;' } } } },
-              { $set: { svelteBody: { $replaceAll: { input: '$svelteBody', find: '}', replacement: '&rcub;' } } } },
-              {
-                $set: {
-                  summary: {
-                    $function: {
-                      body: sideNavRender,
-                      args: [ '$frontmatter.slug' ],
-                      lang: 'js',
-                    }
-                  }
-                } 
-              },
-              { $set: { customTags: { $concatArrays: ['$customTags', '$summary.customTags'] } } },
-              { $set: { imports: { $setIntersection: ['$customTags', config.postrender] } } },
-              {
-                $project: {
-                  _id: { $joinPaths: [dst, 'src/routes', '$frontmatter.slug', '+page.svelte'] },
-                  content: {
-                    $mustache: [
-                      pageTemplate, '$$ROOT'
-                    ]
-                  },
-                },
-              },
-              { $log: { scope: '+page.svelte', message: '$_id' } },
-              {
-                $writeFile: {
-                  content: '$content',
-                  to: '$_id',
-                }
-              }
-            ],
-          }
-        },
-      ]);
+        return {
+          _id: path.join(dst, 'src/routes', frontmatter.slug, '+page.server.js'),
+          content: mustache.render(pageServerTemplate, {
+            data: JSON.stringify({ ...frontmatter, topic, headings, next, prev }, null, 2),
+          }),
+        }
+      });
+
+      aetlan.transformDocument('+page.svelte', async doc => {
+        const { frontmatter, renderable, summary, customTags } = doc;
+
+        return {
+          _id: path.join(dst, 'src/routes', frontmatter.slug, '+page.svelte'),
+          content: mustache.render(pageTemplate, {
+            imports: customTags.filter((t: string) => config.postrender.includes(t)),
+            body: render(renderable, tagsPrerender, config.postrender),
+            summary: render(summary.renderable, tagsPrerender, config.postrender),
+          }),
+        }
+      });
+
+      await aetlan.build();
     });
 }
 
