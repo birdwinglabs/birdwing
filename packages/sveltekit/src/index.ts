@@ -1,6 +1,7 @@
 import { program } from 'commander';
 import { Aetlan } from '@aetlan/aetlan';
-import { compile, render } from './renderer.js';
+import { compile } from './compiler.js';
+import { render } from './renderer.js';
 import path from 'path';
 import fs from 'fs';
 import mustache from 'mustache';
