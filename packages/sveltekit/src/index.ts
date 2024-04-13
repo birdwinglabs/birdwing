@@ -50,7 +50,9 @@ export function svelteKitCompiler(src: string, dst: string, fn: (aetlan: Aetlan)
       const tagsPrerender: any = {};
 
       for (const name of serverComponents) {
-        tagsPrerender[name] = await compile(path.join(componentsPath, `${name}.svelte`));
+        const componentPath = path.join(componentsPath, `${name}.svelte`);
+        aetlan.logger.inScope('svelte compiler').info(`rollup: '${componentPath}'`);
+        tagsPrerender[name] = await compile(componentPath, dst);
       }
 
       aetlan.transformDocument('+page.server.js', async doc => {

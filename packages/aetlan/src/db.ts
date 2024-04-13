@@ -130,7 +130,7 @@ export class Aetlan {
 
     await this.output.aggregate([
       { $sort: { scope: 1 } },
-      { $log: { scope: '$scope', message: '$_id' } },
+      { $log: { scope: '$scope', message: { $concat: ["write: '", "$_id", "'"] } } },
       {
         $writeFile: {
           content: '$content',
