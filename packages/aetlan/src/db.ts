@@ -205,61 +205,36 @@ export class Aetlan {
       ? filePath
       : { $nin: [ 'SUMMARY.md' ] }
 
-    return this.docs.aggregate([
-      {
-        $match: { path: pathMatch }
-      },
-      {
-        $project: {
-          _id: 1,
-          path: 1,
-          body: 1,
-          data: {
-            $mergeObjects: [
-              '$frontmatter', {
-                topic: { $function: { body: topic, args: [ '$frontmatter.slug' ], lang: 'js' } },
-                prev: { $function: { body: prev, args: [ '$frontmatter.slug' ], lang: 'js' } },
-                next: { $function: { body: next, args: [ '$frontmatter.slug' ], lang: 'js' } },
-                headings: { $function: { body: headings, args: [{ $markdownToObject: '$body' }], lang: 'js' } },
-              }
-            ]
-          },
-          ast: { $markdocToAst: '$body' },
-        }
-      },
-      {
-        $set: {
-          summary: {
-            ast: summaryAst,
-            renderable: {
-              $markdocAstToRenderable: [summaryAst, {
-                tags: makeTags(this.customTags, true),
-                nodes: makeNodes(this.customTags, true),
-                variables: { slug: '$data.slug', slugMap },
-              }]
+    return this.docs.aggregate()
+      .match({ path: pathMatch })
+      .project({
+        _id: 1,
+        path: 1,
+        body: 1,
+        data: {
+          $mergeObjects: [
+            '$frontmatter', {
+              topic: { $function: { body: topic, args: [ '$frontmatter.slug' ], lang: 'js' } },
+              prev: { $function: { body: prev, args: [ '$frontmatter.slug' ], lang: 'js' } },
+              next: { $function: { body: next, args: [ '$frontmatter.slug' ], lang: 'js' } },
+              headings: { $function: { body: headings, args: [{ $markdownToObject: '$body' }], lang: 'js' } },
             }
-          }
+          ]
+        },
+        ast: { $markdocToAst: '$body' },
+      })
+      .set({
+        summary: {
+          $markdocAstToRenderable: [summaryAst, {
+            tags: makeTags(this.customTags, true),
+            nodes: makeNodes(this.customTags, true),
+            variables: { slug: '$data.slug', slugMap },
+          }]
         }
-      },
-      {
-        $set: {
-          renderable: {
-            $markdocAstToRenderable: ['$ast', {...this.config, variables: { nav: '$summary.renderable'} }]
-          }
-        }
-      },
-      {
-        $set: {
-          tags: { 
-            $function: { body: (node: any) => this.tags(node), args: [ '$renderable' ], lang: 'js' }
-          },
-        }
-      },
-      {
-        $set: {
-          customTags: { $setIntersection: ['$tags', this.customTags] }
-        }
-      },
-    ]).toArray();
+      })
+      .set({ renderable: { $markdocAstToRenderable: ['$ast', {...this.config, variables: { nav: '$summary' } }] } })
+      .set({ tags: { $function: { body: (node: any) => this.tags(node), args: [ '$renderable' ], lang: 'js' } } })
+      .set({ customTags: { $setIntersection: ['$tags', this.customTags] } })
+      .toArray();
   }
 }
