@@ -214,11 +214,16 @@ export class Aetlan {
           _id: 1,
           path: 1,
           body: 1,
-          frontmatter: 1,
-          topic: { $function: { body: topic, args: [ '$frontmatter.slug' ], lang: 'js' } },
-          prev: { $function: { body: prev, args: [ '$frontmatter.slug' ], lang: 'js' } },
-          next: { $function: { body: next, args: [ '$frontmatter.slug' ], lang: 'js' } },
-          headings: { $function: { body: headings, args: [{ $markdownToObject: '$body' }], lang: 'js' } },
+          data: {
+            $mergeObjects: [
+              '$frontmatter', {
+                topic: { $function: { body: topic, args: [ '$frontmatter.slug' ], lang: 'js' } },
+                prev: { $function: { body: prev, args: [ '$frontmatter.slug' ], lang: 'js' } },
+                next: { $function: { body: next, args: [ '$frontmatter.slug' ], lang: 'js' } },
+                headings: { $function: { body: headings, args: [{ $markdownToObject: '$body' }], lang: 'js' } },
+              }
+            ]
+          },
           ast: { $markdocToAst: '$body' },
         }
       },
@@ -230,7 +235,7 @@ export class Aetlan {
               $markdocAstToRenderable: [summaryAst, {
                 tags: makeTags(this.customTags, true),
                 nodes: makeNodes(this.customTags, true),
-                variables: { slug: '$frontmatter.slug', slugMap },
+                variables: { slug: '$data.slug', slugMap },
               }]
             }
           }
@@ -246,10 +251,7 @@ export class Aetlan {
       {
         $set: {
           tags: { 
-            $concatArrays: [
-              { $function: { body: (node: any) => this.tags(node), args: [ '$renderable' ], lang: 'js' } },
-              { $function: { body: (node: any) => this.tags(node), args: [ '$summary.renderable' ], lang: 'js' } },
-            ]
+            $function: { body: (node: any) => this.tags(node), args: [ '$renderable' ], lang: 'js' }
           },
         }
       },

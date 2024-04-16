@@ -47,25 +47,22 @@ export function svelteKitCompiler(src: string, dst: string, fn: (aetlan: Aetlan)
       }
 
       aetlan.transformDocument('+page.server.js', async doc => {
-        const { frontmatter, topic, headings, next, prev } = doc;
-
         return {
-          _id: path.join(dst, 'src/routes', frontmatter.slug, '+page.server.js'),
+          _id: path.join(dst, 'src/routes', doc.data.slug, '+page.server.js'),
           content: mustache.render(pageServerTemplate, {
-            data: JSON.stringify({ ...frontmatter, topic, headings, next, prev }, null, 2),
+            data: JSON.stringify(doc.data),
           }),
         }
       });
 
       aetlan.transformDocument('+page.svelte', async doc => {
-        const { frontmatter, renderable, summary, customTags } = doc;
+        const { data, renderable, customTags } = doc;
 
         return {
-          _id: path.join(dst, 'src/routes', frontmatter.slug, '+page.svelte'),
+          _id: path.join(dst, 'src/routes', data.slug, '+page.svelte'),
           content: mustache.render(pageTemplate, {
             imports: customTags.filter((t: string) => config.postrender.includes(t)),
             body: render(renderable, tagsPrerender, config.postrender),
-            summary: render(summary.renderable, tagsPrerender, config.postrender),
           }),
         }
       });
