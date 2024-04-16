@@ -53,26 +53,29 @@ export function render(node: any, tagsPrerender: any, tagsPostrender: string[]):
 
   let output = '';
 
-  if (tagsPostrender.includes(name)) {
-    output = `<${name}`;
-    for (const [k, v] of Object.entries(attributes ?? {})) {
-      let value;
-      if (typeof v === 'string') {
-        value = `"${escapeHtml(String(v))}"`;
-      } else {
-        value = `{${v}}`;
-      }
-      output += ` ${k.toLowerCase()}=${value}`;
-    }
-    output += '>';
+  if (name === 'Layout') {
+    output = "<Layout {...data}>";
   } else {
-    output = `<${name}`;
-    for (const [k, v] of Object.entries(attributes ?? {})) {
-      output += ` ${k.toLowerCase()}="${escapeHtml(String(v))}"`;
+    if (tagsPostrender.includes(name)) {
+      output = `<${name}`;
+      for (const [k, v] of Object.entries(attributes ?? {})) {
+        let value;
+        if (typeof v === 'string') {
+          value = `"${escapeHtml(String(v))}"`;
+        } else {
+          value = `{${v}}`;
+        }
+        output += ` ${k.toLowerCase()}=${value}`;
+      }
+      output += '>';
+    } else {
+      output = `<${name}`;
+      for (const [k, v] of Object.entries(attributes ?? {})) {
+        output += ` ${k.toLowerCase()}="${escapeHtml(String(v))}"`;
+      }
+      output += '>';
     }
-    output += '>';
   }
-
 
   if (voidElements.has(name)) return output;
 

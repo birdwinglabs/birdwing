@@ -1,5 +1,8 @@
 import { makeHeading } from "./heading.js";
 import { makeLink } from './link.js';
+import markdoc from '@markdoc/markdoc';
+
+const { Tag } = markdoc;
 
 export function makeNodes(customTags: string[], summary: boolean = false) {
   const nodes: any = {
@@ -8,6 +11,16 @@ export function makeNodes(customTags: string[], summary: boolean = false) {
   }
 
   if (!summary) {
+    nodes.document = {
+      render: 'Layout',
+      transform(node: any, config: any) {
+        return new Tag('Layout', node.attributes, [
+          new Tag('div', { slot: 'nav' }, [config.variables.nav]),
+          ...node.transformChildren(config)
+        ]);
+      }
+    }
+
     if (customTags.includes('Paragraph')) {
       nodes.paragraph = {
         render: 'Paragraph',

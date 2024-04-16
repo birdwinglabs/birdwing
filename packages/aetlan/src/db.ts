@@ -239,7 +239,7 @@ export class Aetlan {
       {
         $set: {
           renderable: {
-            $markdocAstToRenderable: ['$ast', this.config]
+            $markdocAstToRenderable: ['$ast', {...this.config, variables: { nav: '$summary.renderable'} }]
           }
         }
       },

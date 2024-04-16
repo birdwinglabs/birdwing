@@ -8,23 +8,14 @@ import mustache from 'mustache';
 
 const pageTemplate = `
 <script>
-  import Layout from '$lib/layouts/Docs.svelte';
 {{#imports}}
   import {{.}} from '$lib/components/{{.}}.svelte';
 {{/imports}}
 
   export let data;
-
-  const { title, description, topic, slug, next, prev, headings } = data;
 </script>
 
-<Layout title={title} description={description} topic={topic} slug={slug} next={next} prev={prev} headings={headings}>
-  <div slot="nav">
-    {{{summary}}}
-  </div>
-
-  {{{body}}}
-</Layout>
+{{{body}}}
 `;
 
 const pageServerTemplate = `
@@ -36,7 +27,7 @@ export async function load() {
 
 export function svelteKitCompiler(src: string, dst: string, fn: (aetlan: Aetlan) => Promise<void>) {
   const config: any = {
-    postrender: ['Route'],
+    postrender: ['Route', 'Layout'],
   }
 
   const componentsPath = path.join(dst, 'src/lib/components');
