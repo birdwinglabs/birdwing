@@ -36,6 +36,7 @@ export class Aetlan {
     this.output = await this.tashmet.db('aetlan').createCollection('output');
 
     for (const pipe of this.pipelines) {
+      await pipe.target.compile();
       await pipe.source.create(pipe.name, this.tashmet);
       const docs = await pipe.source.read();
       await this.transform(docs, pipe.target.transforms);

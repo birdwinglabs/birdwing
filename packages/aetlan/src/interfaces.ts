@@ -15,7 +15,7 @@ export interface DocumentSource {
 }
 
 export interface Target {
-  //create(): Promise<void>;
+  compile(): Promise<void>;
 
   transforms: Record<string, Transform>;
 }
