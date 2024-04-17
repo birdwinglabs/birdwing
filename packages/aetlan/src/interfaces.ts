@@ -11,11 +11,15 @@ export type Transform = (doc: RenderableDocument) => Promise<File>
 export interface DocumentSource {
   create(name: string, tashmet: Tashmet): Promise<void>;
 
-  read(filePath?: string): Promise<RenderableDocument[]>
+  read(customTags: string[], filePath?: string): Promise<RenderableDocument[]>
 }
 
 export interface Target {
-  compile(): Promise<void>;
+  compile(name: string, filePath: string): Promise<void>;
+
+  components: string;
+
+  postRender: string[];
 
   transforms: Record<string, Transform>;
 }

@@ -3,7 +3,6 @@ import { Aetlan, Target, Transform } from '@aetlan/aetlan';
 import { compile } from './compiler.js';
 import { render } from './renderer.js';
 import path from 'path';
-import fs from 'fs';
 import mustache from 'mustache';
 import { AetlanDocs } from '@aetlan/docs';
 
@@ -31,28 +30,26 @@ interface SvelteKitConfig {
 
   postRender: string[];
 
-  componentsPath: string;
+  components: string;
 }
 
 export class SvelteKitTarget implements Target {
-  private componentsPath: string;
-  public components: string[];
   private tagsPrerender: Record<string, any> = {};
 
   constructor(
     private config: SvelteKitConfig
-  ) {
-    this.componentsPath = path.join(config.path, 'src/lib/components');
-    this.components = fs.readdirSync(this.componentsPath).map(file => path.basename(file, '.svelte'));
+  ) {}
+
+  async compile(name: string, filePath: string) {
+      this.tagsPrerender[name] = await compile(filePath, this.config.path);
   }
 
-  async compile() {
-    const serverComponents = this.components.filter(x => !this.config.postRender.includes(x));
-    for (const name of serverComponents) {
-      const componentPath = path.join(this.componentsPath, `${name}.svelte`);
-      //aetlan.logger.inScope('svelte compiler').info(`rollup: '${componentPath}'`);
-      this.tagsPrerender[name] = await compile(componentPath, this.config.path);
-    }
+  public get postRender(): string[] {
+    return this.config.postRender;
+  }
+
+  public get components(): string {
+    return path.join(this.config.path, this.config.components);
   }
 
   get transforms(): Record<string, Transform> {
@@ -86,14 +83,17 @@ export function cli() {
     .argument('<src>', 'documentation folder')
     .argument('<dst>', 'destination project folder')
     .action(async (src: string, dst: string) => {
-      const target = new SvelteKitTarget({
-        path: dst,
-        postRender: ['Route', 'Layout'],
-        componentsPath: 'src/lib/components',
-      })
-      const aetlan = new Aetlan();
-      aetlan.pipeline({ name: 'docs', source: new AetlanDocs({ path: src, customTags: target.components }), target })
-      await aetlan.run();
+      new Aetlan()
+        .pipeline({
+          name: 'docs',
+          source: new AetlanDocs({ path: src }),
+          target: new SvelteKitTarget({
+            path: dst,
+            postRender: ['Route', 'Layout'],
+            components: 'src/lib/components/*.svelte',
+          })
+        })
+        .run();
     });
 
   program

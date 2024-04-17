@@ -9,8 +9,6 @@ import { DocumentSource } from '@aetlan/aetlan';
 
 interface DocsConfig {
   path: string;
-
-  customTags: string[]
 }
 
 export class AetlanDocs implements DocumentSource {
@@ -43,7 +41,7 @@ export class AetlanDocs implements DocumentSource {
     });
   }
 
-  async read(filePath?: string): Promise<RenderableDocument[]> {
+  async read(customTags: string[], filePath?: string): Promise<RenderableDocument[]> {
     const slugMap = await this.slugMap();
     const summary = await this.summary();
 
@@ -88,8 +86,8 @@ export class AetlanDocs implements DocumentSource {
     const summaryDoc = await this.source.findOne({ path: 'SUMMARY.md' });
 
     const config = {
-      tags: makeTags(this.config.customTags),
-      nodes: makeNodes(this.config.customTags),
+      tags: makeTags(customTags),
+      nodes: makeNodes(customTags),
     };
 
     if (!summaryDoc) {
@@ -122,15 +120,15 @@ export class AetlanDocs implements DocumentSource {
       .set({
         summary: {
           $markdocAstToRenderable: [summaryAst, {
-            tags: makeTags(this.config.customTags, true),
-            nodes: makeNodes(this.config.customTags, true),
+            tags: makeTags(customTags, true),
+            nodes: makeNodes(customTags, true),
             variables: { slug: '$data.slug', slugMap },
           }]
         }
       })
       .set({ renderable: { $markdocAstToRenderable: ['$ast', {...config, variables: { nav: '$summary' } }] } })
       .set({ tags: { $function: { body: (node: any) => this.tags(node), args: [ '$renderable' ], lang: 'js' } } })
-      .set({ customTags: { $setIntersection: ['$tags', this.config.customTags] } })
+      .set({ customTags: { $setIntersection: ['$tags', customTags] } })
       .toArray();
   }
 

@@ -7,6 +7,8 @@ import { Pipeline, RenderableDocument, Transform } from "./interfaces";
 
 import markdocPlugin from './markdoc.js';
 import mustache from './mustache.js';
+import * as glob from 'glob';
+import path from 'path';
 
 export * from './interfaces.js';
 
@@ -18,6 +20,7 @@ export class Aetlan {
 
   pipeline(p: Pipeline) {
     this.pipelines.push(p);
+    return this;
   }
 
   async run() {
@@ -35,11 +38,22 @@ export class Aetlan {
 
     this.output = await this.tashmet.db('aetlan').createCollection('output');
 
-    for (const pipe of this.pipelines) {
-      await pipe.target.compile();
-      await pipe.source.create(pipe.name, this.tashmet);
-      const docs = await pipe.source.read();
-      await this.transform(docs, pipe.target.transforms);
+    for (const { name, source, target } of this.pipelines) {
+      const logger = store.logger.inScope(name);
+      logger.info('running pipe');
+
+      const files = await glob.glob(target.components);
+      const components = files.map(file => ({ path: file, name: path.basename(file, '.' + file.split('.').pop()) }));
+      const serverComponents = components.filter(c => !target.postRender.includes(c.name));
+
+      for (const { name, path } of serverComponents) {
+        logger.inScope('rollup').info(`compile: '${path}'`);
+        await target.compile(name, path);
+      }
+
+      await source.create(name, this.tashmet);
+      const docs = await source.read(components.map(c => c.name));
+      await this.transform(docs, target.transforms);
     }
   }
 
