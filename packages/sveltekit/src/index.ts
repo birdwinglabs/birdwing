@@ -1,10 +1,8 @@
-import { program } from 'commander';
-import { Aetlan, Target, Transform } from '@aetlan/aetlan';
+import { Target, Transform } from '@aetlan/aetlan';
 import { compile } from './compiler.js';
 import { render } from './renderer.js';
 import path from 'path';
 import mustache from 'mustache';
-import { AetlanDocs } from '@aetlan/docs';
 
 const pageTemplate = `
 <script>
@@ -75,34 +73,4 @@ export class SvelteKitTarget implements Target {
       }
     }
   }
-}
-
-export function cli() {
-  program
-    .command('build')
-    .argument('<src>', 'documentation folder')
-    .argument('<dst>', 'destination project folder')
-    .action(async (src: string, dst: string) => {
-      new Aetlan()
-        .pipeline({
-          name: 'docs',
-          source: new AetlanDocs({ path: src }),
-          target: new SvelteKitTarget({
-            path: dst,
-            postRender: ['Route', 'Layout'],
-            components: 'src/lib/components/*.svelte',
-          })
-        })
-        .run();
-    });
-
-  program
-    .command('watch')
-    .argument('<src>', 'documentation folder')
-    .argument('<dst>', 'destination project folder')
-    .action(async (src: string, dst: string) => {
-      //await svelteKitCompiler(src, dst, aetlan => aetlan.watch());
-    });
-
-  program.parse();
 }
