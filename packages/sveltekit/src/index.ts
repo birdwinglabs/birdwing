@@ -25,29 +25,22 @@ export async function load() {
 
 interface SvelteKitConfig {
   path: string;
-
-  postRender: string[];
-
-  components: string;
 }
 
 export class SvelteKitTarget implements Target {
   private tagsPrerender: Record<string, any> = {};
+  private tagsPostrender: string[] = [];
 
   constructor(
     private config: SvelteKitConfig
   ) {}
 
-  async compile(name: string, filePath: string) {
+  async component(name: string, filePath: string, prerender: boolean) {
+    if (prerender) {
       this.tagsPrerender[name] = await compile(filePath, this.config.path);
-  }
-
-  public get postRender(): string[] {
-    return this.config.postRender;
-  }
-
-  public get components(): string {
-    return path.join(this.config.path, this.config.components);
+    } else {
+      this.tagsPostrender.push(name);
+    }
   }
 
   get transforms(): Record<string, Transform> {
@@ -58,8 +51,8 @@ export class SvelteKitTarget implements Target {
         return {
           path: path.join(this.config.path, 'src/routes', data.slug, '+page.svelte'),
           content: mustache.render(pageTemplate, {
-            imports: customTags.filter((t: string) => this.config.postRender.includes(t)),
-            body: render(renderable, this.tagsPrerender, this.config.postRender),
+            imports: customTags.filter((t: string) => !(t in this.tagsPrerender)),
+            body: render(renderable, this.tagsPrerender, this.tagsPostrender),
           }),
         }
       },
@@ -73,4 +66,8 @@ export class SvelteKitTarget implements Target {
       }
     }
   }
+}
+
+export default function sveltekit(config: SvelteKitConfig) {
+  return new SvelteKitTarget(config);
 }

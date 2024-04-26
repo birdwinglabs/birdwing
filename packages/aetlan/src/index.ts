@@ -23,7 +23,7 @@ export class Aetlan {
     return this;
   }
 
-  async run() {
+  async run(root: string) {
     const store = Nabu
       .configure({
         logLevel: LogLevel.Info,
@@ -38,21 +38,21 @@ export class Aetlan {
 
     this.output = await this.tashmet.db('aetlan').createCollection('output');
 
-    for (const { name, source, target } of this.pipelines) {
+    for (const { name, source, target, components, postrender } of this.pipelines) {
       const logger = store.logger.inScope(name);
       logger.info('running pipe');
 
-      const files = await glob.glob(target.components);
-      const components = files.map(file => ({ path: file, name: path.basename(file, '.' + file.split('.').pop()) }));
-      const serverComponents = components.filter(c => !target.postRender.includes(c.name));
+      const files = await glob.glob(path.join(root, components));
+      const componentItems = files.map(file => ({ path: file, name: path.basename(file, '.' + file.split('.').pop()) }));
 
-      for (const { name, path } of serverComponents) {
-        logger.inScope('rollup').info(`compile: '${path}'`);
-        await target.compile(name, path);
+      for (const { name, path } of componentItems) {
+        const prerender = !postrender.includes(name);
+        logger.inScope(prerender ? 'rollup' : 'import').info(`read: '${path}'`);
+        await target.component(name, path, prerender);
       }
 
       await source.create(name, this.tashmet);
-      const docs = await source.read(components.map(c => c.name));
+      const docs = await source.read(componentItems.map(c => c.name));
       await this.transform(docs, target.transforms);
     }
   }

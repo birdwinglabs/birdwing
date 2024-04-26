@@ -4,16 +4,14 @@ import fs from 'fs';
 import path from 'path';
 import yaml from 'js-yaml';
 import { AetlanDocs } from '@aetlan/docs';
-import { SvelteKitTarget } from '@aetlan/sveltekit';
+import sveltekit from '@aetlan/sveltekit';
 
 
-export function makeTarget(type: string, root: string, config: any) {
+export function makeTarget(type: string, root: string) {
   switch (type) {
     case 'sveltekit':
-      return new SvelteKitTarget({
+      return sveltekit({
         path: root,
-        postRender: config.postRender || [],
-        components: config.components || './src/lib/components/*.svelte',
       });
     default:
       throw Error('Unknown target: ' + type);
@@ -42,11 +40,13 @@ export function cli() {
         aetlan.pipeline({
           name: source.type,
           source: makeSource(source.type, root, source),
-          target: makeTarget(cfgFile.target, root, source),
+          target: makeTarget(cfgFile.target, root),
+          components: source.components,
+          postrender: source.postrender,
         });
       }
 
-      aetlan.run();
+      aetlan.run(root);
     });
 
   program

@@ -15,17 +15,17 @@ export interface DocumentSource {
 }
 
 export interface Target {
-  compile(name: string, filePath: string): Promise<void>;
-
-  components: string;
-
-  postRender: string[];
+  component(name: string, filePath: string, prerender: boolean): Promise<void>;
 
   transforms: Record<string, Transform>;
 }
 
 export interface Pipeline {
   name: string;
+
+  components: string;
+
+  postrender: string[];
 
   source: DocumentSource;
 
