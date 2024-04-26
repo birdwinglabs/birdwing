@@ -1,5 +1,6 @@
 import MarkdownIt from 'markdown-it';
 import markdoc from '@markdoc/markdoc';
+import { SvelteComponent } from './interfaces';
 const { escapeHtml } = MarkdownIt().utils;
 
 const { Tag } = markdoc;
@@ -23,7 +24,7 @@ const voidElements = new Set([
   'wbr',
 ]);
 
-export function render(node: any, tagsPrerender: any, tagsPostrender: string[]): string {
+export function render(node: any, components: Record<string, SvelteComponent>): string {
   const uc_map: Record<string, string> = {
     '{': '&lcub;',
     '}': '&rcub;',
@@ -39,24 +40,24 @@ export function render(node: any, tagsPrerender: any, tagsPostrender: string[]):
       );
   }
 
-  if (Array.isArray(node)) return node.map(n => render(n, tagsPrerender, tagsPostrender)).join('');
+  if (Array.isArray(node)) return node.map(n => render(n, components)).join('');
 
   if (node === null || typeof node !== 'object' || !Tag.isTag(node)) return '';
 
   const { name, attributes, children = [] } = node;
 
-  if (name in tagsPrerender) {
-    return tagsPrerender[name](attributes, { default: () => render(children, tagsPrerender, tagsPostrender) });
+  if (name in components && components[name].render) {
+    return components[name].render(attributes, { default: () => render(children, components) });
   }
 
-  if (!name) return render(children, tagsPrerender, tagsPostrender);
+  if (!name) return render(children, components);
 
   let output = '';
 
   if (name === 'Layout') {
     output = "<Layout {...data}>";
   } else {
-    if (tagsPostrender.includes(name)) {
+    if (name in components && !components[name].render) {
       output = `<${name}`;
       for (const [k, v] of Object.entries(attributes ?? {})) {
         let value;
@@ -79,7 +80,7 @@ export function render(node: any, tagsPrerender: any, tagsPostrender: string[]):
 
   if (voidElements.has(name)) return output;
 
-  if (children.length) output += render(children, tagsPrerender, tagsPostrender);
+  if (children.length) output += render(children, components);
   output += `</${name}>`;
 
   return output;

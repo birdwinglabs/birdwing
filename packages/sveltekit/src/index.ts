@@ -3,11 +3,12 @@ import { compile } from './compiler.js';
 import { render } from './renderer.js';
 import path from 'path';
 import mustache from 'mustache';
+import { SvelteKitConfig, SvelteComponent } from './interfaces.js';
 
 const pageTemplate = `
 <script>
 {{#imports}}
-  import {{.}} from '$lib/components/{{.}}.svelte';
+  import {{name}} from '$lib/{{{path}}}';
 {{/imports}}
 
   export let data;
@@ -23,24 +24,19 @@ export async function load() {
 }
 `;
 
-interface SvelteKitConfig {
-  path: string;
-}
 
 export class SvelteKitTarget implements Target {
-  private tagsPrerender: Record<string, any> = {};
-  private tagsPostrender: string[] = [];
+  private components: Record<string, SvelteComponent> = {};
 
   constructor(
     private config: SvelteKitConfig
   ) {}
 
   async component(name: string, filePath: string, prerender: boolean) {
-    if (prerender) {
-      this.tagsPrerender[name] = await compile(filePath, this.config.path);
-    } else {
-      this.tagsPostrender.push(name);
-    }
+    this.components[name] = {
+      path: filePath,
+      render: prerender ? await compile(filePath, this.config.path) : false,
+    };
   }
 
   get transforms(): Record<string, Transform> {
@@ -51,8 +47,15 @@ export class SvelteKitTarget implements Target {
         return {
           path: path.join(this.config.path, 'src/routes', data.slug, '+page.svelte'),
           content: mustache.render(pageTemplate, {
-            imports: customTags.filter((t: string) => !(t in this.tagsPrerender)),
-            body: render(renderable, this.tagsPrerender, this.tagsPostrender),
+            imports: customTags
+              .filter((t: string) => !this.components[t].render)
+              .map((t: string) => {
+                return {
+                  name: t,
+                  path: path.relative(path.join(this.config.path, 'src/lib'), this.components[t].path),
+                }
+              }),
+            body: render(renderable, this.components),
           }),
         }
       },
