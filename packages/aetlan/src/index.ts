@@ -20,6 +20,7 @@ export * from './interfaces.js';
 export class Aetlan {
   private pipelines: Pipeline[] = [];
   private tashmet: Tashmet;
+  private store: Nabu;
 
   private output: Collection;
 
@@ -28,8 +29,8 @@ export class Aetlan {
     return this;
   }
 
-  async run(root: string) {
-    const store = Nabu
+  constructor() {
+    this.store = Nabu
       .configure({
         logLevel: LogLevel.Info,
         logFormat: terminal(),
@@ -38,14 +39,16 @@ export class Aetlan {
       .use(markdocPlugin())
       .use(mustache())
       .bootstrap();
+  }
 
-    this.tashmet = await Tashmet.connect(store.proxy());
+  async run(root: string) {
+    this.tashmet = await Tashmet.connect(this.store.proxy());
 
     this.output = await this.tashmet.db('aetlan').createCollection('output');
     await this.output.deleteMany({});
 
     for (const { name, source, target, components, postrender } of this.pipelines) {
-      const logger = store.logger.inScope(name);
+      const logger = this.store.logger.inScope(name);
       logger.info('running pipe');
 
       const files = await glob.glob(path.join(root, components));
@@ -60,8 +63,42 @@ export class Aetlan {
       await source.create(name, this.tashmet);
       const docs = await source.read(componentItems.map(c => c.name));
       await this.transform(docs, target.transforms);
-
     }
+
+    await this.css(root);
+    await this.write();
+  }
+
+  async watch(root: string) {
+    await this.run(root);
+
+    for (const pipe of this.pipelines) {
+      const markdocWatcher = chokidar.watch(path.join(pipe.source.path, '**/*.md'));
+      const srcWatcher = chokidar.watch(path.join(root, pipe.components));
+      const logger = this.store.logger.inScope(pipe.name);
+
+      srcWatcher.on('change', async file => { 
+        const item = { path: file, name: path.basename(file, '.' + file.split('.').pop()) };
+        logger.info(`rollup: '${item.path}'`);
+        await pipe.target.component(item.name, item.path, false);
+        const docs = await pipe.source.read([]);
+        await this.output.deleteMany({});
+        await this.transform(docs, pipe.target.transforms);
+        await this.css(root);
+        await this.write();
+      });
+
+      markdocWatcher.on('change', async filePath => {
+        const relPath = path.relative(pipe.source.path, filePath);
+        await this.output.deleteMany({});
+        const docs = await pipe.source.read([], relPath);
+        await this.transform(docs, pipe.target.transforms);
+        await this.write();
+      });
+    }
+  }
+
+  private async css(root: string) {
     const cssProc = postcss([
       tailwind({
         config: path.join(root, 'tailwind.config.js'),
@@ -75,27 +112,7 @@ export class Aetlan {
       scope: 'css',
       content: css.css,
       path: path.join(root, 'out/main.css'),
-    })
-
-    await this.write();
-  }
-
-  async watch(root: string) {
-    await this.run(root);
-
-    for (const pipe of this.pipelines) {
-      const watcher = chokidar.watch(path.join(pipe.source.path, '**/*.md'));
-
-      watcher.on('change', async filePath => {
-        const relPath = path.relative(pipe.source.path, filePath);
-        console.log(relPath);
-        await this.output.deleteMany({});
-        const docs = await pipe.source.read([], relPath);
-        console.log(docs);
-        await this.transform(docs, pipe.target.transforms);
-        await this.write();
-      });
-    }
+    });
   }
 
   private async transform(docs: RenderableDocument[], transforms: Record<string, Transform>) {
