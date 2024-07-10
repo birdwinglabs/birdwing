@@ -3,9 +3,9 @@ import path from 'path';
 import { extractLinks, slugify } from './util.js';
 import markdoc from '@markdoc/markdoc';
 import { makeNodes } from './nodes/index.js';
-import { makeTags } from './tags/index.js';
 import { RenderableDocument } from '@aetlan/aetlan';
 import { DocumentSource } from '@aetlan/aetlan';
+import { Hint } from './tags/index.js';
 
 interface DocsConfig {
   path: string;
@@ -15,6 +15,10 @@ export class AetlanDocs implements DocumentSource {
   private source: Collection;
 
   public constructor(private config: DocsConfig) {}
+
+  get path(): string {
+    return this.config.path;
+  }
 
   async create(name: string, tashmet: Tashmet) {
     this.source = await tashmet.db(name).createCollection('source', {
@@ -86,8 +90,10 @@ export class AetlanDocs implements DocumentSource {
     const summaryDoc = await this.source.findOne({ path: 'SUMMARY.md' });
 
     const config = {
-      tags: makeTags(customTags),
-      nodes: makeNodes(customTags),
+      tags: {
+        hint: new Hint(),
+      },
+      nodes: makeNodes(),
     };
 
     if (!summaryDoc) {
@@ -98,6 +104,8 @@ export class AetlanDocs implements DocumentSource {
     const pathMatch = filePath
       ? filePath
       : { $nin: [ 'SUMMARY.md' ] }
+
+    const variables = { context: 'Documentation', nav: '$summary', props: '$data' };
 
     return this.source.aggregate<RenderableDocument>()
       .match({ path: pathMatch })
@@ -120,13 +128,13 @@ export class AetlanDocs implements DocumentSource {
       .set({
         summary: {
           $markdocAstToRenderable: [summaryAst, {
-            tags: makeTags(customTags, true),
-            nodes: makeNodes(customTags, true),
-            variables: { slug: '$data.slug', slugMap },
+            tags: {},
+            nodes: makeNodes(),
+            variables: { slug: '$data.slug', slugMap, context: 'DocumentationSummary' },
           }]
         }
       })
-      .set({ renderable: { $markdocAstToRenderable: ['$ast', {...config, variables: { nav: '$summary' } }] } })
+      .set({ renderable: { $markdocAstToRenderable: ['$ast', {...config, variables }] } })
       .set({ tags: { $function: { body: (node: any) => this.tags(node), args: [ '$renderable' ], lang: 'js' } } })
       .set({ customTags: { $setIntersection: ['$tags', customTags] } })
       .toArray();

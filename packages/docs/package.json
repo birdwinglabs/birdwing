@@ -27,6 +27,7 @@
     "chokidar": "3.6.0"
   },
   "devDependencies": {
+    "@types/node": "20.12.12",
     "@types/mustache": "4.2.5",
     "magic-string": "0.30.9"
   }

@@ -1,6 +1,6 @@
 {
   "compilerOptions": {
-    "target": "es6",
+    "target": "es5",
     "lib": ["es6", "dom"],
     "types": ["reflect-metadata", "node"],
     "module": "esnext",
@@ -20,7 +20,7 @@
     "strictNullChecks": true,
     "esModuleInterop": true,
     "downlevelIteration": true,
-    "jsx": "react-jsx",
+    "jsx": "react-jsx"
   },
   "compileOnSave": false,
   "exclude": [

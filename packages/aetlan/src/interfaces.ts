@@ -12,6 +12,8 @@ export interface DocumentSource {
   create(name: string, tashmet: Tashmet): Promise<void>;
 
   read(customTags: string[], filePath?: string): Promise<RenderableDocument[]>
+
+  path: string;
 }
 
 export interface Target {

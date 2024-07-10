@@ -2,28 +2,26 @@ import markdoc from '@markdoc/markdoc';
 
 const { Tag } = markdoc;
 
-export function makeLink(customTags: string[], summary: boolean) {
-  return {
-    transform(node: any, config: any) {
-      const { slug, slugMap } = config.variables || {};
-
-      let tag = 'a';
-
-      if (summary && customTags.includes('SummaryLink')) {
-        tag = 'SummaryLink';
-      }
-
-      if (!summary && customTags.includes('Link')) {
-        tag = 'Link';
-      }
-
-      if (slug && slugMap) {
-        if (node.attributes.href in slugMap) {
-          const href = slugMap[node.attributes.href];
-          return new Tag(tag, { href, selected: href === slug }, node.transformChildren(config));
-        }
-      }
-      return new Tag(tag, node.attributes, node.transformChildren(config));
+export class Link {
+  readonly attributes = {
+    href: {
+      type: String
+    },
+    title: {
+      type: String
     }
+  };
+
+  transform(node: any, config: any) {
+    const { slug, slugMap, context } = config.variables || {};
+    let attributes = node.attributes;
+
+    if (slug && slugMap) {
+      if (node.attributes.href in slugMap) {
+        const href = slugMap[node.attributes.href];
+        attributes = { href, selected: href === slug };
+      }
+    }
+    return new Tag(`${context}.link`, attributes, node.transformChildren(config));
   }
 }

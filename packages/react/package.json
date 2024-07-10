@@ -1,5 +1,5 @@
 {
-  "name": "@aetlan/cli",
+  "name": "@aetlan/react",
   "version": "0.1.0",
   "private": true,
   "description": "",
@@ -8,9 +8,6 @@
     "build": "tsc",
     "lint": "eslint --cache --ext .js,.ts src/",
     "start": "node ./dist/index.js"
-  },
-  "bin": {
-    "aetlan": "./bin/cli.js"
   },
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -22,10 +19,15 @@
   "dependencies": {
     "@aetlan/aetlan": "^0.1.0",
     "@aetlan/docs": "^0.1.0",
-    "@aetlan/react": "^0.1.0",
-    "@aetlan/sveltekit": "^0.1.0",
-    "commander": "12.0.0",
-    "js-yaml": "4.1.0",
-    "@types/js-yaml": "^4.0.5"
+    "@babel/core": "^7.24.7",
+    "@babel/preset-react": "7.24.7",
+    "@rollup/plugin-babel": "6.0.4",
+    "@rollup/plugin-commonjs": "25.0.7",
+    "@rollup/plugin-node-resolve": "13.1.3",
+    "@types/babel__core": "7.20.5",
+    "@types/react-dom": "18.3.0",
+    "import-jsx": "5.0.0",
+    "react-dom": "18.3.1",
+    "rollup": "2.70.1"
   }
 }

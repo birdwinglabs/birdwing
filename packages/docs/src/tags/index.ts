@@ -1,16 +1,22 @@
-export function makeTags(customTags: string[], summary: boolean = false) {
-  const tags: any = {};
+import markdoc from '@markdoc/markdoc';
 
-  if (!summary && customTags.includes('Hint')) {
-    tags.hint = {
-      render: 'Hint',
-      attributes: {
-        style: {
-          type: String
-        }
-      }
-    };
+const { Tag } = markdoc;
+
+export abstract class Node {
+  readonly render: string;
+
+  transform(node: any , config: any) {
+    const variables = { ...config.variables, context: this.render };
+
+    return new Tag(this.render, node.transformAttributes(config), node.transformChildren({...config, variables }));
   }
+}
 
-  return tags;
+export class Hint extends Node {
+  readonly render = 'Hint';
+  readonly attributes = {
+    style: {
+      type: String
+    }
+  };
 }
