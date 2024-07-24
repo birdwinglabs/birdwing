@@ -9,9 +9,6 @@
     "lint": "eslint --cache --ext .js,.ts src/",
     "start": "node ./dist/index.js"
   },
-  "bin": {
-    "aetlan": "./bin/cli.js"
-  },
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "author": "Björn Andersson",

@@ -41,6 +41,7 @@ export class SvelteKitTarget implements Target {
 
   get transforms(): Record<string, Transform> {
     return {
+      /*
       '+page.svelte': async doc => {
         const { data, renderable, customTags } = doc;
 
@@ -67,6 +68,7 @@ export class SvelteKitTarget implements Target {
           }),
         }
       }
+        */
     }
   }
 }

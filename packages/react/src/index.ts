@@ -21,7 +21,7 @@ export class ReactTarget implements Target {
   get transforms(): Record<string, Transform> {
     return {
       'html': async doc => {
-        const { data, renderable } = doc;
+        const { _id, renderable } = doc;
 
         const namespace = (name: string) => {
           if (name.includes('.')) {
@@ -34,6 +34,9 @@ export class ReactTarget implements Target {
 
         const result = markdoc.renderers.react(renderable, React, { components: (name: string) => {
           const ns = namespace(name);
+          if (!(ns.component in this.components)) {
+            throw Error(`Missing component '${ns.component}'`);
+          }
           return this.components[ns.component](ns.node);
         }});
 
@@ -41,13 +44,8 @@ export class ReactTarget implements Target {
         const template = fs.readFileSync(path.join(this.config.path, 'src/main.html')).toString();
         const html = template.replace(/{{ CONTENT }}/, body);
 
-        let slug = data.slug;
-        if (slug[slug.length - 1] === '/') {
-          slug = slug + 'index';
-        }
-
         return {
-          path: path.join(this.config.path, 'out', slug + '.html'),
+          path: path.join(this.config.path, 'out', _id, 'index.html'),
           content: html,
         }
       },

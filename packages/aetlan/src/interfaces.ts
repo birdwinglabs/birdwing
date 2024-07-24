@@ -1,4 +1,4 @@
-import Tashmet from "@tashmet/tashmet";
+import Tashmet, { Document, Filter, FindCursor } from "@tashmet/tashmet";
 
 export interface File {
   path: string;
@@ -8,10 +8,18 @@ export interface File {
 
 export type Transform = (doc: RenderableDocument) => Promise<File>
 
-export interface DocumentSource {
-  create(name: string, tashmet: Tashmet): Promise<void>;
+export interface TransformContext {
+  findPages(filter: Filter<Document>): FindCursor<Document>;
 
-  read(customTags: string[], filePath?: string): Promise<RenderableDocument[]>
+  mount(slug: string, renderable: any): Promise<void>;
+
+  slugify(page: any): string;
+}
+
+export interface DocumentSource {
+  transform(context: TransformContext): Promise<void>;
+
+  update(doc: any, context: TransformContext): Promise<void>;
 
   path: string;
 }
@@ -35,9 +43,7 @@ export interface Pipeline {
 }
 
 export interface RenderableDocument {
+  _id: string;
+
   renderable: any;
-
-  data: Record<string, any>;
-
-  customTags: string[];
 }

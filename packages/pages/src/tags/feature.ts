@@ -1,5 +1,4 @@
 import markdoc from '@markdoc/markdoc';
-import { softbreak } from '@markdoc/markdoc/dist/src/schema';
 
 const { Tag } = markdoc;
 
@@ -11,15 +10,6 @@ export abstract class CustomTag {
 
     return new Tag(this.render, node.transformAttributes(config), node.transformChildren({...config, variables }));
   }
-}
-
-export class Hint extends CustomTag {
-  readonly render = 'Hint';
-  readonly attributes = {
-    style: {
-      type: String
-    }
-  };
 }
 
 export class Feature extends CustomTag {
@@ -40,6 +30,14 @@ export class Feature extends CustomTag {
 
     return new Tag('Feature.dl', {}, childTags);
   }
+
+  //transformListItem(node: any, config: any) {
+    //const data = node.children
+      //.filter((o: any) => o.type !== 'strong')
+      //.map((n: any) => markdoc.transform(n, config));
+
+      //return new Tag('Feature.dd', {}, c.transformChildren(config));
+  //}
 
   transformChild(node: any, config: any) {
     if (node.type === 'list') {

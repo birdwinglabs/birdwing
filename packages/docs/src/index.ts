@@ -1,180 +1,127 @@
-import Tashmet, { Collection } from '@tashmet/tashmet';
 import path from 'path';
-import { extractLinks, slugify } from './util.js';
+import { extractLinks } from './util.js';
 import markdoc from '@markdoc/markdoc';
 import { makeNodes } from './nodes/index.js';
-import { RenderableDocument } from '@aetlan/aetlan';
+import { TransformContext } from '@aetlan/aetlan';
 import { DocumentSource } from '@aetlan/aetlan';
-import { Hint } from './tags/index.js';
+import { Hint, Feature } from './tags/index.js';
 
 interface DocsConfig {
   path: string;
 }
 
 export class AetlanDocs implements DocumentSource {
-  private source: Collection;
-
   public constructor(private config: DocsConfig) {}
 
   get path(): string {
     return this.config.path;
   }
 
-  async create(name: string, tashmet: Tashmet) {
-    this.source = await tashmet.db(name).createCollection('source', {
-      storageEngine: {
-        glob: {
-          pattern: path.join(this.config.path, '**/*.md'),
-          format: {
-            frontmatter: {
-              format: 'yaml',
-            }
+  async update(doc: any, context: TransformContext): Promise<void> {
+    
+  }
+
+  async transform(context: TransformContext): Promise<void> {
+    const summaryDocs = await context
+      .findPages({
+        'frontmatter.type': 'documentation',
+        path: /SUMMARY.md$/
+      })
+      .toArray();
+
+    for await (const summaryDoc of summaryDocs) {
+      const dir = path.dirname(summaryDoc.path);
+
+      const docs = await context.findPages({
+        $and: [
+          { 'frontmatter.type': 'documentation' },
+          { path: { $regex: `^${dir}`} },
+          { path: { $ne: `${dir}/SUMMARY.md` } },
+        ]
+      }).toArray();
+
+      const slugMap = docs.reduce((slugMap, doc) => {
+        slugMap[path.relative(dir, doc.path)] = context.slugify(doc);
+        return slugMap;
+      }, {} as any);
+
+      const links = extractLinks(slugMap, summaryDoc.ast);
+
+      const next = (slug: string) => {
+        const idx = links.findIndex(link => link.slug === slug);
+        if (idx === -1 || idx === links.length - 1) {
+          return undefined;
+        }
+        const { topic, ...rest } = links[idx + 1];
+        return rest;
+      }
+
+      const prev = (slug: string) => {
+        const idx = links.findIndex(link => link.slug === slug);
+        if (idx === -1 || idx === 0) {
+          return undefined;
+        }
+        const { topic, ...rest } = links[idx - 1];
+        return rest;
+      }
+
+      const topic = (slug: string) => {
+        const idx = links.findIndex(link => link.slug === slug);
+        if (idx === -1) {
+          return undefined;
+        }
+        return links[idx].topic;
+      }
+
+      const config = {
+        tags: {
+          hint: new Hint(),
+          feature: new Feature(),
+        },
+        nodes: makeNodes(),
+        variables: {
+          context: 'Documentation',
+        }
+      };
+
+      for (const doc of docs) {
+        const slug = context.slugify(doc);
+        const summaryRenderable = markdoc.transform(summaryDoc.ast, {
+          tags: {},
+          nodes: makeNodes(),
+          variables: { slug, slugMap, context: 'DocumentationSummary' },
+        });
+
+        const variables: any = {
+          context: 'Documentation',
+          props: {
+            ...doc.frontmatter,
+            headings: this.headings(doc.ast),
+            topic: topic(slug),
+            next: next(slug),
+            prev: prev(slug),
           },
-          construct: {
-            path: {
-              $relativePath: [this.config.path, '$_id']
-            }
-          },
-          default: {
-            'frontmatter.slug': {
-              $function: { body: (id: string) => slugify(id, this.config.path), args: [ '$_id' ], lang: 'js' }
-            },
+          nav: summaryRenderable,
+        };
+
+        await context.mount(context.slugify(doc), markdoc.transform(doc.ast, { ...config, variables }));
+      }
+    }
+  }
+
+  private headings(ast: any) {
+    const headings: any[] = [];
+    for (const node of ast.walk()) {
+      if (node.type === 'heading') {
+        let title = '';
+        for (const child of node.walk()) {
+          if (child.type === 'text') {
+            title += child.attributes.content;
           }
         }
-      }
-    });
-  }
-
-  async read(customTags: string[], filePath?: string): Promise<RenderableDocument[]> {
-    const slugMap = await this.slugMap();
-    const summary = await this.summary();
-
-    if (!summary) {
-      throw Error('no summary');
-    }
-
-    const links = extractLinks(slugMap, summary.ast);
-    const next = (slug: string) => {
-      const idx = links.findIndex(link => link.slug === slug);
-      if (idx === -1 || idx === links.length - 1) {
-        return undefined;
-      }
-      const { topic, ...rest } = links[idx + 1];
-      return rest;
-    }
-
-    const prev = (slug: string) => {
-      const idx = links.findIndex(link => link.slug === slug);
-      if (idx === -1 || idx === 0) {
-        return undefined;
-      }
-      const { topic, ...rest } = links[idx - 1];
-      return rest;
-    }
-
-    const topic = (slug: string) => {
-      const idx = links.findIndex(link => link.slug === slug);
-      if (idx === -1) {
-        return undefined;
-      }
-      return links[idx].topic;
-    }
-
-    const headings = (ast: any) => {
-      const headings = ast.children
-        .filter((node: any) => node.type === 'heading')
-        .map((node: any) => ({ depth: node.depth, title: node.children[0].value }));
-      return headings;
-    }
-
-    const summaryDoc = await this.source.findOne({ path: 'SUMMARY.md' });
-
-    const config = {
-      tags: {
-        hint: new Hint(),
-      },
-      nodes: makeNodes(),
-    };
-
-    if (!summaryDoc) {
-      throw Error('Summary not found');
-    }
-
-    const summaryAst = markdoc.parse(summary.body);
-    const pathMatch = filePath
-      ? filePath
-      : { $nin: [ 'SUMMARY.md' ] }
-
-    const variables = { context: 'Documentation', nav: '$summary', props: '$data' };
-
-    return this.source.aggregate<RenderableDocument>()
-      .match({ path: pathMatch })
-      .project({
-        _id: 1,
-        path: 1,
-        body: 1,
-        data: {
-          $mergeObjects: [
-            '$frontmatter', {
-              topic: { $function: { body: topic, args: [ '$frontmatter.slug' ], lang: 'js' } },
-              prev: { $function: { body: prev, args: [ '$frontmatter.slug' ], lang: 'js' } },
-              next: { $function: { body: next, args: [ '$frontmatter.slug' ], lang: 'js' } },
-              headings: { $function: { body: headings, args: [{ $markdownToObject: '$body' }], lang: 'js' } },
-            }
-          ]
-        },
-        ast: { $markdocToAst: '$body' },
-      })
-      .set({
-        summary: {
-          $markdocAstToRenderable: [summaryAst, {
-            tags: {},
-            nodes: makeNodes(),
-            variables: { slug: '$data.slug', slugMap, context: 'DocumentationSummary' },
-          }]
-        }
-      })
-      .set({ renderable: { $markdocAstToRenderable: ['$ast', {...config, variables }] } })
-      .set({ tags: { $function: { body: (node: any) => this.tags(node), args: [ '$renderable' ], lang: 'js' } } })
-      .set({ customTags: { $setIntersection: ['$tags', customTags] } })
-      .toArray();
-  }
-
-  private async summary() {
-    return this.source.aggregate([
-      { $match: { path: 'SUMMARY.md' } },
-      { $set: { ast: { $markdownToObject: '$body' } } },
-      { $unset: ['slug'] },
-    ]).next();
-  }
-
-  private tags(node: any) {
-    let result: Set<string> = new Set();
-    if (node['$$mdtype'] === 'Tag') {
-      result.add(node.name);
-    }
-    for (const child of node.children || []) {
-      if (child['$$mdtype'] === 'Tag') {
-        result.add(child.name);
-      }
-      if (child.children) {
-        result = new Set([...Array.from(result), ...this.tags(child)]);
+        headings.push({ depth: node.attributes.level, title });
       }
     }
-    return Array.from(result);
-  }
-
-  private async slugMap() {
-    const result = await this.source.aggregate([
-      { $project: { _id: 0, k: '$path', v: '$frontmatter.slug' } },
-      { $group: { _id: 1, items: { $push: '$$ROOT' } } },
-      { $project: { _id: 0, map: { $arrayToObject: '$items' } } },
-    ]).next();
-
-    if (!result) {
-      throw Error('Unable to read slugs');
-    }
-
-    return result.map;
+    return headings;
   }
 }
