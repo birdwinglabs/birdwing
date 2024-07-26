@@ -3,10 +3,12 @@ import { LogLevel } from '@tashmet/core';
 import mingo from '@tashmet/mingo';
 import Tashmet, { Document, Collection, Filter } from '@tashmet/tashmet';
 import { terminal } from '@tashmet/terminal';
+import TashmetServer from '@tashmet/server';
 import { DocumentSource, Pipeline, RenderableDocument, Target, Transform, TransformContext } from "./interfaces";
 
 import tailwind from 'tailwindcss';
 import postcss from 'postcss';
+import http from 'http';
 
 import markdocPlugin from './markdoc.js';
 import mustache from './mustache.js';
@@ -104,7 +106,11 @@ export class Aetlan implements TransformContext {
     ]).toArray();
 
     const files = await glob.glob(path.join(root, 'src/tags/**/*.jsx'));
-    const componentItems = files.map(file => ({ path: file, name: path.basename(file, '.' + file.split('.').pop()) }));
+    const componentItems = files.map(file => ({
+      path: file,
+      relPath: path.relative(root, file),
+      name: path.basename(file, '.' + file.split('.').pop())
+    }));
 
     const logger = this.store.logger;
     for (const { name, path } of componentItems) {
@@ -128,30 +134,6 @@ export class Aetlan implements TransformContext {
       await plugin.transform(this);
     }
     await this.css(root);
-
-    //this.output = await this.tashmet.db('aetlan').createCollection('output');
-    //await this.output.deleteMany({});
-
-    //for (const { name, source, target, components, postrender } of this.pipelines) {
-      //const logger = this.store.logger.inScope(name);
-      //logger.info('running pipe');
-
-      //const files = await glob.glob(path.join(root, components));
-      //const componentItems = files.map(file => ({ path: file, name: path.basename(file, '.' + file.split('.').pop()) }));
-
-      //for (const { name, path } of componentItems) {
-        //const prerender = !postrender.includes(name);
-        //logger.inScope(prerender ? 'rollup' : 'import').info(`read: '${path}'`);
-        //await target.component(name, path, prerender);
-      //}
-
-      //await source.create(name, this.tashmet);
-      //const docs = await source.read(componentItems.map(c => c.name));
-      //await this.transform(docs, target.transforms);
-    //}
-
-    //await this.css(root);
-    //await this.write();
   }
 
   async watch(root: string) {
@@ -182,7 +164,6 @@ export class Aetlan implements TransformContext {
       }
     });
 
-
     const logger = this.store.logger;
     srcWatcher.on('change', async fileName => {
       const p = path.basename(fileName, '.' + fileName.split('.').pop())
@@ -190,44 +171,85 @@ export class Aetlan implements TransformContext {
       await this.target.component(p, fileName, true);
     });
 
+    const files = await glob.glob(path.join(root, 'src/tags/**/*.jsx'));
+    const componentItems = files.map(file => ({
+      path: file,
+      relPath: path.relative(root, file),
+      name: path.basename(file, '.' + file.split('.').pop())
+    }));
+
+    const imports = files.map(f => {
+      const name = path.basename(f, path.extname(f));
+      const file = path.relative(path.join(root, 'src'), f)
+
+      return { name, file };
+    });
+    //console.log(imports);
+
+    const code = `
+      import App from '@aetlan/dev';
+      import React from 'react';
+      import ReactDOM from 'react-dom/client';
+      ${imports.map(({ name, file}) => `import ${name} from './${file}';`).join('\n')}
+
+      const components = { ${imports.map(({ name }) => `${name}: new ${name}()`).join(', ')} };
+
+      const container = document.getElementById('app');
+
+      const root = ReactDOM.createRoot(container);
+      root.render(<App components={components}/>);
+    `;
+
     let ctx = await esbuild.context({
-      entryPoints: [path.join(root, 'src/app.jsx')],
-      outdir: path.join(root, 'out'),
+      //entryPoints: [path.join(root, 'src/app.jsx')],
+      stdin: {
+        contents: code,
+        loader: 'jsx',
+        resolveDir: path.join(root, 'src'),
+      },
+      //outdir: path.join(root, 'out'),
       bundle: true,
+      outfile: path.join(root, 'out/app.js'),
     });
 
     logger.inScope('server').info("Starting server...");
 
-    let { port } = await ctx.serve({
+    let { host, port } = await ctx.serve({
       servedir: path.join(root, 'out'),
     });
 
+    // Then start a proxy server on port 3000
+    const server = http.createServer((req, res) => {
+      const options = {
+        hostname: host,
+        port: port,
+        path: req.url,
+        method: req.method,
+        headers: req.headers,
+      }
+
+      // Forward each incoming request to esbuild
+      const proxyReq = http.request(options, proxyRes => {
+        // If esbuild returns "not found", send a custom 404 page
+        if (proxyRes.statusCode === 404) {
+          res.writeHead(404, { 'Content-Type': 'text/html' })
+          res.end('<h1>A custom 404 page</h1>')
+          return
+        }
+
+        // Otherwise, forward the response from esbuild to the client
+        res.writeHead(proxyRes.statusCode || 0, proxyRes.headers)
+        proxyRes.pipe(res, { end: true })
+      })
+
+      // Forward the body of the request to esbuild
+      req.pipe(proxyReq, { end: true })
+    });
+
     logger.inScope('server').info(`Website ready at 'http://localhost:${port}'`);
+    new TashmetServer(this.store, server).listen();
 
-    //for (const pipe of this.pipelines) {
-      //const markdocWatcher = chokidar.watch(path.join(pipe.source.path, '**/*.md'));
-      //const srcWatcher = chokidar.watch(path.join(root, pipe.components));
-      //const logger = this.store.logger.inScope(pipe.name);
-
-      //srcWatcher.on('change', async file => { 
-        //const item = { path: file, name: path.basename(file, '.' + file.split('.').pop()) };
-        //logger.info(`rollup: '${item.path}'`);
-        //await pipe.target.component(item.name, item.path, false);
-        //const docs = await pipe.source.read([]);
-        //await this.output.deleteMany({});
-        //await this.transform(docs, pipe.target.transforms);
-        //await this.css(root);
-        //await this.write();
-      //});
-
-      //markdocWatcher.on('change', async filePath => {
-        //const relPath = path.relative(pipe.source.path, filePath);
-        //await this.output.deleteMany({});
-        //const docs = await pipe.source.read([], relPath);
-        //await this.transform(docs, pipe.target.transforms);
-        //await this.write();
-      //});
-    //}
+    server.listen(3000);
   }
 
   private async css(root: string) {

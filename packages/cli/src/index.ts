@@ -44,7 +44,7 @@ export function cli() {
 
       const aetlan = new Aetlan(makeTarget(cfgFile.target, root), {
         page: new AetlanPages({ path: root }),
-        docs: new AetlanDocs({ path: root }),
+        documentation: new AetlanDocs({ path: root }),
       });
       //for (const source of cfgFile.sources) {
         //aetlan.pipeline({
@@ -68,7 +68,7 @@ export function cli() {
 
       const aetlan = new Aetlan(makeTarget(cfgFile.target, root), {
         page: new AetlanPages({ path: root }),
-        docs: new AetlanDocs({ path: root }),
+        documentation: new AetlanDocs({ path: root }),
       });
       //for (const source of cfgFile.sources) {
         //aetlan.pipeline({

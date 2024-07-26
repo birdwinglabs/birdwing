@@ -18,7 +18,6 @@ export class AetlanDocs implements DocumentSource {
   }
 
   async update(doc: any, context: TransformContext): Promise<void> {
-    
   }
 
   async transform(context: TransformContext): Promise<void> {

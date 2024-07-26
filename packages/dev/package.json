@@ -1,5 +1,5 @@
 {
-  "name": "@aetlan/aetlan",
+  "name": "@aetlan/dev",
   "version": "0.1.0",
   "private": true,
   "description": "",
@@ -18,20 +18,11 @@
   },
   "dependencies": {
     "@markdoc/markdoc": "0.4.0",
-    "@tashmet/mingo": "^1.0.2",
-    "@tashmet/nabu": "^1.0.2",
-    "@tashmet/server": "^1.0.2",
     "@tashmet/tashmet": "^1.0.2",
-    "@tashmet/terminal": "^1.0.2",
-    "@types/react": "18.2.73",
-    "mustache": "4.2.0",
-    "chokidar": "3.6.0",
-    "postcss": "^8.4.36",
-		"tailwindcss": "^3.4.1"
+    "@tashmet/proxy": "^1.0.2",
+    "@types/react": "18.2.73"
   },
   "devDependencies": {
-    "@types/mustache": "4.2.5",
-    "@types/node": "20.0.0",
-    "magic-string": "0.30.9"
+    "@types/node": "20.12.12"
   }
 }
