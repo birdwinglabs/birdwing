@@ -112,6 +112,7 @@ export class Aetlan implements TransformContext {
       name: path.basename(file, '.' + file.split('.').pop())
     }));
 
+    /*
     const logger = this.store.logger;
     for (const { name, path } of componentItems) {
       logger.inScope('build').info(`read: '${path}'`);
@@ -130,10 +131,11 @@ export class Aetlan implements TransformContext {
       }
     });
 
+    */
     for (const [name, plugin] of Object.entries(this.plugins)) {
       await plugin.transform(this);
     }
-    await this.css(root);
+    //await this.css(root);
   }
 
   async watch(root: string) {
@@ -184,30 +186,33 @@ export class Aetlan implements TransformContext {
 
       return { name, file };
     });
-    //console.log(imports);
 
     const code = `
       import App from '@aetlan/dev';
       import React from 'react';
       import ReactDOM from 'react-dom/client';
+      import { createBrowserRouter, RouterProvider } from "react-router-dom";
       ${imports.map(({ name, file}) => `import ${name} from './${file}';`).join('\n')}
 
       const components = { ${imports.map(({ name }) => `${name}: new ${name}()`).join(', ')} };
 
       const container = document.getElementById('app');
 
+      const router = createBrowserRouter([{
+        path: '*',
+        element: <App components={components}/>
+      }]);
+
       const root = ReactDOM.createRoot(container);
-      root.render(<App components={components}/>);
+      root.render(<RouterProvider router={router} />);
     `;
 
     let ctx = await esbuild.context({
-      //entryPoints: [path.join(root, 'src/app.jsx')],
       stdin: {
         contents: code,
         loader: 'jsx',
         resolveDir: path.join(root, 'src'),
       },
-      //outdir: path.join(root, 'out'),
       bundle: true,
       outfile: path.join(root, 'out/app.js'),
     });
