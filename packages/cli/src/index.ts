@@ -1,5 +1,5 @@
 import { program } from 'commander';
-import { Aetlan, DevServer } from '@aetlan/aetlan';
+import { Aetlan, Build, DevServer } from '@aetlan/aetlan';
 import fs from 'fs';
 import path from 'path';
 import yaml from 'js-yaml';
@@ -46,6 +46,8 @@ export function cli() {
         page: new AetlanPages({ path: root }),
         documentation: new AetlanDocs({ path: root }),
       });
+
+      const builder = new Build(aetlan);
       //for (const source of cfgFile.sources) {
         //aetlan.pipeline({
           //name: source.type,
@@ -56,7 +58,7 @@ export function cli() {
         //});
       //}
 
-      aetlan.run(root);
+      builder.run(root);
     });
 
   program
