@@ -24,6 +24,8 @@ export async function compile(filepath: string, dstRoot: string) {
     React,
   };
 
+  console.log(vm.runInNewContext(code, sandbox));
+
   const componentClass = vm.runInNewContext(code, sandbox).default;
   const component = new componentClass();
 

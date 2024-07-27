@@ -1,5 +1,5 @@
 import { program } from 'commander';
-import { Aetlan } from '@aetlan/aetlan';
+import { Aetlan, DevServer } from '@aetlan/aetlan';
 import fs from 'fs';
 import path from 'path';
 import yaml from 'js-yaml';
@@ -42,7 +42,7 @@ export function cli() {
       const cfgFile: any = yaml.load(fs.readFileSync(cfgPath).toString());
       const root = path.dirname(cfgPath);
 
-      const aetlan = new Aetlan(makeTarget(cfgFile.target, root), {
+      const aetlan = await Aetlan.create(root, makeTarget(cfgFile.target, root), {
         page: new AetlanPages({ path: root }),
         documentation: new AetlanDocs({ path: root }),
       });
@@ -66,10 +66,14 @@ export function cli() {
       const cfgFile: any = yaml.load(fs.readFileSync(cfgPath).toString());
       const root = path.dirname(cfgPath);
 
-      const aetlan = new Aetlan(makeTarget(cfgFile.target, root), {
+      const aetlan = await Aetlan.create(root, makeTarget(cfgFile.target, root), {
         page: new AetlanPages({ path: root }),
         documentation: new AetlanDocs({ path: root }),
       });
+
+      const devServer = new DevServer(aetlan);
+      devServer.run(root);
+
       //for (const source of cfgFile.sources) {
         //aetlan.pipeline({
           //name: source.type,
@@ -80,7 +84,7 @@ export function cli() {
         //});
       //}
 
-      aetlan.watch(root);
+      //aetlan.watch(root);
     });
 
   program.parse();
