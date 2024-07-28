@@ -5,8 +5,8 @@ import * as glob from 'glob';
 import * as esbuild from 'esbuild'
 import { renderToString } from 'react-dom/server';
 
-import { Aetlan } from './aetlan.js';
-import { Renderer } from './renderer.js';
+import { Aetlan } from '../aetlan.js';
+import { Renderer } from '../renderer.js';
 import vm from 'vm';
 import { createRequire } from 'module';
 import { fileURLToPath } from 'url';

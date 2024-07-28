@@ -7,7 +7,7 @@ import * as glob from 'glob';
 import * as esbuild from 'esbuild'
 import * as chokidar from 'chokidar';
 
-import { Aetlan } from './aetlan.js';
+import { Aetlan } from '../aetlan.js';
 
 
 export class DevServer {

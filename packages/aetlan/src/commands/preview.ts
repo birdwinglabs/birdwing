@@ -2,7 +2,7 @@ import path from 'path';
 
 import * as esbuild from 'esbuild'
 
-import { Aetlan } from './aetlan.js';
+import { Aetlan } from '../aetlan.js';
 
 export class Preview {
   constructor(private aetlan: Aetlan) {}
