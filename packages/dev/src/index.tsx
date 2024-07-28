@@ -3,12 +3,8 @@ import React from 'react';
 import Tashmet from '@tashmet/tashmet';
 import ServerProxy from '@tashmet/proxy';
 import {
-  createBrowserRouter,
-  RouterProvider,
-  Router,
   useLocation
 } from "react-router-dom";
-import { JsxElement } from 'typescript';
 
 
 function render(components: any, renderable: any): React.ReactNode {
@@ -32,26 +28,7 @@ function render(components: any, renderable: any): React.ReactNode {
   return result;
 }
 
-//export async function createRouter(components: any) {
-  //const tashmet = new Tashmet(new ServerProxy('http://localhost:3000'));
-
-  //await tashmet.connect()
-  //const db = tashmet.db('pages');
-  //const renderables = await db.collection('renderable').find().toArray();
-
-  //const router = createBrowserRouter(renderables.map(r => ({
-    //path: r._id as string,
-    //element: render(components, r.renderable),
-  //})));
-
-  //tashmet.close();
-
-  //return router;
-//}
-
 export default function App({ path, components }: any): JSX.Element {
-  console.log('App');
-  console.log(React.version);
   const [content, setContent] = React.useState(null);
   const location = useLocation();
 
@@ -67,10 +44,8 @@ export default function App({ path, components }: any): JSX.Element {
         if (slug !== '/' && slug.endsWith('/')) {
           slug = slug.slice(0, -1);
         }
-        console.log(slug);
 
         const doc = await renderable.findOne({ _id: slug });
-        console.log(doc);
 
         if (doc) {
           setContent(doc.renderable);
@@ -96,64 +71,3 @@ export default function App({ path, components }: any): JSX.Element {
 
   return <h1>{path}</h1>;
 }
-
-
-//export default function App({ components, routes }: any) {
-  //const router = createBrowserRouter(routes.map((r: string) => ({
-    //path: r,
-    //element: <App path={r} components={components}/>
-  //})));
-
-  //return (
-    //<React.StrictMode>
-      //<RouterProvider router={router} />
-    //</React.StrictMode>
-  //);
-//}
-
-  //return <h1>Loading...</h1>;
-  /*
-  const [content, setContent] = React.useState(null);
-  const location = useLocation();
-
-  React.useEffect(() => {
-    console.log('Location changed');
-  }, [location]);
-
-  React.useEffect(() => {
-    const tashmet = new Tashmet(new ServerProxy('http://localhost:3000'));
-
-    tashmet.connect()
-      .then(async tashmet =>  {
-        const db = tashmet.db('pages');
-        const renderable = db.collection('renderable');
-
-        const slug = window.location.pathname !== '/' ? window.location.pathname.slice(0, -1) : '/';
-
-        const doc = await renderable.findOne({ _id: slug });
-
-        if (doc) {
-          setContent(doc.renderable);
-        }
-
-        const watcher = renderable.watch();
-
-        watcher.on('change', change => {
-          const doc = change.fullDocument;
-          if (doc) {
-            setContent(doc.renderable);
-          }
-        });
-      });
-    return () => {
-      tashmet.close();
-    }
-  }, []);
-
-  if (content) {
-    return render(components, content);
-  }
-
-  return <h1>Loading...</h1>
-  */
-//}
