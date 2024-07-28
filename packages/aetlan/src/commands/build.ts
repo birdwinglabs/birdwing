@@ -3,7 +3,6 @@ import fs from 'fs';
 
 import * as glob from 'glob';
 import * as esbuild from 'esbuild'
-import { renderToString } from 'react-dom/server';
 
 import { Aetlan } from '../aetlan.js';
 import { Renderer } from '../renderer.js';
@@ -31,9 +30,22 @@ export class Build {
     });
 
     const code = `
+      import { Routes, Route } from 'react-router-dom';
+      import { StaticRouter } from "react-router-dom/server";
+      import ReactDOMServer from "react-dom/server";
+
       ${imports.map(({ name, file}) => `import ${name} from './${file}';`).join('\n')}
 
       components = { ${imports.map(({ name }) => `${name}: new ${name}()`).join(', ')} };
+      app = (routes, path) => {
+        return ReactDOMServer.renderToString(
+          <StaticRouter location={path}>
+            <Routes>
+              { routes.map(r => <Route path={r.path} element={r.element} />)}
+            </Routes>
+          </StaticRouter>
+        );
+      }
     `;
 
     let build = await esbuild.build({
@@ -55,6 +67,9 @@ export class Build {
       module: {},
       exports: {},
       components: {},
+      TextEncoder,
+      URL,
+      app: (routes: any, path: string): string => { return ''; },
       React,
     };
 
@@ -62,23 +77,29 @@ export class Build {
 
     const renderer = new Renderer(sandbox.components);
 
-    for await (const doc of this.aetlan.pagesDb.collection('renderable').find()) {
-      const result = renderer.render(doc.renderable);
-      const body = renderToString(result);
+    const renderables = await this.aetlan.pagesDb.collection('renderable').find().toArray();
+    const routes = renderables.map(r => {
+      return {
+        path: r._id as string,
+        element: renderer.render(r.renderable),
+      }
+    });
+
+    for (const route of routes) {
+      const body = sandbox.app(routes, route.path);
+
       const html = fs.readFileSync(path.join(this.aetlan.root, 'src/main.html')).toString();
       const dom = new JSDOM(html);
       const app = dom.window.document.getElementById('app');
       if (app) {
         app.innerHTML = body;
       }
-      const outfile = path.join(this.aetlan.root, 'out', doc._id as string, 'index.html');
+      const outfile = path.join(this.aetlan.root, 'out', route.path, 'index.html');
       this.aetlan.store.logger.inScope('html').info(`write: '${outfile}'`);
 
       await this.aetlan.pagesDb
         .collection('target')
         .replaceOne({_id: outfile }, { _id: outfile, content: dom.serialize()}, { upsert: true });
     }
-
-    await this.aetlan.css();
   }
 }
