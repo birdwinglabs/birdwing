@@ -55,10 +55,11 @@ export class Aetlan implements TransformContext {
       }
     });
 
-    return new Aetlan(plugins, store, pagesDb);
+    return new Aetlan(root, plugins, store, pagesDb);
   }
 
   constructor(
+    public readonly root: string,
     private plugins: Record<string, DocumentSource>,
     public store: StorageEngine,
     public pagesDb: Database,
@@ -105,15 +106,15 @@ export class Aetlan implements TransformContext {
     }
   }
 
-  async css(root: string) {
+  async css() {
     const cssProc = postcss([
       tailwind({
-        config: path.join(root, 'tailwind.config.js'),
+        config: path.join(this.root, 'tailwind.config.js'),
       })
     ]);
 
-    const cssPath = path.join(root, 'src/main.css');
-    const css = await cssProc.process(fs.readFileSync(cssPath), { from: cssPath, to: path.join(root, 'out/main.css') });
+    const cssPath = path.join(this.root, 'src/main.css');
+    const css = await cssProc.process(fs.readFileSync(cssPath), { from: cssPath, to: path.join(this.root, 'out/main.css') });
 
     fs.writeFileSync(css.opts.to as string, css.css);
   }

@@ -13,8 +13,8 @@ import { Aetlan } from '../aetlan.js';
 export class DevServer {
   constructor(private aetlan: Aetlan) {}
 
-  async run(root: string) {
-    const pageWatcher = chokidar.watch(path.join(root, 'src/pages/**/*.md'));
+  async run() {
+    const pageWatcher = chokidar.watch(path.join(this.aetlan.root, 'src/pages/**/*.md'));
 
     await this.aetlan.loadAst();
     await this.aetlan.transform();
@@ -41,11 +41,11 @@ export class DevServer {
       }
     });
 
-    const files = await glob.glob(path.join(root, 'src/tags/**/*.jsx'));
+    const files = await glob.glob(path.join(this.aetlan.root, 'src/tags/**/*.jsx'));
 
     const imports = files.map(f => {
       const name = path.basename(f, path.extname(f));
-      const file = path.relative(path.join(root, 'src'), f)
+      const file = path.relative(path.join(this.aetlan.root, 'src'), f)
 
       return { name, file };
     });
@@ -76,16 +76,16 @@ export class DevServer {
       stdin: {
         contents: code,
         loader: 'jsx',
-        resolveDir: path.join(root, 'src'),
+        resolveDir: path.join(this.aetlan.root, 'src'),
       },
       bundle: true,
-      outfile: path.join(root, 'out/app.js'),
+      outfile: path.join(this.aetlan.root, 'out/app.js'),
     });
 
     this.aetlan.store.logger.inScope('server').info("Starting server...");
 
     let { host, port } = await ctx.serve({
-      servedir: path.join(root, 'out'),
+      servedir: path.join(this.aetlan.root, 'out'),
     });
     const server = this.createServer(host, port);
     const proxyPort = 3000;

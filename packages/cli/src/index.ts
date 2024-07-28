@@ -1,27 +1,8 @@
 import { program } from 'commander';
 import { Aetlan, Build, DevServer, Preview } from '@aetlan/aetlan';
-import fs from 'fs';
 import path from 'path';
-import yaml from 'js-yaml';
 import { AetlanDocs } from '@aetlan/docs';
 import { AetlanPages } from '@aetlan/pages';
-//import sveltekit from '@aetlan/sveltekit';
-//import react from '@aetlan/react';
-
-//export function makeTarget(type: string, root: string) {
-  //switch (type) {
-    //case 'sveltekit':
-      //return sveltekit({
-        //path: root,
-      //});
-    //case 'react':
-      //return react({
-        //path: root,
-      //});
-    //default:
-      //throw Error('Unknown target: ' + type);
-  //}
-//}
 
 export function makeSource(type: string, root: string, config: any) {
   switch (type) {
@@ -34,53 +15,35 @@ export function makeSource(type: string, root: string, config: any) {
   }
 }
 
+function createAetlan(cfgPath: string) {
+  const root = path.dirname(cfgPath);
+
+  return Aetlan.create(root, {
+    page: new AetlanPages({ path: root }),
+    documentation: new AetlanDocs({ path: root }),
+  });
+}
+
 export function cli() {
   program
     .command('build')
     .argument('<path>', 'path to config file')
     .action(async (cfgPath: string) => {
-      const cfgFile: any = yaml.load(fs.readFileSync(cfgPath).toString());
-      const root = path.dirname(cfgPath);
-
-      const aetlan = await Aetlan.create(root, {
-        page: new AetlanPages({ path: root }),
-        documentation: new AetlanDocs({ path: root }),
-      });
-
-      const builder = new Build(aetlan);
-      builder.run(root);
+      await new Build(await createAetlan(cfgPath)).run();
     });
 
   program
     .command('watch')
     .argument('<path>', 'path to config file')
     .action(async (cfgPath: string) => {
-      const cfgFile: any = yaml.load(fs.readFileSync(cfgPath).toString());
-      const root = path.dirname(cfgPath);
-
-      const aetlan = await Aetlan.create(root, {
-        page: new AetlanPages({ path: root }),
-        documentation: new AetlanDocs({ path: root }),
-      });
-
-      const devServer = new DevServer(aetlan);
-      devServer.run(root);
+      await new DevServer(await createAetlan(cfgPath)).run()
     });
 
   program
     .command('preview')
     .argument('<path>', 'path to config file')
     .action(async (cfgPath: string) => {
-      const cfgFile: any = yaml.load(fs.readFileSync(cfgPath).toString());
-      const root = path.dirname(cfgPath);
-
-      const aetlan = await Aetlan.create(root, {
-        page: new AetlanPages({ path: root }),
-        documentation: new AetlanDocs({ path: root }),
-      });
-
-      const previewServer = new Preview(aetlan);
-      previewServer.run(root);
+      await new Preview(await createAetlan(cfgPath)).run();
     });
 
   program.parse();

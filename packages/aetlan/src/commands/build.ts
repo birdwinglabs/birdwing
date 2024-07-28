@@ -17,15 +17,15 @@ import { JSDOM } from 'jsdom';
 export class Build {
   constructor(private aetlan: Aetlan) {}
 
-  async run(root: string) {
+  async run() {
     await this.aetlan.loadAst();
     await this.aetlan.transform();
 
-    const files = await glob.glob(path.join(root, 'src/tags/**/*.jsx'));
+    const files = await glob.glob(path.join(this.aetlan.root, 'src/tags/**/*.jsx'));
 
     const imports = files.map(f => {
       const name = path.basename(f, path.extname(f));
-      const file = path.relative(path.join(root, 'src'), f)
+      const file = path.relative(path.join(this.aetlan.root, 'src'), f)
 
       return { name, file };
     });
@@ -40,7 +40,7 @@ export class Build {
       stdin: {
         contents: code,
         loader: 'jsx',
-        resolveDir: path.join(root, 'src'),
+        resolveDir: path.join(this.aetlan.root, 'src'),
       },
       bundle: true,
       format: 'cjs',
@@ -65,13 +65,13 @@ export class Build {
     for await (const doc of this.aetlan.pagesDb.collection('renderable').find()) {
       const result = renderer.render(doc.renderable);
       const body = renderToString(result);
-      const html = fs.readFileSync(path.join(root, 'src/main.html')).toString();
+      const html = fs.readFileSync(path.join(this.aetlan.root, 'src/main.html')).toString();
       const dom = new JSDOM(html);
       const app = dom.window.document.getElementById('app');
       if (app) {
         app.innerHTML = body;
       }
-      const outfile = path.join(root, 'out', doc._id as string, 'index.html');
+      const outfile = path.join(this.aetlan.root, 'out', doc._id as string, 'index.html');
       this.aetlan.store.logger.inScope('html').info(`write: '${outfile}'`);
 
       await this.aetlan.pagesDb
@@ -79,6 +79,6 @@ export class Build {
         .replaceOne({_id: outfile }, { _id: outfile, content: dom.serialize()}, { upsert: true });
     }
 
-    await this.aetlan.css(root);
+    await this.aetlan.css();
   }
 }
