@@ -32,24 +32,26 @@ function render(components: any, renderable: any): React.ReactNode {
   return result;
 }
 
-export async function createRouter(components: any) {
-  const tashmet = new Tashmet(new ServerProxy('http://localhost:3000'));
+//export async function createRouter(components: any) {
+  //const tashmet = new Tashmet(new ServerProxy('http://localhost:3000'));
 
-  await tashmet.connect()
-  const db = tashmet.db('pages');
-  const renderables = await db.collection('renderable').find().toArray();
+  //await tashmet.connect()
+  //const db = tashmet.db('pages');
+  //const renderables = await db.collection('renderable').find().toArray();
 
-  const router = createBrowserRouter(renderables.map(r => ({
-    path: r._id as string,
-    element: render(components, r.renderable),
-  })));
+  //const router = createBrowserRouter(renderables.map(r => ({
+    //path: r._id as string,
+    //element: render(components, r.renderable),
+  //})));
 
-  tashmet.close();
+  //tashmet.close();
 
-  return router;
-}
+  //return router;
+//}
 
 export default function App({ path, components }: any): JSX.Element {
+  console.log('App');
+  console.log(React.version);
   const [content, setContent] = React.useState(null);
   const location = useLocation();
 

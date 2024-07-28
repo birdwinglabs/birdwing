@@ -5,23 +5,23 @@ import path from 'path';
 import yaml from 'js-yaml';
 import { AetlanDocs } from '@aetlan/docs';
 import { AetlanPages } from '@aetlan/pages';
-import sveltekit from '@aetlan/sveltekit';
-import react from '@aetlan/react';
+//import sveltekit from '@aetlan/sveltekit';
+//import react from '@aetlan/react';
 
-export function makeTarget(type: string, root: string) {
-  switch (type) {
-    case 'sveltekit':
-      return sveltekit({
-        path: root,
-      });
-    case 'react':
-      return react({
-        path: root,
-      });
-    default:
-      throw Error('Unknown target: ' + type);
-  }
-}
+//export function makeTarget(type: string, root: string) {
+  //switch (type) {
+    //case 'sveltekit':
+      //return sveltekit({
+        //path: root,
+      //});
+    //case 'react':
+      //return react({
+        //path: root,
+      //});
+    //default:
+      //throw Error('Unknown target: ' + type);
+  //}
+//}
 
 export function makeSource(type: string, root: string, config: any) {
   switch (type) {
@@ -42,7 +42,7 @@ export function cli() {
       const cfgFile: any = yaml.load(fs.readFileSync(cfgPath).toString());
       const root = path.dirname(cfgPath);
 
-      const aetlan = await Aetlan.create(root, makeTarget(cfgFile.target, root), {
+      const aetlan = await Aetlan.create(root, {
         page: new AetlanPages({ path: root }),
         documentation: new AetlanDocs({ path: root }),
       });
@@ -58,7 +58,7 @@ export function cli() {
       const cfgFile: any = yaml.load(fs.readFileSync(cfgPath).toString());
       const root = path.dirname(cfgPath);
 
-      const aetlan = await Aetlan.create(root, makeTarget(cfgFile.target, root), {
+      const aetlan = await Aetlan.create(root, {
         page: new AetlanPages({ path: root }),
         documentation: new AetlanDocs({ path: root }),
       });
@@ -74,7 +74,7 @@ export function cli() {
       const cfgFile: any = yaml.load(fs.readFileSync(cfgPath).toString());
       const root = path.dirname(cfgPath);
 
-      const aetlan = await Aetlan.create(root, makeTarget(cfgFile.target, root), {
+      const aetlan = await Aetlan.create(root, {
         page: new AetlanPages({ path: root }),
         documentation: new AetlanDocs({ path: root }),
       });

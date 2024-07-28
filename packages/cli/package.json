@@ -23,8 +23,6 @@
     "@aetlan/aetlan": "^0.1.0",
     "@aetlan/docs": "^0.1.0",
     "@aetlan/pages": "^0.1.0",
-    "@aetlan/react": "^0.1.0",
-    "@aetlan/sveltekit": "^0.1.0",
     "commander": "12.0.0",
     "js-yaml": "4.1.0",
     "@types/js-yaml": "^4.0.5"

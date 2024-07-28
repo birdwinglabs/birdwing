@@ -61,6 +61,8 @@ export class DevServer {
 
       const container = document.getElementById('app');
 
+      console.log(React.version);
+
       const router = createBrowserRouter([{
         path: '*',
         element: <App components={components}/>
@@ -86,11 +88,12 @@ export class DevServer {
       servedir: path.join(root, 'out'),
     });
     const server = this.createServer(host, port);
+    const proxyPort = 3000;
 
-    this.aetlan.store.logger.inScope('server').info(`Website ready at 'http://localhost:${port}'`);
+    this.aetlan.store.logger.inScope('server').info(`Website ready at 'http://localhost:${proxyPort}'`);
     new TashmetServer(this.aetlan.store, server).listen();
 
-    server.listen(3000);
+    server.listen(proxyPort);
   }
 
   private createServer(host: string, port: number) {

@@ -72,11 +72,13 @@ export class Build {
         app.innerHTML = body;
       }
       const outfile = path.join(root, 'out', doc._id as string, 'index.html');
-      console.log(outfile);
+      this.aetlan.store.logger.inScope('html').info(`write: '${outfile}'`);
 
       await this.aetlan.pagesDb
         .collection('target')
         .replaceOne({_id: outfile }, { _id: outfile, content: dom.serialize()}, { upsert: true });
     }
+
+    await this.aetlan.css(root);
   }
 }
