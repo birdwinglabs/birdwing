@@ -1,5 +1,5 @@
 import { program } from 'commander';
-import { Aetlan, Build, DevServer } from '@aetlan/aetlan';
+import { Aetlan, Build, DevServer, Preview } from '@aetlan/aetlan';
 import fs from 'fs';
 import path from 'path';
 import yaml from 'js-yaml';
@@ -48,16 +48,6 @@ export function cli() {
       });
 
       const builder = new Build(aetlan);
-      //for (const source of cfgFile.sources) {
-        //aetlan.pipeline({
-          //name: source.type,
-          //source: makeSource(source.type, root, source),
-          //target: makeTarget(cfgFile.target, root),
-          //components: source.components,
-          //postrender: source.postrender,
-        //});
-      //}
-
       builder.run(root);
     });
 
@@ -75,18 +65,22 @@ export function cli() {
 
       const devServer = new DevServer(aetlan);
       devServer.run(root);
+    });
 
-      //for (const source of cfgFile.sources) {
-        //aetlan.pipeline({
-          //name: source.type,
-          //source: makeSource(source.type, root, source),
-          //target: makeTarget(cfgFile.target, root),
-          //components: source.components,
-          //postrender: source.postrender,
-        //});
-      //}
+  program
+    .command('preview')
+    .argument('<path>', 'path to config file')
+    .action(async (cfgPath: string) => {
+      const cfgFile: any = yaml.load(fs.readFileSync(cfgPath).toString());
+      const root = path.dirname(cfgPath);
 
-      //aetlan.watch(root);
+      const aetlan = await Aetlan.create(root, makeTarget(cfgFile.target, root), {
+        page: new AetlanPages({ path: root }),
+        documentation: new AetlanDocs({ path: root }),
+      });
+
+      const previewServer = new Preview(aetlan);
+      previewServer.run(root);
     });
 
   program.parse();
