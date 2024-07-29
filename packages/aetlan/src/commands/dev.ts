@@ -61,15 +61,12 @@ export class DevServer {
 
       const container = document.getElementById('app');
 
-      console.log(React.version);
-
       const router = createBrowserRouter([{
         path: '*',
         element: <App components={components}/>
       }]);
 
-      const root = ReactDOM.createRoot(container);
-      root.render(<RouterProvider router={router} />);
+      ReactDOM.hydrateRoot(container, <RouterProvider router={router} />);
     `;
 
     let ctx = await esbuild.context({
