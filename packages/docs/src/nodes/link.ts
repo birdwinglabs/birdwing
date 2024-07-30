@@ -13,14 +13,12 @@ export class Link {
   };
 
   transform(node: any, config: any) {
-    const { slug, slugMap, context } = config.variables || {};
+    const { slugMap, context } = config.variables || {};
     let attributes = node.attributes;
 
-    if (slug && slugMap) {
-      if (node.attributes.href in slugMap) {
-        const href = slugMap[node.attributes.href];
-        attributes = { href, selected: href === slug };
-      }
+    if (node.attributes.href in (slugMap || {})) {
+      const href = slugMap[node.attributes.href];
+      attributes = { ...attributes, href };
     }
     return new Tag(`${context}.link`, attributes, node.transformChildren(config));
   }

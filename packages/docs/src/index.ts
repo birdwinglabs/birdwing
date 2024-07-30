@@ -83,13 +83,14 @@ export class AetlanDocs implements DocumentSource {
         }
       };
 
+      const summaryRenderable = markdoc.transform(summaryDoc.ast, {
+        tags: {},
+        nodes: makeNodes(),
+        variables: { slugMap, context: 'DocumentationSummary' },
+      });
+
       for (const doc of docs) {
         const slug = context.slugify(doc);
-        const summaryRenderable = markdoc.transform(summaryDoc.ast, {
-          tags: {},
-          nodes: makeNodes(),
-          variables: { slug, slugMap, context: 'DocumentationSummary' },
-        });
 
         const variables: any = {
           context: 'Documentation',
@@ -103,7 +104,7 @@ export class AetlanDocs implements DocumentSource {
           nav: summaryRenderable,
         };
 
-        await context.mount(context.slugify(doc), markdoc.transform(doc.ast, { ...config, variables }));
+        await context.mount(slug, markdoc.transform(doc.ast, { ...config, variables }));
       }
     }
   }
