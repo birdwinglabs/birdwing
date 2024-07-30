@@ -67,6 +67,8 @@ export class DevServer {
       }]);
 
       ReactDOM.hydrateRoot(container, <RouterProvider router={router} />);
+
+      new EventSource('/esbuild').addEventListener('change', () => location.reload());
     `;
 
     let ctx = await esbuild.context({
@@ -78,6 +80,8 @@ export class DevServer {
       bundle: true,
       outfile: path.join(this.aetlan.root, 'out/app.js'),
     });
+    
+    await ctx.watch();
 
     this.aetlan.store.logger.inScope('server').info("Starting server...");
 
