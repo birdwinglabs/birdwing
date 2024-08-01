@@ -116,6 +116,8 @@ export class Aetlan implements TransformContext {
     const cssPath = path.join(this.root, 'src/main.css');
     const css = await cssProc.process(fs.readFileSync(cssPath), { from: cssPath, to: path.join(this.root, 'out/main.css') });
 
-    fs.writeFileSync(css.opts.to as string, css.css);
+    return css.css;
+
+    //fs.writeFileSync(css.opts.to as string, css.css);
   }
 }

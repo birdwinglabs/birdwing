@@ -1,6 +1,6 @@
 import markdoc from '@markdoc/markdoc';
 import React from 'react';
-import Tashmet from '@tashmet/tashmet';
+import Tashmet, { Database } from '@tashmet/tashmet';
 import ServerProxy from '@tashmet/proxy';
 import {
   useLocation
@@ -30,15 +30,37 @@ function render(components: any, renderable: any): React.ReactNode {
 
 export default function App({ path, components }: any): JSX.Element {
   const [content, setContent] = React.useState(null);
+  const [db, setDb] = React.useState<Database | null>(null);
   const location = useLocation();
+  
+  React.useEffect(() => {
+    if (db) {
+      let slug = window.location.pathname;
+      if (slug !== '/' && slug.endsWith('/')) {
+        slug = slug.slice(0, -1);
+      }
+      db
+        .collection('renderable')
+        .findOne({ _id: slug })
+        .then(doc => {
+          if (doc) {
+            setContent(doc.renderable);
+          }
+        });
+    }
+
+  }, [location]);
 
   React.useEffect(() => {
     const tashmet = new Tashmet(new ServerProxy('http://localhost:3000'));
 
     tashmet.connect()
       .then(async tashmet =>  {
-        const db = tashmet.db('pages');
-        const renderable = db.collection('renderable');
+        console.log('connected to dev server');
+
+        const database = tashmet.db('pages');
+        const renderable = database.collection('renderable');
+        const devtarget = database.collection('devtarget');
 
         let slug = window.location.pathname;
         if (slug !== '/' && slug.endsWith('/')) {
@@ -51,23 +73,31 @@ export default function App({ path, components }: any): JSX.Element {
           setContent(doc.renderable);
         }
 
-        const watcher = renderable.watch();
+        const docWatcher = renderable.watch();
+        const fileWatcher = devtarget.watch();
 
-        watcher.on('change', change => {
+        docWatcher.on('change', change => {
           const doc = change.fullDocument;
           if (doc) {
             setContent(doc.renderable);
           }
         });
+        fileWatcher.on('change', change => {
+          if (change.documentKey?._id === '/main.css') {
+            tashmet.close();
+            window.location.reload();
+          }
+        });
+        setDb(database);
       });
     return () => {
       tashmet.close();
     }
-  }, [location]);
+  }, []);
 
   if (content) {
     return render(components, content) as JSX.Element;
   }
 
-  return <h1>{path}</h1>;
+  return <h1>Loading...</h1>;
 }

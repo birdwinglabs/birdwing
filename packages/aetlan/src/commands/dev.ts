@@ -2,19 +2,27 @@ import TashmetServer from '@tashmet/server';
 
 import http from 'http';
 import path from 'path';
+import fs from 'fs';
 
 import * as glob from 'glob';
 import * as esbuild from 'esbuild'
 import * as chokidar from 'chokidar';
 
 import { Aetlan } from '../aetlan.js';
+import { Collection } from '@tashmet/tashmet';
 
 
 export class DevServer {
-  constructor(private aetlan: Aetlan) {}
+  private targetFiles: Collection;
+
+  constructor(private aetlan: Aetlan) {
+  }
 
   async run() {
+    this.targetFiles = await this.aetlan.pagesDb.createCollection('devtarget');
+
     const pageWatcher = chokidar.watch(path.join(this.aetlan.root, 'src/pages/**/*.md'));
+    const srcWatcher = chokidar.watch(path.join(this.aetlan.root, 'src/**/*.jsx'));
 
     await this.aetlan.loadAst();
     await this.aetlan.transform();
@@ -66,9 +74,7 @@ export class DevServer {
         element: <App components={components}/>
       }]);
 
-      ReactDOM.hydrateRoot(container, <RouterProvider router={router} />);
-
-      new EventSource('/esbuild').addEventListener('change', () => location.reload());
+      ReactDOM.createRoot(container).render(<RouterProvider router={router} />);
     `;
 
     let ctx = await esbuild.context({
@@ -78,51 +84,60 @@ export class DevServer {
         resolveDir: path.join(this.aetlan.root, 'src'),
       },
       bundle: true,
-      outfile: path.join(this.aetlan.root, 'out/app.js'),
+      outfile: path.join(this.aetlan.root, 'out/client.js'),
+      write: false,
     });
-    
-    await ctx.watch();
+
+    srcWatcher.on('change', async () => {
+      await this.rebuild(ctx);
+    });
+
+    await this.rebuild(ctx);
 
     this.aetlan.store.logger.inScope('server').info("Starting server...");
 
-    let { host, port } = await ctx.serve({
-      servedir: path.join(this.aetlan.root, 'out'),
-    });
-    const server = this.createServer(host, port);
-    const proxyPort = 3000;
+    const port = 3000;
+    const server = this.createServer();
 
-    this.aetlan.store.logger.inScope('server').info(`Website ready at 'http://localhost:${proxyPort}'`);
+    this.aetlan.store.logger.inScope('server').info(`Website ready at 'http://localhost:${port}'`);
     new TashmetServer(this.aetlan.store, server).listen();
 
-    server.listen(proxyPort);
+    server.listen(port);
   }
 
-  private createServer(host: string, port: number) {
-    return http.createServer((req, res) => {
-      const options = {
-        hostname: host,
-        port: port,
-        path: req.url,
-        method: req.method,
-        headers: req.headers,
-      }
+  private async rebuild(ctx: esbuild.BuildContext) {
+    this.aetlan.store.logger.inScope('server').info("Building...");
 
-      // Forward each incoming request to esbuild
-      const proxyReq = http.request(options, proxyRes => {
-        // If esbuild returns "not found", send a custom 404 page
-        if (proxyRes.statusCode === 404) {
-          res.writeHead(404, { 'Content-Type': 'text/html' })
-          res.end('<h1>A custom 404 page</h1>')
-          return
+    const buildRes = await ctx.rebuild();
+    if (buildRes.outputFiles) {
+      await this.updateFile('/app.js', buildRes.outputFiles[0].text);
+    }
+    await this.updateFile('/main.css', await this.aetlan.css());
+
+    this.aetlan.store.logger.inScope('server').info("Done");
+  }
+
+  private async updateFile(name: string, content: string) {
+    await this.targetFiles.replaceOne({ _id: name }, { _id: name, content }, { upsert: true });
+  }
+
+  private createServer() {
+    return http.createServer(async (req, res) => {
+      const url = req.url || '';
+      const doc = await this.aetlan.pagesDb
+        .collection('renderable')
+        .findOne({ _id: url !== '/' ? url.replace(/\/$/, "") : url });
+
+      if (doc) {
+        var stream = fs.createReadStream(path.join(this.aetlan.root, 'src/main.html'));
+        stream.pipe(res);
+      } else {
+        const file = await this.targetFiles.findOne({ _id: req.url });
+        if (file) {
+          res.write(file.content);
+          res.end();
         }
-
-        // Otherwise, forward the response from esbuild to the client
-        res.writeHead(proxyRes.statusCode || 0, proxyRes.headers)
-        proxyRes.pipe(res, { end: true })
-      })
-
-      // Forward the body of the request to esbuild
-      req.pipe(proxyReq, { end: true })
+      }
     });
   }
 }
