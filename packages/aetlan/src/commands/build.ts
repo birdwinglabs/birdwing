@@ -94,12 +94,18 @@ export class Build {
       if (app) {
         app.innerHTML = body;
       }
-      const outfile = path.join(this.aetlan.root, 'out', route.path, 'index.html');
-      this.aetlan.store.logger.inScope('html').info(`write: '${outfile}'`);
-
-      await this.aetlan.pagesDb
-        .collection('target')
-        .replaceOne({_id: outfile }, { _id: outfile, content: dom.serialize()}, { upsert: true });
+      await this.updateFile(path.join(route.path, 'index.html'), dom.serialize());
     }
+
+    await this.updateFile('main.css', await this.aetlan.css());
+  }
+
+  private async updateFile(name: string, content: string) {
+    const _id = path.join(this.aetlan.root, 'out', name);
+    this.aetlan.store.logger.inScope('build').info(`write: '${_id}'`);
+
+    await this.aetlan.pagesDb
+      .collection('target')
+      .replaceOne({ _id }, { _id, content }, { upsert: true });
   }
 }
