@@ -1,8 +1,9 @@
+import path from 'path';
 import { Document, Fence, Heading, Link, List, Paragraph, TransformContext } from '@aetlan/aetlan';
 import { DocumentSource } from '@aetlan/aetlan';
 import { Feature } from './tags/feature.js';
 import { Cta } from './tags/cta.js';
-import markdoc from '@markdoc/markdoc';
+import markdoc, { RenderableTreeNode } from '@markdoc/markdoc';
 
 const { Tag } = markdoc;
 
@@ -32,17 +33,27 @@ export class AetlanPages implements DocumentSource {
     return this.config.path;
   }
 
-  async transform(context: TransformContext): Promise<void> {
-    for await (const doc of context.findPages({'frontmatter.type': 'page'})) {
-      await this.update(doc, context);
+  url(page: any) {
+    if (page.frontmatter.slug) {
+      return path.join(this.path, page.frontmatter.slug);
     }
+    const relPath = page.path;
+    let dirName = path.join('/', path.dirname(relPath));
+
+    if (relPath.endsWith('INDEX.md')) {
+      return dirName;
+    }
+
+    return path.join(dirName, path.basename(relPath, path.extname(relPath)));
   }
 
-  async update(doc: any, context: TransformContext) {
-    const variables = { context: 'Page', props: doc.frontmatter };
-    const renderable = markdoc.transform(doc.ast, { ...this.markdocConfig, variables });
+  async data(page: any) {
+    return page.frontmatter;
+  }
 
-    await context.mount(context.slugify(doc), renderable);
+  async transform(doc: any): Promise<RenderableTreeNode> {
+    const variables = { context: 'Page' };
+    return markdoc.transform(doc.ast, { ...this.markdocConfig, variables });
   }
 
   private componentNames(tag: any): string[] {

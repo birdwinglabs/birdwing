@@ -1,3 +1,4 @@
+import { RenderableTreeNode } from "@markdoc/markdoc";
 import Tashmet, { Document, Filter, FindCursor } from "@tashmet/tashmet";
 
 export interface File {
@@ -13,13 +14,20 @@ export interface TransformContext {
 
   mount(slug: string, renderable: any): Promise<void>;
 
-  slugify(page: any): string;
+  url(path: string): Promise<string>;
+
+  urls: Record<string, string>;
+  //slugify(page: any): string;
 }
 
 export interface DocumentSource {
-  transform(context: TransformContext): Promise<void>;
+  url(page: any): string;
 
-  update(doc: any, context: TransformContext): Promise<void>;
+  data(page: any, context: TransformContext): Promise<any>;
+
+  transform(page: any, urls: Record<string, string>): Promise<RenderableTreeNode>;
+
+  //update(doc: any, context: TransformContext): Promise<void>;
 
   path: string;
 }

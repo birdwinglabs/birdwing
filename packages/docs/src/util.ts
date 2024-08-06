@@ -1,4 +1,4 @@
-export function extractLinks(slugMap: Record<string, string>, ast: any): any[] {
+export function extractLinks(ast: any): any[] {
   let heading: string | undefined;
   let meta: any[] = [];
 
@@ -12,14 +12,14 @@ export function extractLinks(slugMap: Record<string, string>, ast: any): any[] {
         }
         break;
       case 'link':
-        const slug = slugMap[node.attributes.href];
+        const href = node.attributes.href;
         let title = '';
         for (const child of node.walk()) {
           if (child.type === 'text') {
             title = child.attributes.content;
           }
         }
-        meta.push({ slug, title, topic: heading });
+        meta.push({ href, title, topic: heading });
         break;
     }
   }

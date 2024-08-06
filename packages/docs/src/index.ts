@@ -1,6 +1,6 @@
 import path from 'path';
 import { extractLinks } from './util.js';
-import markdoc from '@markdoc/markdoc';
+import markdoc, { RenderableTreeNode } from '@markdoc/markdoc';
 import { makeNodes } from './nodes/index.js';
 import { TransformContext } from '@aetlan/aetlan';
 import { DocumentSource } from '@aetlan/aetlan';
@@ -10,103 +10,108 @@ interface DocsConfig {
   path: string;
 }
 
+class Links {
+  constructor(
+    private links: any,
+    private rootPath: string,
+    private pagePath: string,
+    private urls: Record<string, string>
+  ) {}
+
+  get topic() {
+    const idx = this.links.findIndex((link: any) => link.href === this.pagePath);
+    if (idx === -1) {
+      return undefined;
+    }
+    return this.links[idx].topic;
+  }
+
+  get next() {
+    const idx = this.links.findIndex((link: any) => link.href === this.pagePath);
+    if (idx === -1 || idx === this.links.length - 1) {
+      return undefined;
+    }
+    const { href, title } = this.links[idx + 1];
+    return { href: this.urls[path.join(this.rootPath, href)], title };
+  }
+
+  get prev() {
+    const idx = this.links.findIndex((link: any) => link.href === this.pagePath);
+    if (idx === -1 || idx === 0) {
+      return undefined;
+    }
+    const { href, title } = this.links[idx - 1];
+    return { href: this.urls[path.join(this.rootPath, href)], title };
+  }
+}
+
 export class AetlanDocs implements DocumentSource {
+  private links: any = undefined;
+
   public constructor(private config: DocsConfig) {}
 
   get path(): string {
     return this.config.path;
   }
 
-  async update(doc: any, context: TransformContext): Promise<void> {
+  url(page: any) {
+    if (page.frontmatter.slug) {
+      return path.join('/', this.path, page.frontmatter.slug);
+    }
+    const relPath = page.path;
+    let dirName = path.join('/', path.dirname(relPath));
+
+    if (relPath.endsWith('README.md')) {
+      return dirName;
+    }
+
+    return path.join(dirName, path.basename(relPath, path.extname(relPath)));
   }
 
-  async transform(context: TransformContext): Promise<void> {
-    const summaryDocs = await context
-      .findPages({
-        'frontmatter.type': 'documentation',
-        path: /SUMMARY.md$/
-      })
-      .toArray();
+  async data(page: any, context: TransformContext) {
+    let summary: any = undefined;
+    summary = await context.findPages({ path: path.join(this.path, 'SUMMARY.md') }).next();
+    if (summary && !this.links) {
+      this.links = extractLinks(summary.ast);
+    }
 
-    for await (const summaryDoc of summaryDocs) {
-      const dir = path.dirname(summaryDoc.path);
+    const links = new Links(this.links, this.path, path.relative(this.path, page.path), context.urls);
 
-      const docs = await context.findPages({
-        $and: [
-          { 'frontmatter.type': 'documentation' },
-          { path: { $regex: `^${dir}`} },
-          { path: { $ne: `${dir}/SUMMARY.md` } },
-        ]
-      }).toArray();
+    return {
+      ...page.frontmatter,
+      headings: this.headings(page.ast),
+      topic: links.topic,
+      next: links.next,
+      prev: links.prev,
+      summary: summary ? summary.renderable : undefined,
+    }
+  }
 
-      const slugMap = docs.reduce((slugMap, doc) => {
-        slugMap[path.relative(dir, doc.path)] = context.slugify(doc);
-        return slugMap;
-      }, {} as any);
-
-      const links = extractLinks(slugMap, summaryDoc.ast);
-
-      const next = (slug: string) => {
-        const idx = links.findIndex(link => link.slug === slug);
-        if (idx === -1 || idx === links.length - 1) {
-          return undefined;
-        }
-        const { topic, ...rest } = links[idx + 1];
-        return rest;
-      }
-
-      const prev = (slug: string) => {
-        const idx = links.findIndex(link => link.slug === slug);
-        if (idx === -1 || idx === 0) {
-          return undefined;
-        }
-        const { topic, ...rest } = links[idx - 1];
-        return rest;
-      }
-
-      const topic = (slug: string) => {
-        const idx = links.findIndex(link => link.slug === slug);
-        if (idx === -1) {
-          return undefined;
-        }
-        return links[idx].topic;
-      }
-
-      const config = {
-        tags: {
-          hint: new Hint(),
-          feature: new Feature(),
-        },
-        nodes: makeNodes(),
-        variables: {
-          context: 'Documentation',
-        }
-      };
-
-      const summaryRenderable = markdoc.transform(summaryDoc.ast, {
+  async transform(page: any, urls: Record<string, string>): Promise<RenderableTreeNode> {
+    if (path.basename(page.path) === 'SUMMARY.md') {
+      return markdoc.transform(page.ast, {
         tags: {},
         nodes: makeNodes(),
-        variables: { slugMap, context: 'DocumentationSummary' },
+        variables: {
+          context: 'DocumentationSummary',
+          urls,
+          path: this.path,
+        }
       });
-
-      for (const doc of docs) {
-        const slug = context.slugify(doc);
-
-        const variables: any = {
-          context: 'Documentation',
-          props: {
-            ...doc.frontmatter,
-            headings: this.headings(doc.ast),
-            topic: topic(slug),
-            next: next(slug),
-            prev: prev(slug),
-          },
-          nav: summaryRenderable,
-        };
-
-        await context.mount(slug, markdoc.transform(doc.ast, { ...config, variables }));
-      }
     }
+    
+    return markdoc.transform(page.ast, {
+      tags: {
+        hint: new Hint(),
+        feature: new Feature(),
+      },
+      nodes: makeNodes(),
+      variables: {
+        context: 'Documentation',
+        urls,
+        path: this.path,
+      }
+    });
   }
 
   private headings(ast: any) {

@@ -20,6 +20,33 @@ export class Build {
     await this.aetlan.loadAst();
     await this.aetlan.transform();
 
+    const { app: application, components } = await this.buildApp();
+    const renderer = new Renderer(components);
+
+    const pages = await this.aetlan.db.collection('routes').find().toArray();
+    const routes = pages.map(r => {
+      return {
+        path: r.url as string,
+        element: renderer.render(r.renderable),
+      }
+    });
+
+    for (const route of routes) {
+      const body = application(routes, route.path);
+
+      const html = fs.readFileSync(path.join(this.aetlan.root, 'src/main.html')).toString();
+      const dom = new JSDOM(html);
+      const app = dom.window.document.getElementById('app');
+      if (app) {
+        app.innerHTML = body;
+      }
+      await this.updateFile(path.join(route.path, 'index.html'), dom.serialize());
+    }
+
+    await this.updateFile('main.css', await this.aetlan.css());
+  }
+
+  private async buildApp() {
     const files = await glob.glob(path.join(this.aetlan.root, 'src/tags/**/*.jsx'));
 
     const imports = files.map(f => {
@@ -75,37 +102,15 @@ export class Build {
 
     vm.runInNewContext(build.outputFiles[0].text, sandbox);
 
-    const renderer = new Renderer(sandbox.components);
-
-    const renderables = await this.aetlan.pagesDb.collection('renderable').find().toArray();
-    const routes = renderables.map(r => {
-      return {
-        path: r._id as string,
-        element: renderer.render(r.renderable),
-      }
-    });
-
-    for (const route of routes) {
-      const body = sandbox.app(routes, route.path);
-
-      const html = fs.readFileSync(path.join(this.aetlan.root, 'src/main.html')).toString();
-      const dom = new JSDOM(html);
-      const app = dom.window.document.getElementById('app');
-      if (app) {
-        app.innerHTML = body;
-      }
-      await this.updateFile(path.join(route.path, 'index.html'), dom.serialize());
-    }
-
-    await this.updateFile('main.css', await this.aetlan.css());
+    return { app: sandbox.app, components: sandbox.components };
   }
 
   private async updateFile(name: string, content: string) {
     const _id = path.join(this.aetlan.root, 'out', name);
-    this.aetlan.store.logger.inScope('build').info(`write: '${_id}'`);
+    //this.aetlan.store.logger.inScope('build').info(`write: '${_id}'`);
 
-    await this.aetlan.pagesDb
-      .collection('target')
+    await this.aetlan.db
+      .collection('buildtarget')
       .replaceOne({ _id }, { _id, content }, { upsert: true });
   }
 }

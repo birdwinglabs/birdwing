@@ -20,7 +20,7 @@ function createAetlan(cfgPath: string) {
 
   return Aetlan.create(root, {
     page: new AetlanPages({ path: root }),
-    documentation: new AetlanDocs({ path: root }),
+    documentation: new AetlanDocs({ path: 'docs' }),
   });
 }
 

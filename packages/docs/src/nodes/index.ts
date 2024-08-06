@@ -6,13 +6,14 @@ const { Tag } = markdoc;
 
 export class Document {
   transform(node: any, config: any) {
-    if (config.variables.context === 'Documentation') {
-      return new Tag(config.variables.context, {...node.attributes, ...config.variables.props, nav: config.variables.nav}, [
-        ...node.transformChildren(config)
-      ]);
-    } else {
-      return new Tag(config.variables.context, node.attributes, node.transformChildren(config));
-    }
+    return new Tag(config.variables.context, node.attributes, node.transformChildren(config));
+    //if (config.variables.context === 'Documentation') {
+      //return new Tag(config.variables.context, node.attributes, [
+        //...node.transformChildren(config)
+      //]);
+    //} else {
+      //return new Tag(config.variables.context, node.attributes, node.transformChildren(config));
+    //}
   }
 }
 
