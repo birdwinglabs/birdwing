@@ -19,26 +19,19 @@ export class DevServer {
   }
 
   async run() {
-    //this.targetFiles = this.aetlan.db.collection('devtarget');
+    this.targetFiles = this.aetlan.db.collection('devtarget');
 
-    //const pageWatcher = chokidar.watch(path.join(this.aetlan.root, 'src/pages/**/*.md'));
-    //const srcWatcher = chokidar.watch(path.join(this.aetlan.root, 'src/**/*.jsx'));
+    const pageWatcher = chokidar.watch(path.join(this.aetlan.root, 'src/pages/**/*.md'));
+    const srcWatcher = chokidar.watch(path.join(this.aetlan.root, 'src/**/*.jsx'));
 
-    //await this.aetlan.loadAst();
-    //await this.aetlan.transform();
+    await this.aetlan.loadAst();
+    await this.aetlan.transform();
 
-    //pageWatcher.on('change', async filePath => {
-      //const doc = await this.aetlan.pagesDb.collection('source').aggregate()
-        //.match({ _id: filePath })
-        //.set({ ast: { $markdocToAst: '$body' }})
-        //.next();
+    pageWatcher.on('change', async filePath => {
+      await this.aetlan.reloadContent(filePath);
+    });
 
-      //if (doc) {
-        //this.aetlan.pagesDb.collection('ast').replaceOne({ _id: doc._id }, doc, { upsert: true });
-      //}
-    //});
-
-    //const astChangeStream = this.aetlan.pagesDb.collection('ast').watch();
+    //const astChangeStream = this.aetlan.db.collection('pagecache').watch();
     //astChangeStream.on('change', async change => {
       //if (change.operationType === 'replace') {
         //const doc = change.fullDocument;

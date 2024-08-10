@@ -12,22 +12,22 @@ import { fileURLToPath } from 'url';
 import React from 'react';
 
 import { JSDOM } from 'jsdom';
+import { Route } from '../interfaces.js';
 
 export class Build {
   constructor(private aetlan: Aetlan) {}
 
   async run() {
     await this.aetlan.loadAst();
-    await this.aetlan.transform();
+    const pages = await this.aetlan.transform();
 
     const { app: application, components } = await this.buildApp();
     const renderer = new Renderer(components);
 
-    const pages = await this.aetlan.db.collection('routes').find().toArray();
     const routes = pages.map(r => {
       return {
-        path: r.url as string,
-        element: renderer.render(r.renderable),
+        path: r.url,
+        element: renderer.render(r.tag),
       }
     });
 
