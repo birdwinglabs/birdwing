@@ -3,7 +3,8 @@ import { LogLevel } from '@tashmet/core';
 import mingo from '@tashmet/mingo';
 import Tashmet, { Document, Database, Filter, Collection } from '@tashmet/tashmet';
 import { terminal } from '@tashmet/terminal';
-import { Page, PageData, Plugin, Route, Fragment } from "./interfaces";
+import { Page, PageData, Plugin, Route, Fragment, FileHandler, PageFileHandler, FragmentFileHandler } from "./interfaces.js";
+import minimatch from 'minimatch';
 
 import tailwind from 'tailwindcss';
 import postcss from 'postcss';
@@ -65,15 +66,19 @@ export class Aetlan {
   public urls: Record<string, string> = {};
   private contentCache: Collection<PageData>;
 
-  static async create(root: string, plugins: Record<string, Plugin>) {
+  static async create(root: string, plugins: Plugin[]) {
     const db = await createDatabase(root);
+    const handlers: FileHandler[] = [];
+    for (const plugin of plugins) {
+      handlers.push(...plugin.handlers);
+    }
 
-    return new Aetlan(root, plugins, db);
+    return new Aetlan(root, handlers, db);
   }
 
   constructor(
     public readonly root: string,
-    private plugins: Record<string, Plugin>,
+    private handlers: FileHandler[],
     public db: Database,
   ) {
     this.contentCache = db.collection('pagecache');
@@ -101,31 +106,38 @@ export class Aetlan {
     return this.db.collection('pagecache').find(filter);
   }
 
+  private getFileHandler(content: PageData): FileHandler | null {
+    for (const handler of this.handlers) {
+      if (minimatch(content.path, handler.glob)) {
+        return handler;
+      }
+    }
+    return null;
+  }
+
   async createPages(): Promise<Page[]> {
     const pages: Page[] = [];
 
-    for (const plugin of Object.values(this.plugins)) {
-      for (const pageFact of plugin.pages) {
-        for await (const doc of this.contentCache.find(pageFact.match)) {
-          pages.push(await pageFact.create(doc));
-        }
+    for await (const content of this.contentCache.find()) {
+      const handler = this.getFileHandler(content);
+
+      if (handler instanceof PageFileHandler) {
+        pages.push(await handler.createPage(content));
       }
     }
-
     return pages;
   }
 
   async createFragments(urls: Record<string, string>): Promise<Fragment[]> {
     const fragments: Fragment[] = [];
 
-    for (const plugin of Object.values(this.plugins)) {
-      for (const fragmentFact of plugin.fragments) {
-        for await (const doc of this.contentCache.find(fragmentFact.match)) {
-          fragments.push(await fragmentFact.create(doc, urls));
-        }
+    for await (const content of this.contentCache.find()) {
+      const handler = this.getFileHandler(content);
+
+      if (handler instanceof FragmentFileHandler) {
+        fragments.push(await handler.createFragment(content, urls));
       }
     }
-
     return fragments;
   }
 

@@ -18,10 +18,10 @@ import pages from '@aetlan/pages';
 function createAetlan(cfgPath: string) {
   const root = path.dirname(cfgPath);
 
-  return Aetlan.create(root, {
-    page: pages({ path: root }),
-    documentation: docs({ path: 'docs' }),
-  });
+  return Aetlan.create(root, [
+    docs({ path: 'docs' }),
+    pages({ path: '/' }),
+  ]);
 }
 
 export function cli() {

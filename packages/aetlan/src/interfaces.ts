@@ -80,32 +80,40 @@ export interface Fragment extends Document {
   path: string;
 }
 
-export interface FragmentFactory<T extends Fragment = Fragment> {
-  match: Document;
-
-  create(doc: PageData, urls: Record<string, string>): Promise<T>;
+export interface FileHandler {
+  glob: string;
 }
 
-export interface PageFactory {
-  match: Document;
-  create: (doc: PageData) => Promise<Page>;
+export class FragmentFileHandler<T extends Fragment = Fragment> implements FileHandler {
+  constructor(
+    public readonly glob: string,
+    public createFragment: (doc: PageData, urls: Record<string, string>) => Promise<T>
+  ) {}
+}
+
+export class PageFileHandler implements FileHandler  {
+  constructor(
+    public readonly glob: string,
+    public createPage: (doc: PageData) => Promise<Page>
+  ) {}
 }
 
 export type PluginFactory = (config: any) => Plugin
 
 export class Plugin {
   constructor(
-    public pages: PageFactory[] = [],
-    public fragments: FragmentFactory[] = []
+    public handlers: FileHandler[] = [],
+    //public pages: PageFactory[] = [],
+    //public fragments: FragmentFactory[] = []
   ) {}
 
-  fragment(match: Document, create: (doc: PageData, urls: Record<string, string>) => Promise<Fragment>) {
-    this.fragments.push({ match, create });
+  page(glob: string, create: (doc: PageData) => Promise<Page>) {
+    this.handlers.push(new PageFileHandler(glob, create));
     return this;
   }
 
-  page(match: Document, create: (doc: PageData) => Promise<Page>) {
-    this.pages.push({ match, create });
+  fragment(glob: string, create: (doc: PageData, urls: Record<string, string>) => Promise<Fragment>) {
+    this.handlers.push(new FragmentFileHandler(glob, create));
     return this;
   }
 }

@@ -40,7 +40,7 @@ export class AetlanPage extends Page {
 
 export default function pages(config: PagesConfig) {
   return new Plugin()
-    .page({ 'frontmatter.type': 'page' }, async doc => new AetlanPage(doc, config.path));
+    .page('**/*.md', async doc => new AetlanPage(doc, config.path));
 }
 
   //private componentNames(tag: any): string[] {
