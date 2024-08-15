@@ -25,7 +25,9 @@ export class DevServer {
     const srcWatcher = chokidar.watch(path.join(this.aetlan.root, 'src/**/*.jsx'));
 
     await this.aetlan.loadAst();
-    await this.aetlan.transform();
+    const transformer = await this.aetlan.createTransformer();
+
+    await transformer.transform();
 
     pageWatcher.on('change', async filePath => {
       await this.aetlan.reloadContent(filePath);
@@ -89,13 +91,14 @@ export class DevServer {
 
     //this.aetlan.store.logger.inScope('server').info("Starting server...");
 
-    //const port = 3000;
-    //const server = this.createServer();
+    const port = 3000;
+    const server = this.createServer();
 
     //this.aetlan.store.logger.inScope('server').info(`Website ready at 'http://localhost:${port}'`);
     //new TashmetServer(this.aetlan.store, server).listen();
+    this.aetlan.createServer(server).listen();
 
-    //server.listen(port);
+    server.listen(port);
   }
 
   private async rebuild(ctx: esbuild.BuildContext) {

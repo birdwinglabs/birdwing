@@ -19,7 +19,8 @@ export class Build {
 
   async run() {
     await this.aetlan.loadAst();
-    const pages = await this.aetlan.transform();
+    const transformer = await this.aetlan.createTransformer();
+    const pages = await transformer.transform();
 
     const { app: application, components } = await this.buildApp();
     const renderer = new Renderer(components);

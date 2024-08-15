@@ -69,6 +69,8 @@ export abstract class Page {
 }
 
 export interface Route {
+  _id: string;
+
   url: string;
 
   tag: Tag;
