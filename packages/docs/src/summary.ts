@@ -3,7 +3,7 @@ import { makeNodes } from './nodes/index.js';
 import { PageData, Fragment } from '@aetlan/aetlan';
 import Markdoc from '@markdoc/markdoc';
 
-export class Summary implements Fragment {
+export class Summary extends Fragment {
   readonly name = 'summary';
 
   constructor(
@@ -11,7 +11,9 @@ export class Summary implements Fragment {
     public readonly path: string,
     private links: any,
     private urls: Record<string, string>
-  ) {}
+  ) {
+    super();
+  }
 
   static fromDocument(page: PageData, rootPath: string, urls: Record<string, string>) {
     let heading: string | undefined;

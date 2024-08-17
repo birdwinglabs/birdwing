@@ -1,7 +1,7 @@
 import Nabu from "@tashmet/nabu";
 import { LogLevel } from '@tashmet/core';
 import mingo from '@tashmet/mingo';
-import Tashmet, { Document, Database, Filter, Collection, ChangeStream } from '@tashmet/tashmet';
+import Tashmet, { Document, Database, Filter, Collection } from '@tashmet/tashmet';
 import { StorageEngine } from '@tashmet/engine';
 import { terminal } from '@tashmet/terminal';
 import { Page, PageData, Plugin, Route, Fragment, FileHandler, PageFileHandler, FragmentFileHandler } from "./interfaces.js";
@@ -15,9 +15,11 @@ import postcss from 'postcss';
 import markdocPlugin from './markdoc.js';
 import path from 'path';
 import fs from 'fs';
-import markdoc from "@markdoc/markdoc";
+import { Tag } from "@markdoc/markdoc";
+import ev from "eventemitter3";
 
-const { Tag } = markdoc;
+const { EventEmitter } = ev;
+
 
 async function createStorageEngine() {
   return Nabu
@@ -117,53 +119,10 @@ export class ContentFactory {
   }
 }
 
-export class Transformer {
-  constructor(
-    private content: Collection<PageData>,
-    private routes: Collection<Route>,
-    private contentFactory: ContentFactory,
-    private urls: Record<string, string>,
-    private fragments: Fragment[] = [],
-    private pages: Page[] = [],
-  ) {
-    content.watch().on('change', change => {
-      if (change.operationType === 'replace' && change.fullDocument) {
-        this.onContentReplaced(change.fullDocument);
-      }
-    });
+export class PageDataLoader {
+  constructor(private fragments: Fragment[]) {}
 
-    routes.watch().on('change', change => {
-      console.log(change);
-    });
-  }
-
-  static async initialize(
-    content: Collection<PageData>,
-    routes: Collection<Route>,
-    contentFactory: ContentFactory,
-  ) {
-    const contentDocs = await content.find().toArray();
-
-    const pages = await contentFactory.createPages(contentDocs);
-    const urls = pages.reduce((urls, page) => {
-      urls[page.path] = page.url || '';
-      return urls;
-    }, {} as Record<string, string>);
-
-    const fragments = await contentFactory.createFragments(contentDocs, urls);
-
-    return new Transformer(content, routes, contentFactory, urls, fragments, pages);
-  }
-
-  private async onContentReplaced(content: PageData) {
-    const pageOrFragment = await this.contentFactory.createContent(content, this.urls);
-
-    if (pageOrFragment instanceof Page) {
-      await this.transformPage(pageOrFragment);
-    }
-  }
-
-  private getPageData(page: Page) {
+  async getData(page: Page) {
     function isSubPath(dir: string, root: string) {
       const relative = path.relative(root, dir);
       return relative && !relative.startsWith('..') && !path.isAbsolute(relative);
@@ -179,22 +138,125 @@ export class Transformer {
     return page.data(f);
   }
 
-  async transform() {
-    for (const page of this.pages) {
-      await this.transformPage(page);
+  pushFragment(fragment: Fragment) {
+    for (let i=0; i<this.fragments.length; i++) {
+      if (this.fragments[i].name === fragment.name && this.fragments[i].path === fragment.path) {
+        this.fragments[i] = fragment;
+        return true;
+      }
     }
-    return this.routes.find().toArray();
+    this.fragments.push(fragment);
+    return false;
+  }
+}
+
+export class RenderablePage {
+  static fromPage(page: Page, dataLoader: PageDataLoader, urls: Record<string, string>) {
+    return new RenderablePage(
+      page.url, page.transform(urls) as Tag, () => dataLoader.getData(page)
+    );
+  }
+
+  constructor(
+    public url: string,
+    private tag: Tag,
+    private attributes: () => Promise<Document>
+  ) {}
+
+  async compile(): Promise<Tag> {
+    return { ...this.tag, attributes: await this.attributes() };
+  }
+}
+
+export class DevWatcher {
+  private pages: RenderablePage[] = [];
+
+  constructor(
+    private transformer: Transformer,
+    private content: Collection<PageData>,
+    private routes: Collection<Route>,
+  ) {
+    transformer.on('page-updated', async (page: RenderablePage) => {
+      await this.createRoute(page);
+    });
+    transformer.on('fragment-updated', async (fragment: Fragment) => {
+      for (const page of this.pages) {
+        await this.createRoute(page);
+      }
+    });
+    transformer.on('fragment-added', (fragment: Fragment) => {
+    });
+  }
+
+  async watch() {
+    this.pages = await this.transformer.transform();
+    for (const page of this.pages) {
+      await this.createRoute(page);
+    }
+    this.content.watch().on('change', change => {
+      if (change.operationType === 'replace' && change.fullDocument) {
+        this.transformer.pushContent(change.fullDocument);
+      }
+    });
+  }
+
+  private async createRoute(page: RenderablePage) {
+    const route: Route = { _id: page.url, url: page.url, tag: await page.compile() };
+    await this.routes.replaceOne({ _id: page.url }, route, { upsert: true });
+  }
+}
+
+export class Transformer extends EventEmitter {
+  constructor(
+    private contentFactory: ContentFactory,
+    private urls: Record<string, string>,
+    private dataLoader: PageDataLoader,
+    private pages: Page[] = [],
+  ) {
+    super();
+  }
+
+  static async initialize(
+    content: PageData[],
+    contentFactory: ContentFactory,
+  ) {
+    const pages = await contentFactory.createPages(content);
+    const urls = pages.reduce((urls, page) => {
+      urls[page.path] = page.url || '';
+      return urls;
+    }, {} as Record<string, string>);
+
+    const fragments = await contentFactory.createFragments(content, urls);
+
+    return new Transformer(contentFactory, urls, new PageDataLoader(fragments), pages);
+  }
+
+  async pushContent(content: PageData) {
+    const pageOrFragment = await this.contentFactory.createContent(content, this.urls);
+
+    if (pageOrFragment instanceof Page) {
+      const renderable = await this.transformPage(pageOrFragment);
+      this.emit('page-updated', renderable);
+    } else if (pageOrFragment instanceof Fragment) {
+      const updated = this.dataLoader.pushFragment(pageOrFragment);
+      if (updated) {
+        this.emit('fragment-updated', pageOrFragment);
+      } else {
+        this.emit('fragment-added', pageOrFragment);
+      }
+    }
+  }
+
+  async transform() {
+    const renderables: RenderablePage[] = [];
+    for (const page of this.pages) {
+      renderables.push(await this.transformPage(page));
+    }
+    return renderables;
   }
 
   private async transformPage(page: Page) {
-    const data = await this.getPageData(page);
-
-    const renderable = page.transform(this.urls);
-    if (renderable instanceof Tag) {
-      const tag = { ...renderable, attributes: data };
-      const route = { _id: page.id, url: page.url, tag };
-      await this.routes.replaceOne({ _id: page.id }, route, { upsert: true });
-    }
+    return RenderablePage.fromPage(page, this.dataLoader, this.urls);
   }
 }
 
@@ -222,8 +284,13 @@ export class Aetlan {
     this.contentCache = db.collection('pagecache');
   }
 
-  createTransformer() {
-    return Transformer.initialize(this.contentCache, this.db.collection('routes'), new ContentFactory(this.handlers));
+  async createDevWatcher() {
+    const t = await this.createTransformer();
+    return new DevWatcher(t, this.contentCache, this.db.collection('routes'));
+  }
+
+  async createTransformer() {
+    return Transformer.initialize(await this.contentCache.find().toArray(), new ContentFactory(this.handlers));
   }
 
   createServer(server: http.Server) {

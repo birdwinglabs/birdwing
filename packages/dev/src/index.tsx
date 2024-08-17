@@ -40,16 +40,24 @@ export default function App({ path, components }: any): JSX.Element {
         slug = slug.slice(0, -1);
       }
       db
-        .collection('renderable')
+        .collection('routes')
         .findOne({ _id: slug })
         .then(doc => {
           if (doc) {
-            setContent(doc.renderable);
+            setContent(doc.tag);
           }
         });
     }
 
   }, [location]);
+
+  function currentUrl() {
+    let path = window.location.pathname;
+    if (path !== '/' && path.endsWith('/')) {
+      path = path.slice(0, -1);
+    }
+    return path;
+  }
 
   React.useEffect(() => {
     const tashmet = new Tashmet(new ServerProxy('http://localhost:3000'));
@@ -58,28 +66,23 @@ export default function App({ path, components }: any): JSX.Element {
       .then(async tashmet =>  {
         console.log('connected to dev server');
 
-        const database = tashmet.db('pages');
-        const renderable = database.collection('renderable');
+        const database = tashmet.db('aetlan');
+        const routes = database.collection('routes');
         const devtarget = database.collection('devtarget');
 
-        let slug = window.location.pathname;
-        if (slug !== '/' && slug.endsWith('/')) {
-          slug = slug.slice(0, -1);
-        }
-
-        const doc = await renderable.findOne({ _id: slug });
+        const doc = await routes.findOne({ _id: currentUrl() });
 
         if (doc) {
-          setContent(doc.renderable);
+          setContent(doc.tag);
         }
 
-        const docWatcher = renderable.watch();
+        const docWatcher = routes.watch();
         const fileWatcher = devtarget.watch();
 
         docWatcher.on('change', change => {
           const doc = change.fullDocument;
-          if (doc) {
-            setContent(doc.renderable);
+          if (doc && doc._id === currentUrl()) {
+            setContent(doc.tag);
           }
         });
         fileWatcher.on('change', change => {

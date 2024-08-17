@@ -1,5 +1,3 @@
-import TashmetServer from '@tashmet/server';
-
 import http from 'http';
 import path from 'path';
 import fs from 'fs';
@@ -25,69 +23,58 @@ export class DevServer {
     const srcWatcher = chokidar.watch(path.join(this.aetlan.root, 'src/**/*.jsx'));
 
     await this.aetlan.loadAst();
-    const transformer = await this.aetlan.createTransformer();
+    const watcher = await this.aetlan.createDevWatcher();
 
-    await transformer.transform();
+    await watcher.watch();
 
     pageWatcher.on('change', async filePath => {
       await this.aetlan.reloadContent(filePath);
     });
 
-    //const astChangeStream = this.aetlan.db.collection('pagecache').watch();
-    //astChangeStream.on('change', async change => {
-      //if (change.operationType === 'replace') {
-        //const doc = change.fullDocument;
+    const files = await glob.glob(path.join(this.aetlan.root, 'src/tags/**/*.jsx'));
 
-        //if (doc) {
-          //await this.aetlan.replacePage(doc);
-        //}
-      //}
-    //});
+    const imports = files.map(f => {
+      const name = path.basename(f, path.extname(f));
+      const file = path.relative(path.join(this.aetlan.root, 'src'), f)
 
-    //const files = await glob.glob(path.join(this.aetlan.root, 'src/tags/**/*.jsx'));
+      return { name, file };
+    });
 
-    //const imports = files.map(f => {
-      //const name = path.basename(f, path.extname(f));
-      //const file = path.relative(path.join(this.aetlan.root, 'src'), f)
+    const code = `
+      import App from '@aetlan/dev';
+      import React from 'react';
+      import ReactDOM from 'react-dom/client';
+      import { createBrowserRouter, RouterProvider } from "react-router-dom";
+      ${imports.map(({ name, file}) => `import ${name} from './${file}';`).join('\n')}
 
-      //return { name, file };
-    //});
+      const components = { ${imports.map(({ name }) => `${name}: new ${name}()`).join(', ')} };
 
-    //const code = `
-      //import App from '@aetlan/dev';
-      //import React from 'react';
-      //import ReactDOM from 'react-dom/client';
-      //import { createBrowserRouter, RouterProvider } from "react-router-dom";
-      //${imports.map(({ name, file}) => `import ${name} from './${file}';`).join('\n')}
+      const container = document.getElementById('app');
 
-      //const components = { ${imports.map(({ name }) => `${name}: new ${name}()`).join(', ')} };
+      const router = createBrowserRouter([{
+        path: '*',
+        element: <App components={components}/>
+      }]);
 
-      //const container = document.getElementById('app');
+      ReactDOM.createRoot(container).render(<RouterProvider router={router} />);
+    `;
 
-      //const router = createBrowserRouter([{
-        //path: '*',
-        //element: <App components={components}/>
-      //}]);
+    let ctx = await esbuild.context({
+      stdin: {
+        contents: code,
+        loader: 'jsx',
+        resolveDir: path.join(this.aetlan.root, 'src'),
+      },
+      bundle: true,
+      outfile: path.join(this.aetlan.root, 'out/client.js'),
+      write: false,
+    });
 
-      //ReactDOM.createRoot(container).render(<RouterProvider router={router} />);
-    //`;
+    srcWatcher.on('change', async () => {
+      await this.rebuild(ctx);
+    });
 
-    //let ctx = await esbuild.context({
-      //stdin: {
-        //contents: code,
-        //loader: 'jsx',
-        //resolveDir: path.join(this.aetlan.root, 'src'),
-      //},
-      //bundle: true,
-      //outfile: path.join(this.aetlan.root, 'out/client.js'),
-      //write: false,
-    //});
-
-    //srcWatcher.on('change', async () => {
-      //await this.rebuild(ctx);
-    //});
-
-    //await this.rebuild(ctx);
+    await this.rebuild(ctx);
 
     //this.aetlan.store.logger.inScope('server').info("Starting server...");
 
@@ -95,7 +82,6 @@ export class DevServer {
     const server = this.createServer();
 
     //this.aetlan.store.logger.inScope('server').info(`Website ready at 'http://localhost:${port}'`);
-    //new TashmetServer(this.aetlan.store, server).listen();
     this.aetlan.createServer(server).listen();
 
     server.listen(port);
@@ -121,7 +107,7 @@ export class DevServer {
     return http.createServer(async (req, res) => {
       const url = req.url || '';
       const doc = await this.aetlan.db
-        .collection('renderable')
+        .collection('routes')
         .findOne({ _id: url !== '/' ? url.replace(/\/$/, "") : url });
 
       if (doc) {

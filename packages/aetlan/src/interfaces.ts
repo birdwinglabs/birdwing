@@ -1,18 +1,5 @@
 import markdoc, { Node, RenderableTreeNode, Tag } from "@markdoc/markdoc";
-import Tashmet, { Document, Filter, FindCursor } from "@tashmet/tashmet";
-
-//export interface File {
-  //path: string;
-
-  //content: string;
-//}
-
-
-//export interface Target {
-  //component(name: string, filePath: string, prerender: boolean): Promise<void>;
-
-  //transforms: Record<string, Transform>;
-//}
+import { Document } from "@tashmet/tashmet";
 
 export interface RenderableDocument {
   _id: string;
@@ -76,10 +63,10 @@ export interface Route {
   tag: Tag;
 }
 
-export interface Fragment extends Document {
-  name: string;
+export abstract class Fragment {
+  abstract name: string;
 
-  path: string;
+  abstract path: string;
 }
 
 export interface FileHandler {
@@ -105,8 +92,6 @@ export type PluginFactory = (config: any) => Plugin
 export class Plugin {
   constructor(
     public handlers: FileHandler[] = [],
-    //public pages: PageFactory[] = [],
-    //public fragments: FragmentFactory[] = []
   ) {}
 
   page(glob: string, create: (doc: PageData) => Promise<Page>) {

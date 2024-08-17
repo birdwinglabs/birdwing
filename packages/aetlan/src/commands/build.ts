@@ -20,17 +20,17 @@ export class Build {
   async run() {
     await this.aetlan.loadAst();
     const transformer = await this.aetlan.createTransformer();
-    const pages = await transformer.transform();
 
     const { app: application, components } = await this.buildApp();
     const renderer = new Renderer(components);
 
-    const routes = pages.map(r => {
-      return {
-        path: r.url,
-        element: renderer.render(r.tag),
-      }
-    });
+    const routes: any[] = [];
+    for (const page of await transformer.transform()) {
+      routes.push({
+        path: page.url,
+        element: renderer.render(await page.compile())
+      });
+    }
 
     for (const route of routes) {
       const body = application(routes, route.path);
