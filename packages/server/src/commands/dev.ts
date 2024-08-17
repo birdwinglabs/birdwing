@@ -6,11 +6,10 @@ import * as glob from 'glob';
 import * as esbuild from 'esbuild'
 import * as chokidar from 'chokidar';
 
-import { createFileHandlers, Aetlan, generateCss } from '../aetlan.js';
+import { generateCss } from '../css.js';
 import { createDatabase, createStorageEngine } from '../database.js';
-import { Fragment, PageData, Plugin } from '../interfaces.js';
-import { RenderablePage, Transformer } from '../transformer.js';
-import { ContentFactory } from '../contentFactory.js';
+
+import { Aetlan, Fragment, PageData, Plugin, RenderablePage, Transformer, ContentFactory, createFileHandlers } from '@aetlan/aetlan';
 import { StorageEngine } from '@tashmet/engine';
 import TashmetServer from '@tashmet/server';
 

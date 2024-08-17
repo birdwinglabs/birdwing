@@ -1,5 +1,5 @@
 import { program } from 'commander';
-import { Build, DevServer, Preview } from '@aetlan/aetlan';
+import { Build, DevServer, Preview } from '@aetlan/server';
 import path from 'path';
 import docs from '@aetlan/docs';
 import pages from '@aetlan/pages';

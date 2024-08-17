@@ -4,18 +4,15 @@ import fs from 'fs';
 import * as glob from 'glob';
 import * as esbuild from 'esbuild'
 
-import { createFileHandlers, Aetlan, generateCss } from '../aetlan.js';
-import { Renderer } from '../renderer.js';
+import { generateCss } from '../css.js';
+import { createDatabase, createStorageEngine } from '../database.js';
+import { createFileHandlers, Aetlan, Renderer, Plugin, ContentFactory, Transformer } from '@aetlan/aetlan';
 import vm from 'vm';
 import { createRequire } from 'module';
 import { fileURLToPath } from 'url';
 import React from 'react';
 
 import { JSDOM } from 'jsdom';
-import { Plugin } from '../interfaces.js';
-import { createDatabase, createStorageEngine } from '../database.js';
-import { Transformer } from '../transformer.js';
-import { ContentFactory } from '../contentFactory.js';
 
 export class Build {
   constructor(

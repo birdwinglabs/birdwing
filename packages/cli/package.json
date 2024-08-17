@@ -20,7 +20,7 @@
     "access": "public"
   },
   "dependencies": {
-    "@aetlan/aetlan": "^0.1.0",
+    "@aetlan/server": "^0.1.0",
     "@aetlan/docs": "^0.1.0",
     "@aetlan/pages": "^0.1.0",
     "commander": "12.0.0",
