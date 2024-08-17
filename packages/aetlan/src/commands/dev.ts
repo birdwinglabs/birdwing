@@ -32,32 +32,7 @@ export class DevServer {
     });
 
     const files = await glob.glob(path.join(this.aetlan.root, 'src/tags/**/*.jsx'));
-
-    const imports = files.map(f => {
-      const name = path.basename(f, path.extname(f));
-      const file = path.relative(path.join(this.aetlan.root, 'src'), f)
-
-      return { name, file };
-    });
-
-    const code = `
-      import App from '@aetlan/dev';
-      import React from 'react';
-      import ReactDOM from 'react-dom/client';
-      import { createBrowserRouter, RouterProvider } from "react-router-dom";
-      ${imports.map(({ name, file}) => `import ${name} from './${file}';`).join('\n')}
-
-      const components = { ${imports.map(({ name }) => `${name}: new ${name}()`).join(', ')} };
-
-      const container = document.getElementById('app');
-
-      const router = createBrowserRouter([{
-        path: '*',
-        element: <App components={components}/>
-      }]);
-
-      ReactDOM.createRoot(container).render(<RouterProvider router={router} />);
-    `;
+    const code = this.createClientCode(files);
 
     let ctx = await esbuild.context({
       stdin: {
@@ -85,6 +60,34 @@ export class DevServer {
     this.aetlan.createServer(server).listen();
 
     server.listen(port);
+  }
+
+  private createClientCode(jsxFiles: string[]) {
+    const imports = jsxFiles.map(f => {
+      const name = path.basename(f, path.extname(f));
+      const file = path.relative(path.join(this.aetlan.root, 'src'), f)
+
+      return { name, file };
+    });
+
+    return `
+      import App from '@aetlan/dev';
+      import React from 'react';
+      import ReactDOM from 'react-dom/client';
+      import { createBrowserRouter, RouterProvider } from "react-router-dom";
+      ${imports.map(({ name, file}) => `import ${name} from './${file}';`).join('\n')}
+
+      const components = { ${imports.map(({ name }) => `${name}: new ${name}()`).join(', ')} };
+
+      const container = document.getElementById('app');
+
+      const router = createBrowserRouter([{
+        path: '*',
+        element: <App components={components}/>
+      }]);
+
+      ReactDOM.createRoot(container).render(<RouterProvider router={router} />);
+    `;
   }
 
   private async rebuild(ctx: esbuild.BuildContext) {
