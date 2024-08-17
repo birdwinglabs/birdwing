@@ -4,10 +4,6 @@ import { Feature } from './tags/feature.js';
 import { Cta } from './tags/cta.js';
 
 
-interface PagesConfig {
-  path: string;
-}
-
 export class AetlanPage extends Page {
   context: 'Page';
   tags = {
@@ -38,9 +34,9 @@ export class AetlanPage extends Page {
   }
 }
 
-export default function pages(config: PagesConfig) {
+export default function pages() {
   return new Plugin()
-    .page('**/*.md', async doc => new AetlanPage(doc, config.path));
+    .page('**/*.md', async doc => new AetlanPage(doc, '/'));
 }
 
   //private componentNames(tag: any): string[] {
