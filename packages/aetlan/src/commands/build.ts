@@ -4,7 +4,7 @@ import fs from 'fs';
 import * as glob from 'glob';
 import * as esbuild from 'esbuild'
 
-import { Aetlan } from '../aetlan.js';
+import { createFileHandlers, Aetlan, generateCss } from '../aetlan.js';
 import { Renderer } from '../renderer.js';
 import vm from 'vm';
 import { createRequire } from 'module';
@@ -12,20 +12,37 @@ import { fileURLToPath } from 'url';
 import React from 'react';
 
 import { JSDOM } from 'jsdom';
-import { Route } from '../interfaces.js';
+import { Plugin } from '../interfaces.js';
+import { createDatabase, createStorageEngine } from '../database.js';
+import { Transformer } from '../transformer.js';
+import { ContentFactory } from '../contentFactory.js';
 
 export class Build {
-  constructor(private aetlan: Aetlan) {}
+  constructor(
+    private aetlan: Aetlan,
+    private transformer: Transformer,
+    private root: string
+  ) {}
+
+  static async create(root: string, plugins: Plugin[]) {
+    const store = await createStorageEngine();
+    const db = await createDatabase(store, root, false);
+    const handlers = createFileHandlers(plugins);
+
+    const aetlan = await Aetlan.load(db);
+    const transformer = await Transformer.initialize(
+      await aetlan.findContent({}).toArray(), new ContentFactory(handlers)
+    );
+
+    return new Build(aetlan, transformer, root);
+  }
 
   async run() {
-    await this.aetlan.loadAst();
-    const transformer = await this.aetlan.createTransformer();
-
     const { app: application, components } = await this.buildApp();
     const renderer = new Renderer(components);
 
     const routes: any[] = [];
-    for (const page of await transformer.transform()) {
+    for (const page of await this.transformer.transform()) {
       routes.push({
         path: page.url,
         element: renderer.render(await page.compile())
@@ -35,7 +52,7 @@ export class Build {
     for (const route of routes) {
       const body = application(routes, route.path);
 
-      const html = fs.readFileSync(path.join(this.aetlan.root, 'src/main.html')).toString();
+      const html = fs.readFileSync(path.join(this.root, 'src/main.html')).toString();
       const dom = new JSDOM(html);
       const app = dom.window.document.getElementById('app');
       if (app) {
@@ -44,15 +61,15 @@ export class Build {
       await this.updateFile(path.join(route.path, 'index.html'), dom.serialize());
     }
 
-    await this.updateFile('main.css', await this.aetlan.css());
+    await this.updateFile('main.css', await generateCss(this.root));
   }
 
   private async buildApp() {
-    const files = await glob.glob(path.join(this.aetlan.root, 'src/tags/**/*.jsx'));
+    const files = await glob.glob(path.join(this.root, 'src/tags/**/*.jsx'));
 
     const imports = files.map(f => {
       const name = path.basename(f, path.extname(f));
-      const file = path.relative(path.join(this.aetlan.root, 'src'), f)
+      const file = path.relative(path.join(this.root, 'src'), f)
 
       return { name, file };
     });
@@ -80,7 +97,7 @@ export class Build {
       stdin: {
         contents: code,
         loader: 'jsx',
-        resolveDir: path.join(this.aetlan.root, 'src'),
+        resolveDir: path.join(this.root, 'src'),
       },
       bundle: true,
       format: 'cjs',
@@ -107,11 +124,6 @@ export class Build {
   }
 
   private async updateFile(name: string, content: string) {
-    const _id = path.join(this.aetlan.root, 'out', name);
-    //this.aetlan.store.logger.inScope('build').info(`write: '${_id}'`);
-
-    await this.aetlan.db
-      .collection('buildtarget')
-      .replaceOne({ _id }, { _id, content }, { upsert: true });
+    await this.aetlan.write(path.join(this.root, 'out', name), content);
   }
 }

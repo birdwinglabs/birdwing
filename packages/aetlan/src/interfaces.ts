@@ -63,6 +63,12 @@ export interface Route {
   tag: Tag;
 }
 
+export interface TargetFile {
+  _id: string;
+
+  content: string;
+}
+
 export abstract class Fragment {
   abstract name: string;
 

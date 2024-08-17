@@ -17,7 +17,7 @@ export class RenderablePage {
   constructor(
     public url: string,
     private tag: Tag,
-    private attributes: () => Promise<Document>
+    public attributes: () => Promise<Document>
   ) {}
 
   async compile(): Promise<Tag> {

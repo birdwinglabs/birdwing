@@ -1,126 +1,106 @@
-import { Document, Database, Filter, Collection } from '@tashmet/tashmet';
-import { StorageEngine } from '@tashmet/engine';
-import { PageData, Plugin, Route, Fragment, FileHandler } from "./interfaces.js";
-import TashmetServer from '@tashmet/server';
-import http from 'http';
+import { Database, Filter, Collection } from '@tashmet/tashmet';
+import { PageData, Plugin, Route, Fragment, FileHandler, TargetFile } from "./interfaces.js";
 
 import tailwind from 'tailwindcss';
 import postcss from 'postcss';
 
 import path from 'path';
 import fs from 'fs';
-import { ContentFactory } from "./contentFactory.js";
-import { createDatabase, createStorageEngine } from './database.js';
-import { RenderablePage, Transformer } from './transformer.js';
+import ev from "eventemitter3";
+import { RenderablePage } from './transformer.js';
 
+const { EventEmitter } = ev;
 
-export class DevWatcher {
-  private pages: RenderablePage[] = [];
-
+export class Aetlan extends EventEmitter {
   constructor(
-    private transformer: Transformer,
-    private content: Collection<PageData>,
+    private source: Collection,
+    private cache: Collection<PageData>,
     private routes: Collection<Route>,
+    private target: Collection<TargetFile>,
   ) {
-    transformer.on('page-updated', async (page: RenderablePage) => {
-      await this.createRoute(page);
-    });
-    transformer.on('fragment-updated', async (fragment: Fragment) => {
-      for (const page of this.pages) {
-        await this.createRoute(page);
-      }
-    });
-    transformer.on('fragment-added', (fragment: Fragment) => {
-    });
-  }
-
-  async watch() {
-    this.pages = await this.transformer.transform();
-    for (const page of this.pages) {
-      await this.createRoute(page);
-    }
-    this.content.watch().on('change', change => {
+    super();
+    cache.watch().on('change', change => {
       if (change.operationType === 'replace' && change.fullDocument) {
-        this.transformer.pushContent(change.fullDocument);
+        this.emit('content-changed', change.fullDocument);
       }
     });
   }
 
-  private async createRoute(page: RenderablePage) {
-    const route: Route = { _id: page.url, url: page.url, tag: await page.compile() };
-    await this.routes.replaceOne({ _id: page.url }, route, { upsert: true });
-  }
-}
+  static async load(db: Database): Promise<Aetlan> {
+    const source = db.collection('pagesource');
+    const cache = db.collection<PageData>('pagecache');
+    const routes = db.collection<Route>('routes');
+    const target = db.collection<TargetFile>('target');
 
-export class Aetlan {
-  public urls: Record<string, string> = {};
-  private contentCache: Collection<PageData>;
+    await source.aggregate([
+      { $set: { ast: { $markdocToAst: '$body' } } },
+      { $out: cache.collectionName }
+    ]).toArray();
 
-  static async create(root: string, plugins: Plugin[]) {
-    const store = await createStorageEngine();
-    const db = await createDatabase(store, root);
-    const handlers: FileHandler[] = [];
-    for (const plugin of plugins) {
-      handlers.push(...plugin.handlers);
-    }
-
-    return new Aetlan(root, handlers, db, store);
+    return new Aetlan(source, cache, routes, target);
   }
 
-  constructor(
-    public readonly root: string,
-    private handlers: FileHandler[],
-    public db: Database,
-    private store: StorageEngine,
-  ) {
-    this.contentCache = db.collection('pagecache');
-  }
-
-  async createDevWatcher() {
-    const t = await this.createTransformer();
-    return new DevWatcher(t, this.contentCache, this.db.collection('routes'));
-  }
-
-  async createTransformer() {
-    return Transformer.initialize(await this.contentCache.find().toArray(), new ContentFactory(this.handlers));
-  }
-
-  createServer(server: http.Server) {
-    return new TashmetServer(this.store, server);
-  }
-
-  async reloadContent(filePath: string) {
-    const doc = await this.db.collection('pagesource').aggregate<PageData>()
-      .match({ _id: filePath })
+  async reloadContent(file: string) {
+    const doc = await this.source.aggregate<PageData>()
+      .match({ _id: file })
       .set({ ast: { $markdocToAst: '$body' }})
       .next();
 
     if (doc) {
-      await this.contentCache.replaceOne({ _id: doc._id }, doc, { upsert: true });
+      await this.cache.replaceOne({ _id: doc._id }, doc, { upsert: true });
     }
   }
 
-  async loadAst() {
-    await this.db.collection('pagesource').aggregate([
-      { $set: { ast: { $markdocToAst: '$body' } } },
-      { $out: 'pagecache' }
-    ]).toArray();
+  findContent(filter: Filter<PageData>) {
+    return this.cache.find(filter);
   }
 
-  findPages(filter: Filter<Document>) {
-    return this.db.collection('pagecache').find(filter);
+  getRoute(url: string) {
+    return this.routes.findOne({ _id: url !== '/' ? url.replace(/\/$/, "") : url });
   }
 
-  async css() {
-    const cssProc = postcss([
-      tailwind({
-        config: path.join(this.root, 'tailwind.config.js'),
-      })
-    ]);
-
-    const cssPath = path.join(this.root, 'src/main.css');
-    const css = await cssProc.process(fs.readFileSync(cssPath), { from: cssPath, to: path.join(this.root, 'out/main.css') });
-
-    return css.css;
+  async updateRoute(page: RenderablePage) {
+    const route: Route = { _id: page.url, url: page.url, tag: await page.compile() };
+    await this.routes.replaceOne({ _id: page.url }, route, { upsert: true });
   }
+
+  async updateRouteAttributes(page: RenderablePage) {
+    await this.routes.updateOne(
+      { _id: page.url }, { $set: { 'tag.attributes': await page.attributes() } }
+    );
+  }
+
+  async write(file: string, content: string) {
+    await this.target.replaceOne({ _id: file }, { _id: file, content }, { upsert: true });
+  }
+
+  async getOutput(file: string): Promise<string | null> {
+    const f = await this.target.findOne({ _id: file });
+    if (f) {
+      return f.content;
+    }
+    return null;
+  }
+}
+
+
+export function createFileHandlers(plugins: Plugin[]) {
+  const handlers: FileHandler[] = [];
+  for (const plugin of plugins) {
+    handlers.push(...plugin.handlers);
+  }
+  return handlers;
+}
+
+export async function generateCss(root: string) {
+  const cssProc = postcss([
+    tailwind({
+      config: path.join(root, 'tailwind.config.js'),
+    })
+  ]);
+
+  const cssPath = path.join(root, 'src/main.css');
+  const css = await cssProc.process(fs.readFileSync(cssPath), { from: cssPath, to: path.join(root, 'out/main.css') });
+
+  return css.css;
 }

@@ -6,42 +6,89 @@ import * as glob from 'glob';
 import * as esbuild from 'esbuild'
 import * as chokidar from 'chokidar';
 
-import { Aetlan } from '../aetlan.js';
-import { Collection } from '@tashmet/tashmet';
+import { createFileHandlers, Aetlan, generateCss } from '../aetlan.js';
+import { createDatabase, createStorageEngine } from '../database.js';
+import { Fragment, PageData, Plugin } from '../interfaces.js';
+import { RenderablePage, Transformer } from '../transformer.js';
+import { ContentFactory } from '../contentFactory.js';
+import { StorageEngine } from '@tashmet/engine';
+import TashmetServer from '@tashmet/server';
 
+
+export class DevContentWatcher {
+  private pages: RenderablePage[] = [];
+
+  constructor(
+    private transformer: Transformer,
+    private aetlan: Aetlan
+  ) {
+    transformer.on('page-updated', async (page: RenderablePage) => {
+      await this.aetlan.updateRoute(page);
+    });
+    transformer.on('fragment-updated', async (fragment: Fragment) => {
+      for (const page of this.pages) {
+        await this.aetlan.updateRouteAttributes(page);
+      }
+    });
+    transformer.on('fragment-added', (fragment: Fragment) => {
+    });
+  }
+
+  async watch() {
+    this.pages = await this.transformer.transform();
+    for (const page of this.pages) {
+      await this.aetlan.updateRoute(page);
+    }
+    this.aetlan.on('content-changed', (content: PageData) => {
+      this.transformer.pushContent(content);
+    });
+  }
+}
 
 export class DevServer {
-  private targetFiles: Collection;
+  constructor(
+    private aetlan: Aetlan,
+    private watcher: DevContentWatcher,
+    private store: StorageEngine,
+    private root: string
+  ) {
+  }
 
-  constructor(private aetlan: Aetlan) {
+  static async create(root: string, plugins: Plugin[]) {
+    const store = await createStorageEngine();
+    const db = await createDatabase(store, root, true);
+    const handlers = createFileHandlers(plugins);
+
+    const aetlan = await Aetlan.load(db);
+    const transformer = await Transformer.initialize(
+      await aetlan.findContent({}).toArray(), new ContentFactory(handlers)
+    );
+    const contentWatcher = new DevContentWatcher(transformer, aetlan);
+
+    return new DevServer(aetlan, contentWatcher, store, root);
   }
 
   async run() {
-    this.targetFiles = this.aetlan.db.collection('devtarget');
+    const pageWatcher = chokidar.watch(path.join(this.root, 'src/pages/**/*.md'));
+    const srcWatcher = chokidar.watch(path.join(this.root, 'src/**/*.jsx'));
 
-    const pageWatcher = chokidar.watch(path.join(this.aetlan.root, 'src/pages/**/*.md'));
-    const srcWatcher = chokidar.watch(path.join(this.aetlan.root, 'src/**/*.jsx'));
-
-    await this.aetlan.loadAst();
-    const watcher = await this.aetlan.createDevWatcher();
-
-    await watcher.watch();
+    await this.watcher.watch();
 
     pageWatcher.on('change', async filePath => {
       await this.aetlan.reloadContent(filePath);
     });
 
-    const files = await glob.glob(path.join(this.aetlan.root, 'src/tags/**/*.jsx'));
+    const files = await glob.glob(path.join(this.root, 'src/tags/**/*.jsx'));
     const code = this.createClientCode(files);
 
     let ctx = await esbuild.context({
       stdin: {
         contents: code,
         loader: 'jsx',
-        resolveDir: path.join(this.aetlan.root, 'src'),
+        resolveDir: path.join(this.root, 'src'),
       },
       bundle: true,
-      outfile: path.join(this.aetlan.root, 'out/client.js'),
+      outfile: path.join(this.root, 'out/client.js'),
       write: false,
     });
 
@@ -51,13 +98,13 @@ export class DevServer {
 
     await this.rebuild(ctx);
 
-    //this.aetlan.store.logger.inScope('server').info("Starting server...");
+    this.store.logger.inScope('server').info("Starting server...");
 
     const port = 3000;
     const server = this.createServer();
 
-    //this.aetlan.store.logger.inScope('server').info(`Website ready at 'http://localhost:${port}'`);
-    this.aetlan.createServer(server).listen();
+    this.store.logger.inScope('server').info(`Website ready at 'http://localhost:${port}'`);
+    new TashmetServer(this.store, server).listen();
 
     server.listen(port);
   }
@@ -65,7 +112,7 @@ export class DevServer {
   private createClientCode(jsxFiles: string[]) {
     const imports = jsxFiles.map(f => {
       const name = path.basename(f, path.extname(f));
-      const file = path.relative(path.join(this.aetlan.root, 'src'), f)
+      const file = path.relative(path.join(this.root, 'src'), f)
 
       return { name, file };
     });
@@ -91,37 +138,29 @@ export class DevServer {
   }
 
   private async rebuild(ctx: esbuild.BuildContext) {
-    //this.aetlan.store.logger.inScope('server').info("Building...");
+    this.store.logger.inScope('server').info("Building...");
 
     const buildRes = await ctx.rebuild();
     if (buildRes.outputFiles) {
-      await this.updateFile('/app.js', buildRes.outputFiles[0].text);
+      await this.aetlan.write('/app.js', buildRes.outputFiles[0].text);
     }
-    await this.updateFile('/main.css', await this.aetlan.css());
+    await this.aetlan.write('/main.css', await generateCss(this.root));
 
-    //this.aetlan.store.logger.inScope('server').info("Done");
-  }
-
-  private async updateFile(name: string, content: string) {
-    await this.targetFiles.replaceOne({ _id: name }, { _id: name, content }, { upsert: true });
+    this.store.logger.inScope('server').info("Done");
   }
 
   private createServer() {
     return http.createServer(async (req, res) => {
       const url = req.url || '';
-      const doc = await this.aetlan.db
-        .collection('routes')
-        .findOne({ _id: url !== '/' ? url.replace(/\/$/, "") : url });
+      const route = await this.aetlan.getRoute(url);
 
-      if (doc) {
-        var stream = fs.createReadStream(path.join(this.aetlan.root, 'src/main.html'));
+      if (route) {
+        var stream = fs.createReadStream(path.join(this.root, 'src/main.html'));
         stream.pipe(res);
       } else {
-        const file = await this.targetFiles.findOne({ _id: req.url });
-        if (file) {
-          res.write(file.content);
-          res.end();
-        }
+        const content = await this.aetlan.getOutput(req.url || '');
+        res.write(content || '');
+        res.end();
       }
     });
   }

@@ -19,7 +19,7 @@ export async function createStorageEngine(): Promise<StorageEngine> {
     .bootstrap();
 }
 
-export async function createDatabase(store: StorageEngine, root: string): Promise<Database> {
+export async function createDatabase(store: StorageEngine, root: string, dev: boolean): Promise<Database> {
   const tashmet = await Tashmet.connect(store.proxy());
   const db = tashmet.db('aetlan');
   const pagesPath = path.join(root, 'src/pages');
@@ -43,15 +43,19 @@ export async function createDatabase(store: StorageEngine, root: string): Promis
   });
   await db.createCollection('pagecache');
   await db.createCollection('routes');
-  await db.createCollection('devtarget');
-  await db.createCollection('buildtarget', {
-    storageEngine: {
-      glob: {
-        pattern: path.join(root, 'out', '**/*'),
-        format: 'text',
-      }
-    }
-  });
+
+  const targetOptions = dev
+    ? undefined
+    : {
+        storageEngine: {
+          glob: {
+            pattern: path.join(root, 'out', '**/*'),
+            format: 'text',
+          }
+        }
+      };
+
+  await db.createCollection('target', targetOptions);
 
   return db;
 }
