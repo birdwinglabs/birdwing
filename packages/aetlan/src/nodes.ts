@@ -1,4 +1,5 @@
 import markdoc from '@markdoc/markdoc';
+import nodePath from 'path';
 
 const { Tag } = markdoc;
 
@@ -84,6 +85,16 @@ export class Link {
   };
 
   transform(node: any, config: any) {
-    return new Tag(`${config.variables.context}.link`, node.attributes, node.transformChildren(config));
+    const { urls, path, context } = config.variables || {};
+    let attributes = node.attributes;
+    const absPath = path !== '/'
+      ? nodePath.join(path, node.attributes.href)
+      : node.attributes.href;
+
+    if (absPath in (urls || {})) {
+      const href = urls[absPath];
+      attributes = { ...attributes, href };
+    }
+    return new Tag(`${context}.link`, attributes, node.transformChildren(config));
   }
 }

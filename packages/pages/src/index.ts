@@ -1,23 +1,22 @@
 import path from 'path';
-import { Document, Fence, Heading, Link, List, Page, Paragraph, Plugin } from '@aetlan/aetlan';
+import { nodes, Page, Plugin } from '@aetlan/aetlan';
 import { Feature } from './tags/feature.js';
 import { Cta } from './tags/cta.js';
+import { Menu } from './menu.js';
 
+export { Menu };
+
+interface PageFragments {
+  menu: Menu;
+}
 
 export class AetlanPage extends Page {
-  context: 'Page';
+  context = 'Page';
   tags = {
     feature: new Feature(),
     cta: new Cta(),
   };
-  nodes = {
-    document: new Document(),
-    paragraph: new Paragraph(),
-    fence: new Fence(),
-    list: new List(),
-    link: new Link(),
-    heading: new Heading(),
-  };
+  nodes = nodes;
 
   get url(): string {
     if (this.page.frontmatter.slug) {
@@ -32,10 +31,18 @@ export class AetlanPage extends Page {
 
     return path.join(dirName, path.basename(relPath, path.extname(relPath)));
   }
+
+  async data({ menu }: PageFragments) {
+    return {
+      ...this.page.frontmatter,
+      menu: menu.renderable
+    };
+  }
 }
 
 export default function pages() {
   return new Plugin()
+    .fragment('MENU.md', async (doc, urls) => Menu.fromDocument(doc, urls))
     .page('**/*.md', async doc => new AetlanPage(doc, '/'));
 }
 

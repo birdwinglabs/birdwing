@@ -1,6 +1,5 @@
 import path from 'path';
-import { makeNodes } from './nodes/index.js';
-import { PageData, Fragment } from '@aetlan/aetlan';
+import { PageData, Fragment, nodes } from '@aetlan/aetlan';
 import Markdoc from '@markdoc/markdoc';
 
 export class Summary extends Fragment {
@@ -21,7 +20,7 @@ export class Summary extends Fragment {
 
     const renderable = Markdoc.transform(page.ast, {
       tags: {},
-      nodes: makeNodes(),
+      nodes,
       variables: {
         context: 'DocumentationSummary',
         urls,

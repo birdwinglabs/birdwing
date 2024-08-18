@@ -1,11 +1,14 @@
 import path from 'path';
-import { makeNodes } from './nodes/index.js';
-import { Page, PageData } from '@aetlan/aetlan';
+import { Page, PageData, nodes } from '@aetlan/aetlan';
 import { Hint, Feature } from './tags/index.js';
 import { Summary } from './summary.js';
+import { Menu } from '@aetlan/pages';
+
 
 interface DocFragments {
   summary: Summary;
+
+  menu: Menu;
 }
 
 export class DocPage extends Page {
@@ -14,7 +17,7 @@ export class DocPage extends Page {
     hint: new Hint(),
     feature: new Feature(),
   };
-  nodes = makeNodes();
+  nodes = nodes;
 
   constructor(
     page: PageData,
@@ -35,7 +38,7 @@ export class DocPage extends Page {
     return path.join(dirName, path.basename(relPath, path.extname(relPath)));
   }
 
-  async data({ summary }: DocFragments) {
+  async data({ summary, menu }: DocFragments) {
     const p = path.relative(this.root, this.page.path);
 
     return {
@@ -45,6 +48,7 @@ export class DocPage extends Page {
       next: summary.next(p),
       prev: summary.prev(p),
       summary: summary.renderable,
+      menu: menu.renderable,
     }
   }
 
