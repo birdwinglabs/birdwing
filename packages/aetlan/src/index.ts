@@ -1,4 +1,5 @@
-import { FileHandler, Plugin } from './interfaces.js';
+import { FileHandler } from './interfaces.js';
+import { Plugin } from './plugin.js';
 import { Document, Paragraph, Heading, List, Link, Fence } from './nodes.js';
 
 export * from './interfaces.js';
@@ -7,7 +8,11 @@ export * from './nodes.js';
 export { Aetlan } from './aetlan.js';
 export { ContentFactory } from './contentFactory.js';
 export { Renderer } from './renderer.js';
-export { Transformer, RenderablePage } from './transformer.js';
+export { Transformer } from './transformer.js';
+export { Page, RenderablePage } from './page.js';
+export { Fragment } from './fragment.js';
+
+export { Plugin };
 
 
 export function createFileHandlers(plugins: Plugin[]) {

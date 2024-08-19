@@ -1,62 +1,50 @@
-import path from 'path';
-import { nodes, Page, Plugin } from '@aetlan/aetlan';
+import { join, dirname, basename, extname } from 'path';
+import { nodes, Plugin } from '@aetlan/aetlan';
 import { Feature } from './tags/feature.js';
 import { Cta } from './tags/cta.js';
-import { Menu } from './menu.js';
-
-export { Menu };
+import { Tag } from '@markdoc/markdoc';
 
 interface PageFragments {
-  menu: Menu;
-}
-
-export class AetlanPage extends Page {
-  context = 'Page';
-  tags = {
-    feature: new Feature(),
-    cta: new Cta(),
-  };
-  nodes = nodes;
-
-  get url(): string {
-    if (this.page.frontmatter.slug) {
-      return path.join(this.root, this.page.frontmatter.slug);
-    }
-    const relPath = this.page.path;
-    let dirName = path.join('/', path.dirname(relPath));
-
-    if (relPath.endsWith('INDEX.md')) {
-      return dirName;
-    }
-
-    return path.join(dirName, path.basename(relPath, path.extname(relPath)));
-  }
-
-  async data({ menu }: PageFragments) {
-    return {
-      ...this.page.frontmatter,
-      menu: menu.renderable
-    };
-  }
+  menu: Tag;
 }
 
 export default function pages() {
   return new Plugin()
-    .fragment('MENU.md', async (doc, urls) => Menu.fromDocument(doc, urls))
-    .page('**/*.md', async doc => new AetlanPage(doc, '/'));
+    .fragment('MENU.md', ({ frontmatter, path }) => {
+      return {
+        name: 'menu',
+        render: 'Menu',
+        url: path,
+        nodes,
+        tags: {},
+        data: async () => frontmatter,
+        output: (tag: Tag) => tag,
+      }
+    })
+    .page('**/*.md', ({ frontmatter, path }) => {
+      const url = () => {
+        if (frontmatter.slug) {
+          return join('/', frontmatter.slug);
+        }
+        let dirName = join('/', dirname(path));
+
+        if (path.endsWith('INDEX.md')) {
+          return dirName;
+        }
+
+        return join(dirName, basename(path, extname(path)));
+      }
+      return {
+        render: 'Page',
+        url: url(),
+        nodes,
+        tags: {
+          feature: new Feature(),
+          cta: new Cta(),
+        },
+        data: async ({ menu }: PageFragments) => {
+          return { ...frontmatter, menu };
+        }
+      }
+    });
 }
-
-  //private componentNames(tag: any): string[] {
-    //let tagNames: string[] = [];
-
-    //if (tag instanceof Tag) {
-      //if (!tag.name.includes('.') && tag.name.toLowerCase() !== tag.name) {
-        //tagNames.push(tag.name);
-      //}
-      //tag.children.map((c: any) => {
-        //tagNames.push(...this.componentNames(c));
-      //});
-    //}
-
-    //return Array.from(new Set<string>(tagNames));
-  //}

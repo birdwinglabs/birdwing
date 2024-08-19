@@ -1,29 +1,12 @@
-import { Document } from '@tashmet/tashmet';
-import { Page, PageData, Fragment } from "./interfaces.js";
+import { PageData } from "./interfaces.js";
+import { Page, PageFileHandler, RenderablePage } from "./page.js";
 import ev from "eventemitter3";
 import { ContentFactory } from "./contentFactory.js";
 import { PageDataLoader } from "./pageDataLoader.js";
-import { Tag } from "@markdoc/markdoc";
+import { Fragment, FragmentFileHandler } from "./fragment.js";
 
 const { EventEmitter } = ev;
 
-export class RenderablePage {
-  static fromPage(page: Page, dataLoader: PageDataLoader, urls: Record<string, string>) {
-    return new RenderablePage(
-      page.url, page.transform(urls) as Tag, () => dataLoader.getData(page)
-    );
-  }
-
-  constructor(
-    public url: string,
-    private tag: Tag,
-    public attributes: () => Promise<Document>
-  ) {}
-
-  async compile(): Promise<Tag> {
-    return { ...this.tag, attributes: await this.attributes() };
-  }
-}
 
 export class Transformer extends EventEmitter {
   constructor(
@@ -39,42 +22,49 @@ export class Transformer extends EventEmitter {
     content: PageData[],
     contentFactory: ContentFactory,
   ) {
-    const pages = await contentFactory.createPages(content);
-    const urls = pages.reduce((urls, page) => {
-      urls[page.path] = page.url || '';
-      return urls;
-    }, {} as Record<string, string>);
+    const urls: Record<string, string> = {};
+    const pages: Page[] = [];
+    const fragments: Fragment[] = [];
 
-    const fragments = await contentFactory.createFragments(content, urls);
+    for (const c of content) {
+      const handler = contentFactory.getFileHandler(c);
+      if (handler instanceof PageFileHandler) {
+        const page = handler.createPage(c);
+        pages.push(page);
+        urls[c.path] = page.url;
+      } else if (handler instanceof FragmentFileHandler) {
+        fragments.push(handler.createFragment(c));
+      }
+    }
 
-    return new Transformer(contentFactory, urls, new PageDataLoader(fragments), pages);
+    return new Transformer(contentFactory, urls, new PageDataLoader(fragments, urls), pages);
   }
 
   async pushContent(content: PageData) {
-    const pageOrFragment = await this.contentFactory.createContent(content, this.urls);
+    const handler = this.contentFactory.getFileHandler(content);
 
-    if (pageOrFragment instanceof Page) {
-      const renderable = await this.transformPage(pageOrFragment);
-      this.emit('page-updated', renderable);
-    } else if (pageOrFragment instanceof Fragment) {
-      const updated = this.dataLoader.pushFragment(pageOrFragment);
+    if (handler instanceof PageFileHandler) {
+      const page = handler.createPage(content);
+      this.emit('page-updated', page.transform(this.urls, this.dataLoader));
+    }
+    
+    else if (handler instanceof FragmentFileHandler) {
+      const fragment = handler.createFragment(content);
+
+      const updated = this.dataLoader.pushFragment(fragment);
       if (updated) {
-        this.emit('fragment-updated', pageOrFragment);
+        this.emit('fragment-updated', fragment);
       } else {
-        this.emit('fragment-added', pageOrFragment);
+        this.emit('fragment-added', fragment);
       }
     }
   }
 
-  async transform() {
+  transform() {
     const renderables: RenderablePage[] = [];
     for (const page of this.pages) {
-      renderables.push(await this.transformPage(page));
+      renderables.push(page.transform(this.urls, this.dataLoader) );
     }
     return renderables;
-  }
-
-  private async transformPage(page: Page) {
-    return RenderablePage.fromPage(page, this.dataLoader, this.urls);
   }
 }

@@ -1,57 +1,12 @@
 import path from 'path';
-import { PageData, Fragment, nodes } from '@aetlan/aetlan';
-import Markdoc from '@markdoc/markdoc';
 
-export class Summary extends Fragment {
-  readonly name = 'summary';
-
+export class Summary {
   constructor(
     public readonly renderable: any,
     public readonly path: string,
     private links: any,
     private urls: Record<string, string>
-  ) {
-    super();
-  }
-
-  static fromDocument(page: PageData, rootPath: string, urls: Record<string, string>) {
-    let heading: string | undefined;
-    let links: any[] = [];
-
-    const renderable = Markdoc.transform(page.ast, {
-      tags: {},
-      nodes,
-      variables: {
-        context: 'DocumentationSummary',
-        urls,
-        path: rootPath,
-      }
-    });
-
-    for (const node of page.ast.walk()) {
-      switch (node.type) {
-        case 'heading':
-          for (const child of node.walk()) {
-            if (child.type === 'text') {
-              heading = child.attributes.content;
-            }
-          }
-          break;
-        case 'link':
-          const href = node.attributes.href;
-          let title = '';
-          for (const child of node.walk()) {
-            if (child.type === 'text') {
-              title = child.attributes.content;
-            }
-          }
-          links.push({ href, title, topic: heading });
-          break;
-      }
-    }
-
-    return new Summary(renderable, rootPath, links, urls);
-  }
+  ) {}
 
   topic(pagePath: string) {
     const idx = this.links.findIndex((link: any) => link.href === pagePath);

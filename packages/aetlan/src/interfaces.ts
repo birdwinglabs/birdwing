@@ -1,4 +1,4 @@
-import markdoc, { Node, RenderableTreeNode, Tag } from "@markdoc/markdoc";
+import { Node, RenderableTreeNode, Tag } from "@markdoc/markdoc";
 import { Document } from "@tashmet/tashmet";
 
 export interface RenderableDocument {
@@ -21,39 +21,24 @@ export interface PageData {
   frontmatter: Document;
 }
 
-export abstract class Page {
-  constructor(protected page: PageData, protected root: string) {}
+export interface ContentTransform {
+  render: string;
 
-  nodes: Document = {};
-  tags: Document = {};
-  abstract context: string;
+  url: string;
 
-  get id() {
-    return this.page._id;
-  }
+  nodes: Document;
 
-  get path() {
-    return this.page.path;
-  }
+  tags: Document;
 
-  abstract get url(): string;
-
-  async data(fragments: Document) {
-    return this.page.frontmatter;
-  }
-
-  transform(urls: Record<string, string>) {
-    return markdoc.transform(this.page.ast, {
-      tags: this.tags,
-      nodes: this.nodes,
-      variables: {
-        context: this.context,
-        urls,
-        path: this.root,
-      }
-    });
-  }
+  data(fragments: Document): Promise<Document>;
 }
+
+export interface FragmentConfig extends ContentTransform {
+  name: string;
+
+  output: (tag: Tag, variables: Document) => any;
+}
+
 
 export interface Route {
   _id: string;
@@ -69,44 +54,8 @@ export interface TargetFile {
   content: string;
 }
 
-export abstract class Fragment {
-  abstract name: string;
-
-  abstract path: string;
-}
-
 export interface FileHandler {
   glob: string;
 }
 
-export class FragmentFileHandler<T extends Fragment = Fragment> implements FileHandler {
-  constructor(
-    public readonly glob: string,
-    public createFragment: (doc: PageData, urls: Record<string, string>) => Promise<T>
-  ) {}
-}
-
-export class PageFileHandler implements FileHandler  {
-  constructor(
-    public readonly glob: string,
-    public createPage: (doc: PageData) => Promise<Page>
-  ) {}
-}
-
 export type PluginFactory = (config: any) => Plugin
-
-export class Plugin {
-  constructor(
-    public handlers: FileHandler[] = [],
-  ) {}
-
-  page(glob: string, create: (doc: PageData) => Promise<Page>) {
-    this.handlers.push(new PageFileHandler(glob, create));
-    return this;
-  }
-
-  fragment(glob: string, create: (doc: PageData, urls: Record<string, string>) => Promise<Fragment>) {
-    this.handlers.push(new FragmentFileHandler(glob, create));
-    return this;
-  }
-}

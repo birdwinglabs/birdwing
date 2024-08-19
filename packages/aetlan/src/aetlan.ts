@@ -2,7 +2,7 @@ import { Database, Filter, Collection } from '@tashmet/tashmet';
 import { PageData, Route, TargetFile } from "./interfaces.js";
 
 import ev from "eventemitter3";
-import { RenderablePage } from './transformer.js';
+import { RenderablePage } from './page.js';
 
 const { EventEmitter } = ev;
 
