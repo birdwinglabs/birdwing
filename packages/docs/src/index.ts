@@ -1,7 +1,7 @@
 import { join, dirname, basename, extname, relative } from 'path';
 import { Plugin, nodes } from '@aetlan/aetlan';
 import { Summary } from './summary.js';
-import { Hint, Feature } from './tags/index.js';
+import { Hint } from './tags/index.js';
 import { Tag } from '@markdoc/markdoc';
 
 interface DocsConfig {
@@ -16,13 +16,14 @@ interface DocFragments {
 
 export default function(config: DocsConfig) {
   return new Plugin()
+    .tag('hint', new Hint())
     .fragment(join(config.path, 'SUMMARY.md'), ({ frontmatter, ast }) => {
       return {
         name: 'summary',
         render: 'DocumentationSummary',
         url: config.path,
         nodes,
-        tags: {},
+        tags: [],
         data: async () => frontmatter,
         output: (tag, variables) => {
           let heading: string | undefined;
@@ -70,10 +71,7 @@ export default function(config: DocsConfig) {
         render: 'Documentation',
         url: url(),
         nodes,
-        tags: {
-          hint: new Hint(),
-          feature: new Feature(),
-        },
+        tags: ['hint'],
         data: async ({ summary, menu }: DocFragments) => {
           const p = relative(config.path, path);
 
@@ -101,5 +99,5 @@ export default function(config: DocsConfig) {
           }
         }
       }
-    });
+    })
 }

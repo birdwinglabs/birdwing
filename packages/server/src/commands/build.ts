@@ -6,7 +6,7 @@ import * as esbuild from 'esbuild'
 
 import { generateCss } from '../css.js';
 import { createDatabase, createStorageEngine } from '../database.js';
-import { createFileHandlers, Aetlan, Renderer, Plugin, ContentFactory, Transformer } from '@aetlan/aetlan';
+import { Aetlan, Renderer, Plugin, PluginContext, Transformer } from '@aetlan/aetlan';
 import vm from 'vm';
 import { createRequire } from 'module';
 import { fileURLToPath } from 'url';
@@ -24,11 +24,10 @@ export class Build {
   static async create(root: string, plugins: Plugin[]) {
     const store = await createStorageEngine();
     const db = await createDatabase(store, root, false);
-    const handlers = createFileHandlers(plugins);
 
     const aetlan = await Aetlan.load(db);
     const transformer = await Transformer.initialize(
-      await aetlan.findContent({}).toArray(), new ContentFactory(handlers)
+      await aetlan.findContent({}).toArray(), new PluginContext(plugins)
     );
 
     return new Build(aetlan, transformer, root);

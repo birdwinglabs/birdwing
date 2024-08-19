@@ -10,13 +10,15 @@ interface PageFragments {
 
 export default function pages() {
   return new Plugin()
+    .tag('cta', new Cta())
+    .tag('feature', new Feature())
     .fragment('MENU.md', ({ frontmatter, path }) => {
       return {
         name: 'menu',
         render: 'Menu',
         url: path,
         nodes,
-        tags: {},
+        tags: [],
         data: async () => frontmatter,
         output: (tag: Tag) => tag,
       }
@@ -38,13 +40,8 @@ export default function pages() {
         render: 'Page',
         url: url(),
         nodes,
-        tags: {
-          feature: new Feature(),
-          cta: new Cta(),
-        },
-        data: async ({ menu }: PageFragments) => {
-          return { ...frontmatter, menu };
-        }
+        tags: ['cta', 'feature'],
+        data: async ({ menu }: PageFragments) => ({ ...frontmatter, menu }),
       }
     });
 }

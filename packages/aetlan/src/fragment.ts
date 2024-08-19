@@ -3,6 +3,7 @@ import Markdoc, { Node, Tag } from "@markdoc/markdoc";
 import { Document } from "@tashmet/tashmet";
 import { PageDataLoader } from "./pageDataLoader.js";
 import { FileHandler, FragmentConfig, PageData } from "./interfaces.js";
+import { CustomTag } from './tag.js';
 
 export class Fragment {
   constructor(private ast: Node, public readonly path: string, private config: FragmentConfig) {
@@ -17,8 +18,14 @@ export class Fragment {
     return this.config.url;
   }
 
-  transform(urls: Record<string, string>, dataLoader: PageDataLoader): any {
-    const { tags, nodes, render } = this.config;
+  transform(urls: Record<string, string>, customTags: Record<string, CustomTag>, dataLoader: PageDataLoader): any {
+    const { tags: tagnames, nodes, render } = this.config;
+
+    const tags = tagnames.reduce((tags, name) => {
+      tags[name] = customTags[name];
+      return tags;
+    }, {} as Record<string, CustomTag>);
+
     const variables: Document = {
       context: render,
       urls,

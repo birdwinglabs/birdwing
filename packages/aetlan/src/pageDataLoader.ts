@@ -2,9 +2,13 @@ import { Fragment } from "./fragment.js";
 
 import path from 'path';
 import { Page } from "./page.js";
+import { CustomTag } from "./tag.js";
 
 export class PageDataLoader {
-  constructor(private fragments: Fragment[], private urls: Record<string, string>) {}
+  constructor(
+    private fragments: Fragment[],
+    private customTags: Record<string, CustomTag>,
+    private urls: Record<string, string>) {}
 
   async getData(page: Page) {
     function isSubPath(dir: string, root: string) {
@@ -14,7 +18,7 @@ export class PageDataLoader {
 
     const f = this.fragments.reduce((obj, f) => {
       if (isSubPath(page.path, f.path)) {
-        obj[f.name] = f.transform(this.urls, this);
+        obj[f.name] = f.transform(this.urls, this.customTags, this);
       }
       return obj;
     }, {} as Record<string, any>);

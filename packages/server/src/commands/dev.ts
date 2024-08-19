@@ -9,7 +9,7 @@ import * as chokidar from 'chokidar';
 import { generateCss } from '../css.js';
 import { createDatabase, createStorageEngine } from '../database.js';
 
-import { Aetlan, Fragment, PageData, Plugin, RenderablePage, Transformer, ContentFactory, createFileHandlers } from '@aetlan/aetlan';
+import { Aetlan, Fragment, PageData, Plugin, PluginContext, RenderablePage, Transformer } from '@aetlan/aetlan';
 import { StorageEngine } from '@tashmet/engine';
 import TashmetServer from '@tashmet/server';
 
@@ -56,11 +56,10 @@ export class DevServer {
   static async create(root: string, plugins: Plugin[]) {
     const store = await createStorageEngine();
     const db = await createDatabase(store, root, true);
-    const handlers = createFileHandlers(plugins);
 
     const aetlan = await Aetlan.load(db);
     const transformer = await Transformer.initialize(
-      await aetlan.findContent({}).toArray(), new ContentFactory(handlers)
+      await aetlan.findContent({}).toArray(), new PluginContext(plugins)
     );
     const contentWatcher = new DevContentWatcher(transformer, aetlan);
 

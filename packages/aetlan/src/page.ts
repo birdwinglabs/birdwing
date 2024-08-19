@@ -3,6 +3,7 @@ import Markdoc, { Node, Tag } from "@markdoc/markdoc";
 import { Document } from '@tashmet/tashmet';
 import { PageDataLoader } from "./pageDataLoader";
 import { ContentTransform, FileHandler, PageData } from "./interfaces";
+import { CustomTag } from './tag';
 
 export class Page {
   constructor(
@@ -19,8 +20,13 @@ export class Page {
     return this.config.data(fragments);
   }
 
-  transform(urls: Record<string, string>, dataLoader: PageDataLoader): RenderablePage {
-    const { tags, nodes, render } = this.config;
+  transform(urls: Record<string, string>, customTags: Record<string, CustomTag>, dataLoader: PageDataLoader): RenderablePage {
+    const { tags: tagnames, nodes, render } = this.config;
+
+    const tags = tagnames.reduce((tags, name) => {
+      tags[name] = customTags[name];
+      return tags;
+    }, {} as Record<string, CustomTag>);
 
     const tag = Markdoc.transform(this.ast, {
       tags,

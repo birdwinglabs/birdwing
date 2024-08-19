@@ -1,16 +1,16 @@
 import { PageData } from "./interfaces.js";
 import { Page, PageFileHandler, RenderablePage } from "./page.js";
 import ev from "eventemitter3";
-import { ContentFactory } from "./contentFactory.js";
 import { PageDataLoader } from "./pageDataLoader.js";
 import { Fragment, FragmentFileHandler } from "./fragment.js";
+import { PluginContext } from "./plugin.js";
 
 const { EventEmitter } = ev;
 
 
 export class Transformer extends EventEmitter {
   constructor(
-    private contentFactory: ContentFactory,
+    private pluginContext: PluginContext,
     private urls: Record<string, string>,
     private dataLoader: PageDataLoader,
     private pages: Page[] = [],
@@ -20,14 +20,14 @@ export class Transformer extends EventEmitter {
 
   static async initialize(
     content: PageData[],
-    contentFactory: ContentFactory,
+    pluginContext: PluginContext,
   ) {
     const urls: Record<string, string> = {};
     const pages: Page[] = [];
     const fragments: Fragment[] = [];
 
     for (const c of content) {
-      const handler = contentFactory.getFileHandler(c);
+      const handler = pluginContext.getFileHandler(c);
       if (handler instanceof PageFileHandler) {
         const page = handler.createPage(c);
         pages.push(page);
@@ -37,15 +37,15 @@ export class Transformer extends EventEmitter {
       }
     }
 
-    return new Transformer(contentFactory, urls, new PageDataLoader(fragments, urls), pages);
+    return new Transformer(pluginContext, urls, new PageDataLoader(fragments, pluginContext.tags, urls), pages);
   }
 
   async pushContent(content: PageData) {
-    const handler = this.contentFactory.getFileHandler(content);
+    const handler = this.pluginContext.getFileHandler(content);
 
     if (handler instanceof PageFileHandler) {
       const page = handler.createPage(content);
-      this.emit('page-updated', page.transform(this.urls, this.dataLoader));
+      this.emit('page-updated', page.transform(this.urls, this.pluginContext.tags, this.dataLoader));
     }
     
     else if (handler instanceof FragmentFileHandler) {
@@ -63,7 +63,7 @@ export class Transformer extends EventEmitter {
   transform() {
     const renderables: RenderablePage[] = [];
     for (const page of this.pages) {
-      renderables.push(page.transform(this.urls, this.dataLoader) );
+      renderables.push(page.transform(this.urls, this.pluginContext.tags, this.dataLoader) );
     }
     return renderables;
   }

@@ -28,7 +28,7 @@ export interface ContentTransform {
 
   nodes: Document;
 
-  tags: Document;
+  tags: string[];
 
   data(fragments: Document): Promise<Document>;
 }
