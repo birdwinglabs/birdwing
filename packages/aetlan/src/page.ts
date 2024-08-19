@@ -1,9 +1,9 @@
 import { dirname } from 'path';
-import Markdoc, { Node, Tag } from "@markdoc/markdoc";
+import { Node, Tag } from "@markdoc/markdoc";
 import { Document } from '@tashmet/tashmet';
 import { PageDataLoader } from "./pageDataLoader";
 import { ContentTransform, FileHandler, PageData } from "./interfaces";
-import { CustomTag } from './tag';
+import { TransformContext } from './transformer';
 
 export class Page {
   constructor(
@@ -20,23 +20,8 @@ export class Page {
     return this.config.data(fragments);
   }
 
-  transform(urls: Record<string, string>, customTags: Record<string, CustomTag>, dataLoader: PageDataLoader): RenderablePage {
-    const { tags: tagnames, nodes, render } = this.config;
-
-    const tags = tagnames.reduce((tags, name) => {
-      tags[name] = customTags[name];
-      return tags;
-    }, {} as Record<string, CustomTag>);
-
-    const tag = Markdoc.transform(this.ast, {
-      tags,
-      nodes,
-      variables: {
-        context: render,
-        urls,
-        path: this.path,
-      }
-    }) as Tag;
+  transform(ctx: TransformContext, dataLoader: PageDataLoader): RenderablePage {
+    const { tag } = ctx.transform(this.ast, this.config, { path: this.path });
 
     return new RenderablePage(this.config.url, tag, () => dataLoader.getData(this));
   }
