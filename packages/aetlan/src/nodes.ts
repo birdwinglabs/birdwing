@@ -1,5 +1,5 @@
 import markdoc from '@markdoc/markdoc';
-import nodePath from 'path';
+import nodePath, { dirname } from 'path';
 
 const { Tag } = markdoc;
 
@@ -86,9 +86,10 @@ export class Link {
 
   transform(node: any, config: any) {
     const { urls, path, context } = config.variables || {};
+    const dirName = dirname(path);
     let attributes = node.attributes;
-    const absPath = path !== '/'
-      ? nodePath.join(path, node.attributes.href)
+    const absPath = dirName !== '/'
+      ? nodePath.join(dirName, node.attributes.href)
       : node.attributes.href;
 
     if (absPath in (urls || {})) {

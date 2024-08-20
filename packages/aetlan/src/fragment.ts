@@ -6,8 +6,8 @@ import { FileHandler } from './loader.js';
 export class FragmentNode {
   constructor(
     private ast: Node,
-    public readonly path:
-    string, private config: FragmentConfig
+    public readonly path: string,
+    private config: FragmentConfig
   ) {}
 
   get url() {
