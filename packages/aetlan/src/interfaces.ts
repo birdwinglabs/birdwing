@@ -54,8 +54,4 @@ export interface TargetFile {
   content: string;
 }
 
-export interface FileHandler {
-  glob: string;
-}
-
 export type PluginFactory = (config: any) => Plugin

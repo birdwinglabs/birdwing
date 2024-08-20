@@ -16,7 +16,7 @@ export default function pages() {
       return {
         name: 'menu',
         render: 'Menu',
-        url: path,
+        url: join('/', dirname(path)),
         nodes,
         tags: [],
         data: async () => frontmatter,

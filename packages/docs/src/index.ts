@@ -17,11 +17,11 @@ interface DocFragments {
 export default function(config: DocsConfig) {
   return new Plugin()
     .tag('hint', new Hint())
-    .fragment(join(config.path, 'SUMMARY.md'), ({ frontmatter, ast }) => {
+    .fragment(join(config.path, 'SUMMARY.md'), ({ frontmatter, ast, path }) => {
       return {
         name: 'summary',
         render: 'DocumentationSummary',
-        url: config.path,
+        url: join('/', dirname(path)),
         nodes,
         tags: [],
         data: async () => frontmatter,

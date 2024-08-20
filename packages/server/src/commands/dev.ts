@@ -9,45 +9,30 @@ import * as chokidar from 'chokidar';
 import { generateCss } from '../css.js';
 import { createDatabase, createStorageEngine } from '../database.js';
 
-import { Aetlan, Fragment, PageData, Plugin, PluginContext, RenderablePage, Transformer } from '@aetlan/aetlan';
+import { Aetlan, ContentTarget, Plugin, Route } from '@aetlan/aetlan';
 import { StorageEngine } from '@tashmet/engine';
 import TashmetServer from '@tashmet/server';
+import { Document } from '@tashmet/tashmet';
 
+class DevContentTarget implements ContentTarget {
+  constructor(private aetlan: Aetlan) {}
 
-export class DevContentWatcher {
-  private pages: RenderablePage[] = [];
-
-  constructor(
-    private transformer: Transformer,
-    private aetlan: Aetlan
-  ) {
-    transformer.on('page-updated', async (page: RenderablePage) => {
-      await this.aetlan.updateRoute(page);
-    });
-    transformer.on('fragment-updated', async (fragment: Fragment) => {
-      for (const page of this.pages) {
-        await this.aetlan.updateRouteAttributes(page);
-      }
-    });
-    transformer.on('fragment-added', (fragment: Fragment) => {
-    });
+  mount(route: Route) {
+    this.aetlan.updateRoute(route);
   }
 
-  async watch() {
-    this.pages = await this.transformer.transform();
-    for (const page of this.pages) {
-      await this.aetlan.updateRoute(page);
-    }
-    this.aetlan.on('content-changed', (content: PageData) => {
-      this.transformer.pushContent(content);
-    });
+  mountAttributes(url: string, attributes: Document): void {
+    this.aetlan.updateRouteAttributes(url, attributes);
+  }
+
+  unmount(url: string): void {
+    
   }
 }
 
 export class DevServer {
   constructor(
     private aetlan: Aetlan,
-    private watcher: DevContentWatcher,
     private store: StorageEngine,
     private root: string
   ) {
@@ -57,20 +42,16 @@ export class DevServer {
     const store = await createStorageEngine();
     const db = await createDatabase(store, root, true);
 
-    const aetlan = await Aetlan.load(db);
-    const transformer = await Transformer.initialize(
-      await aetlan.findContent({}).toArray(), new PluginContext(plugins)
-    );
-    const contentWatcher = new DevContentWatcher(transformer, aetlan);
+    const aetlan = await Aetlan.load(db, plugins);
 
-    return new DevServer(aetlan, contentWatcher, store, root);
+    return new DevServer(aetlan, store, root);
   }
 
   async run() {
     const pageWatcher = chokidar.watch(path.join(this.root, 'src/pages/**/*.md'));
     const srcWatcher = chokidar.watch(path.join(this.root, 'src/**/*.jsx'));
 
-    await this.watcher.watch();
+    await this.aetlan.watch(new DevContentTarget(this.aetlan));
 
     pageWatcher.on('change', async filePath => {
       await this.aetlan.reloadContent(filePath);

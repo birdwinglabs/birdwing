@@ -6,7 +6,7 @@ import * as esbuild from 'esbuild'
 
 import { generateCss } from '../css.js';
 import { createDatabase, createStorageEngine } from '../database.js';
-import { Aetlan, Renderer, Plugin, PluginContext, Transformer } from '@aetlan/aetlan';
+import { Aetlan, Renderer, Plugin, PluginContext, Transformer, ContentLoader } from '@aetlan/aetlan';
 import vm from 'vm';
 import { createRequire } from 'module';
 import { fileURLToPath } from 'url';
@@ -17,7 +17,6 @@ import { JSDOM } from 'jsdom';
 export class Build {
   constructor(
     private aetlan: Aetlan,
-    private transformer: Transformer,
     private root: string
   ) {}
 
@@ -25,12 +24,9 @@ export class Build {
     const store = await createStorageEngine();
     const db = await createDatabase(store, root, false);
 
-    const aetlan = await Aetlan.load(db);
-    const transformer = await Transformer.initialize(
-      await aetlan.findContent({}).toArray(), new PluginContext(plugins)
-    );
+    const aetlan = await Aetlan.load(db, plugins);
 
-    return new Build(aetlan, transformer, root);
+    return new Build(aetlan, root);
   }
 
   async run() {
@@ -38,10 +34,10 @@ export class Build {
     const renderer = new Renderer(components);
 
     const routes: any[] = [];
-    for (const page of await this.transformer.transform()) {
+    for (const route of await this.aetlan.compile()) {
       routes.push({
-        path: page.url,
-        element: renderer.render(await page.compile())
+        path: route.url,
+        element: renderer.render(route.tag),
       });
     }
 

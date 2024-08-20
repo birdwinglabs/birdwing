@@ -7,9 +7,11 @@ export * from './nodes.js';
 export { Aetlan } from './aetlan.js';
 export { Renderer } from './renderer.js';
 export { Transformer } from './transformer.js';
-export { Page, RenderablePage } from './page.js';
+export { Compiler, ContentTarget } from './compiler.js';
+export { Page } from './page.js';
 export { Fragment } from './fragment.js';
 export { CustomTag } from './tag.js';
+export { ContentLoader } from './loader.js';
 
 export { Plugin, PluginContext };
 

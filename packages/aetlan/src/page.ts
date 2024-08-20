@@ -1,11 +1,12 @@
-import { dirname } from 'path';
+import { relative, isAbsolute } from 'path';
 import { Node, Tag } from "@markdoc/markdoc";
 import { Document } from '@tashmet/tashmet';
-import { PageDataLoader } from "./pageDataLoader";
-import { ContentTransform, FileHandler, PageData } from "./interfaces";
-import { TransformContext } from './transformer';
+import { ContentTransform, PageData } from "./interfaces.js";
+import { Transformer } from './transformer.js';
+import { Fragment } from './fragment.js';
+import { FileHandler } from './loader.js';
 
-export class Page {
+export class PageNode {
   constructor(
     private ast: Node,
     public readonly path: string,
@@ -16,14 +17,24 @@ export class Page {
     return this.config.url;
   }
 
-  async data(fragments: Document) {
-    return this.config.data(fragments);
-  }
+  transform(transformer: Transformer): Page {
+    const { tag } = transformer.transform(this.ast, this.config, { path: this.path });
 
-  transform(ctx: TransformContext, dataLoader: PageDataLoader): RenderablePage {
-    const { tag } = ctx.transform(this.ast, this.config, { path: this.path });
+    function isSubPath(dir: string, root: string) {
+      const rel = relative(root, dir);
+      return dir === root || (rel && !rel.startsWith('..') && !isAbsolute(rel));
+    }
 
-    return new RenderablePage(this.config.url, tag, () => dataLoader.getData(this));
+    return new Page(this.config.url, tag, async fragments => {
+      const f = fragments.reduce((obj, f) => {
+        if (isSubPath(this.url, f.url)) {
+          obj[f.name] = f.fragment;
+        }
+        return obj;
+      }, {} as Record<string, any>);
+
+      return this.config.data(f);
+    });
   }
 }
 
@@ -34,19 +45,20 @@ export class PageFileHandler implements FileHandler  {
     private config: (doc: PageData) => ContentTransform,
   ) {}
 
-  public createPage(content: PageData) {
-    return new Page(content.ast, dirname(content.path), this.config(content));
+  public createNode(content: PageData) {
+    return new PageNode(content.ast, content.path, this.config(content));
   }
 }
 
-export class RenderablePage {
+
+export class Page {
   constructor(
     public url: string,
     public tag: Tag,
-    public attributes: () => Promise<Document>
+    public attributes: (fragments: Fragment<any>[]) => Promise<Document>
   ) {}
 
-  async compile(): Promise<Tag> {
-    return { ...this.tag, attributes: await this.attributes() };
+  async compile(fragments: Fragment<any>[]): Promise<Tag> {
+    return { ...this.tag, attributes: await this.attributes(fragments) };
   }
 }

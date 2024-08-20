@@ -1,5 +1,6 @@
 import { FragmentFileHandler } from "./fragment.js";
-import { ContentTransform, FileHandler, FragmentConfig, PageData } from "./interfaces.js";
+import { ContentTransform, FragmentConfig, PageData } from "./interfaces.js";
+import { FileHandler } from "./loader.js";
 import { PageFileHandler } from "./page.js";
 import { CustomTag } from "./tag.js";
 import minimatch from 'minimatch';
@@ -10,13 +11,13 @@ export class Plugin {
     public tags: Record<string, CustomTag> = {},
   ) {}
 
-  page(glob: string, transform: (doc: PageData) => ContentTransform) {
-    this.handlers.push(new PageFileHandler(glob, transform));
+  page(glob: string, config: (doc: PageData) => ContentTransform) {
+    this.handlers.push(new PageFileHandler(glob, config));
     return this;
   }
 
-  fragment(glob: string, transform: (doc: PageData) => FragmentConfig) {
-    this.handlers.push(new FragmentFileHandler(glob, transform));
+  fragment(glob: string, config: (doc: PageData) => FragmentConfig) {
+    this.handlers.push(new FragmentFileHandler(glob, config));
     return this;
   }
 

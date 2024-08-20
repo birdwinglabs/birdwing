@@ -1,30 +1,30 @@
-import { dirname } from 'path';
 import { Node } from "@markdoc/markdoc";
-import { FileHandler, FragmentConfig, PageData } from "./interfaces.js";
-import { TransformContext } from './transformer.js';
+import { FragmentConfig, PageData } from "./interfaces.js";
+import { Transformer } from './transformer.js';
+import { FileHandler } from './loader.js';
 
-export class Fragment {
+export class FragmentNode {
   constructor(
     private ast: Node,
     public readonly path:
     string, private config: FragmentConfig
   ) {}
 
-  get name() {
-    return this.config.name;
+  get url() {
+    return this.config.url;
   }
 
-  transform(ctx: TransformContext): any {
-    const { tag, variables } = ctx.transform(this.ast, this.config, { path: this.path });
+  transform(transformer: Transformer) {
+    const { tag, variables } = transformer.transform(this.ast, this.config, { path: this.path });
 
-    return new RenderableFragment(this.name, this.path, this.config.output(tag, variables));
+    return new Fragment(this.config.name, this.config.url, this.config.output(tag, variables));
   }
 }
 
-export class RenderableFragment<T> {
+export class Fragment<T = any> {
   constructor(
     public name: string,
-    public path: string,
+    public url: string,
     public fragment: T,
   ) {}
 }
@@ -35,7 +35,7 @@ export class FragmentFileHandler implements FileHandler {
     private config: (doc: PageData) => FragmentConfig,
   ) {}
 
-  public createFragment(content: PageData) {
-    return new Fragment(content.ast, dirname(content.path), this.config(content));
+  createNode(content: PageData) {
+    return new FragmentNode(content.ast, content.path, this.config(content));
   }
 }

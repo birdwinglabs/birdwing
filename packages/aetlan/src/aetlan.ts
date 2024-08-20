@@ -1,27 +1,29 @@
-import { Database, Filter, Collection } from '@tashmet/tashmet';
+import { Database, Filter, Collection, Document } from '@tashmet/tashmet';
 import { PageData, Route, TargetFile } from "./interfaces.js";
 
 import ev from "eventemitter3";
-import { RenderablePage } from './page.js';
+import { Plugin, PluginContext } from './plugin.js';
+import { ContentLoader } from './loader.js';
+import { Pipeline } from './pipeline.js';
+import { Compiler, ContentTarget } from './compiler.js';
 
 const { EventEmitter } = ev;
 
 export class Aetlan extends EventEmitter {
+  private contentLoader: ContentLoader;
+
   constructor(
     private source: Collection,
     private cache: Collection<PageData>,
     private routes: Collection<Route>,
     private target: Collection<TargetFile>,
+    private pluginContext: PluginContext,
   ) {
     super();
-    cache.watch().on('change', change => {
-      if (change.operationType === 'replace' && change.fullDocument) {
-        this.emit('content-changed', change.fullDocument);
-      }
-    });
+    this.contentLoader = new ContentLoader(pluginContext);
   }
 
-  static async load(db: Database): Promise<Aetlan> {
+  static async load(db: Database, plugins: Plugin[]): Promise<Aetlan> {
     const source = db.collection('pagesource');
     const cache = db.collection<PageData>('pagecache');
     const routes = db.collection<Route>('routes');
@@ -32,7 +34,7 @@ export class Aetlan extends EventEmitter {
       { $out: cache.collectionName }
     ]).toArray();
 
-    return new Aetlan(source, cache, routes, target);
+    return new Aetlan(source, cache, routes, target, new PluginContext(plugins));
   }
 
   async reloadContent(file: string) {
@@ -54,14 +56,13 @@ export class Aetlan extends EventEmitter {
     return this.routes.findOne({ _id: url !== '/' ? url.replace(/\/$/, "") : url });
   }
 
-  async updateRoute(page: RenderablePage) {
-    const route: Route = { _id: page.url, url: page.url, tag: await page.compile() };
-    await this.routes.replaceOne({ _id: page.url }, route, { upsert: true });
+  async updateRoute(route: Route) {
+    await this.routes.replaceOne({ _id: route.url }, route, { upsert: true });
   }
 
-  async updateRouteAttributes(page: RenderablePage) {
+  async updateRouteAttributes(url: string, attributes: Document) {
     await this.routes.updateOne(
-      { _id: page.url }, { $set: { 'tag.attributes': await page.attributes() } }
+      { _id: url }, { $set: { 'tag.attributes': attributes } }
     );
   }
 
@@ -75,5 +76,26 @@ export class Aetlan extends EventEmitter {
       return f.content;
     }
     return null;
+  }
+
+  async compile(): Promise<Route[]> {
+    const compiler = await this.createCompiler();
+
+    return compiler.transform().compileRoutes();
+  }
+
+  async watch(target: ContentTarget) {
+    const compiler = await this.createCompiler();
+
+    for (const route of await compiler.transform().compileRoutes()) {
+      target.mount(route);
+    }
+    return new Pipeline(this.cache, target, compiler, this.contentLoader);
+  }
+
+  private async createCompiler() {
+    const content = await this.cache.find().toArray();
+    const nodes = content.map(c => this.contentLoader.load(c));
+    return new Compiler(nodes, this.pluginContext.tags);
   }
 }
