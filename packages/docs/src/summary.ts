@@ -1,36 +1,64 @@
-import path from 'path';
+import { join } from 'path';
+import { Node, Tag } from '@markdoc/markdoc';
+
+export interface SummaryLink {
+  href: string;
+  title: string;
+  topic: string | undefined;
+}
+
+export interface SummaryPageData {
+  title: string;
+  topic: string | undefined;
+  prev: SummaryLink | undefined;
+  next: SummaryLink | undefined;
+}
+
+export function extractLinks(ast: Node, basePath: string, urls: Record<string, string>): SummaryLink[] {
+  let heading: string | undefined;
+  const links: SummaryLink[] = [];
+
+  for (const node of ast.walk()) {
+    switch (node.type) {
+      case 'heading':
+        for (const child of node.walk()) {
+          if (child.type === 'text') {
+            heading = child.attributes.content;
+          }
+        }
+        break;
+      case 'link':
+        const href = urls[join(basePath, node.attributes.href)];
+        let title = '';
+        for (const child of node.walk()) {
+          if (child.type === 'text') {
+            title = child.attributes.content;
+          }
+        }
+        links.push({ href, title, topic: heading });
+        break;
+    }
+  }
+  return links;
+}
+
+export function makePageData(links: SummaryLink[]) {
+  const prev = (i: number) => i >= 1 ? links[i - 1] : undefined;
+  const next = (i: number) => i < (links.length - 1) ? links[i + 1] : undefined;
+
+  return links.reduce((data, { href, title, topic }, i) => {
+    data[href] = { title, topic, prev: prev(i), next: next(i) }
+    return data;
+  }, {} as Record<string, SummaryPageData>)
+}
 
 export class Summary {
   constructor(
-    public readonly renderable: any,
-    public readonly path: string,
-    private links: any,
-    private urls: Record<string, string>
+    public readonly renderable: Tag,
+    private readonly dataMap: Record<string, SummaryPageData>
   ) {}
 
-  topic(pagePath: string) {
-    const idx = this.links.findIndex((link: any) => link.href === pagePath);
-    if (idx === -1) {
-      return undefined;
-    }
-    return this.links[idx].topic;
-  }
-
-  next(pagePath: string) {
-    const idx = this.links.findIndex((link: any) => link.href === pagePath);
-    if (idx === -1 || idx === this.links.length - 1) {
-      return undefined;
-    }
-    const { href, title } = this.links[idx + 1];
-    return { href: this.urls[path.join(this.path, href)], title };
-  }
-
-  prev(pagePath: string) {
-    const idx = this.links.findIndex((link: any) => link.href === pagePath);
-    if (idx === -1 || idx === 0) {
-      return undefined;
-    }
-    const { href, title } = this.links[idx - 1];
-    return { href: this.urls[path.join(this.path, href)], title };
+  data(url: string) {
+    return this.dataMap[url];
   }
 }
