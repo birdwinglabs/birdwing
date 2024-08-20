@@ -1,5 +1,5 @@
-import { join, dirname, basename, extname } from 'path';
-import { nodes, Plugin } from '@aetlan/aetlan';
+import { join, dirname } from 'path';
+import { nodes, Plugin, resolvePageUrl } from '@aetlan/aetlan';
 import { Feature } from './tags/feature.js';
 import { Cta } from './tags/cta.js';
 import { Tag } from '@markdoc/markdoc';
@@ -24,21 +24,9 @@ export default function pages() {
       }
     })
     .page('**/*.md', ({ frontmatter, path }) => {
-      const url = () => {
-        if (frontmatter.slug) {
-          return join('/', frontmatter.slug);
-        }
-        let dirName = join('/', dirname(path));
-
-        if (path.endsWith('INDEX.md')) {
-          return dirName;
-        }
-
-        return join(dirName, basename(path, extname(path)));
-      }
       return {
         render: 'Page',
-        url: url(),
+        url: resolvePageUrl(path, frontmatter.slug),
         nodes,
         tags: ['cta', 'feature'],
         data: async ({ menu }: PageFragments) => ({ ...frontmatter, menu }),

@@ -12,6 +12,7 @@ export { Page } from './page.js';
 export { Fragment } from './fragment.js';
 export { CustomTag } from './tag.js';
 export { ContentLoader } from './loader.js';
+export { resolvePageUrl } from './util.js';
 
 export { Plugin, PluginContext };
 

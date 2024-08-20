@@ -1,5 +1,5 @@
 import { join, dirname, basename, extname } from 'path';
-import { Plugin, nodes } from '@aetlan/aetlan';
+import { Plugin, nodes, resolvePageUrl } from '@aetlan/aetlan';
 import { extractLinks, makePageData, Summary } from './summary.js';
 import { Hint } from './tags/index.js';
 import { Tag } from '@markdoc/markdoc';
@@ -35,12 +35,7 @@ export default function(config: DocsConfig) {
       }
     })
     .page(join(config.path, '**/*.md'), ({ frontmatter, path, ast }) => {
-      const dirName = join('/', dirname(path));
-      const url = frontmatter.slug
-        ? join('/', config.path, frontmatter.slug)
-        : basename(path) === 'README.md'
-        ? dirName
-        : join(dirName, basename(path, extname(path)));
+      const url = resolvePageUrl(path, frontmatter.slug, config.path);
 
       return {
         render: 'Documentation',
