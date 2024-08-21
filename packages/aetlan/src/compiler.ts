@@ -2,9 +2,9 @@ import { Route } from "./interfaces.js";
 import { Page } from "./page.js";
 import { Fragment } from "./fragment.js";
 import { Transformer } from "./transformer.js";
-import { CustomTag } from "./tag.js";
 import { Document } from "@tashmet/tashmet";
 import { FileNode } from "./loader.js";
+import { Schema } from "@markdoc/markdoc";
 
 
 export class TransformResult {
@@ -27,7 +27,7 @@ export class Compiler {
   private transformer: Transformer;
   private nodes: Record<string, { loaded: FileNode, transformed: Page | Fragment | undefined }> = {};
 
-  constructor(nodes: FileNode[], tags: Record<string, CustomTag>) {
+  constructor(nodes: FileNode[], tags: Record<string, Schema>) {
     this.transformer = new Transformer(tags);
     for (const node of nodes) {
       this.nodes[node.path] = { loaded: node, transformed: undefined };

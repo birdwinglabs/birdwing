@@ -1,14 +1,13 @@
-import Markdoc, { Node, Tag } from "@markdoc/markdoc";
+import Markdoc, { Node, Schema, Tag } from "@markdoc/markdoc";
 import { Document } from '@tashmet/tashmet';
 
 import { ContentTransform } from "./interfaces.js";
-import { CustomTag } from "./tag.js";
 
 export class Transformer {
   private urlMap: Record<string, string> = {};
 
   constructor(
-    private customTags: Record<string, CustomTag>,
+    private customTags: Record<string, Schema>,
   ) {}
 
   linkPath(path: string, url: string) {
@@ -25,7 +24,7 @@ export class Transformer {
     const tags = tagnames.reduce((tags, name) => {
       tags[name] = this.customTags[name];
       return tags;
-    }, {} as Record<string, CustomTag>);
+    }, {} as Record<string, Schema>);
 
     const variables = {
       context: render,

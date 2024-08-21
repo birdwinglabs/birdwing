@@ -1,14 +1,14 @@
+import { Schema } from "@markdoc/markdoc";
 import { FragmentFileHandler } from "./fragment.js";
 import { ContentTransform, FragmentConfig, PageData } from "./interfaces.js";
 import { FileHandler } from "./loader.js";
 import { PageFileHandler } from "./page.js";
-import { CustomTag } from "./tag.js";
 import minimatch from 'minimatch';
 
 export class Plugin {
   constructor(
     public handlers: FileHandler[] = [],
-    public tags: Record<string, CustomTag> = {},
+    public tags: Record<string, Schema> = {},
   ) {}
 
   page(glob: string, config: (doc: PageData) => ContentTransform) {
@@ -21,7 +21,7 @@ export class Plugin {
     return this;
   }
 
-  tag(name: string, tag: CustomTag) {
+  tag(name: string, tag: Schema) {
     this.tags[name] = tag;
     return this;
   }
@@ -30,7 +30,7 @@ export class Plugin {
 
 export class PluginContext {
   private handlers: FileHandler[] = [];
-  public tags: Record<string, CustomTag> = {};
+  public tags: Record<string, Schema> = {};
 
   constructor(plugins: Plugin[]) {
     for (const plugin of plugins) {

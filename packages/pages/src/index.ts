@@ -1,7 +1,7 @@
 import { join, dirname } from 'path';
 import { nodes, Plugin, resolvePageUrl } from '@aetlan/aetlan';
-import { Feature } from './tags/feature.js';
-import { Cta } from './tags/cta.js';
+import { feature } from './tags/feature.js';
+import { cta } from './tags/cta.js';
 import { Tag } from '@markdoc/markdoc';
 
 interface PageFragments {
@@ -10,8 +10,8 @@ interface PageFragments {
 
 export default function pages() {
   return new Plugin()
-    .tag('cta', new Cta())
-    .tag('feature', new Feature())
+    .tag('cta', cta)
+    .tag('feature', feature)
     .fragment('MENU.md', ({ frontmatter, path }) => {
       return {
         name: 'menu',

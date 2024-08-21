@@ -1,8 +1,9 @@
 import { join, dirname } from 'path';
 import { Plugin, extractHeadings, nodes, resolvePageUrl } from '@aetlan/aetlan';
 import { extractLinks, makePageData, Summary } from './summary.js';
-import { Hint } from './tags/index.js';
-import { Tag } from '@markdoc/markdoc';
+import Markdoc from '@markdoc/markdoc';
+
+const { Tag } = Markdoc;
 
 interface DocsConfig {
   path: string;
@@ -11,13 +12,24 @@ interface DocsConfig {
 interface DocFragments {
   summary: Summary;
 
-  menu: Tag;
+  menu: typeof Tag;
 }
 
 
 export default function(config: DocsConfig) {
   return new Plugin()
-    .tag('hint', new Hint())
+    .tag('hint', {
+      attributes: {
+        style: {
+          type: String
+        }
+      },
+      transform(node, config) {
+        const variables = { ...config.variables, context: 'Hint' };
+
+        return new Tag('Hint', node.transformAttributes(config), node.transformChildren({...config, variables }));
+      }
+    })
     .fragment(join(config.path, 'SUMMARY.md'), ({ frontmatter, ast, path }) => {
       return {
         name: 'summary',
