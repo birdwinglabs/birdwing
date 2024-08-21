@@ -1,5 +1,5 @@
-import { join, dirname, basename, extname } from 'path';
-import { Plugin, nodes, resolvePageUrl } from '@aetlan/aetlan';
+import { join, dirname } from 'path';
+import { Plugin, extractHeadings, nodes, resolvePageUrl } from '@aetlan/aetlan';
 import { extractLinks, makePageData, Summary } from './summary.js';
 import { Hint } from './tags/index.js';
 import { Tag } from '@markdoc/markdoc';
@@ -42,28 +42,13 @@ export default function(config: DocsConfig) {
         url,
         nodes,
         tags: ['hint'],
-        data: async ({ summary, menu }: DocFragments) => {
-          const headings: any[] = [];
-          for (const node of ast.walk()) {
-            if (node.type === 'heading') {
-              let title = '';
-              for (const child of node.walk()) {
-                if (child.type === 'text') {
-                  title += child.attributes.content;
-                }
-              }
-              headings.push({ depth: node.attributes.level, title });
-            }
-          }
-
-          return {
-            ...summary.data(url),
-            ...frontmatter,
-            headings,
-            summary: summary.renderable,
-            menu: menu,
-          }
-        }
+        data: async ({ summary, menu }: DocFragments) => ({
+          ...summary.data(url),
+          ...frontmatter,
+          headings: extractHeadings(ast),
+          summary: summary.renderable,
+          menu: menu,
+        }),
       }
     })
 }
