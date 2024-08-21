@@ -1,5 +1,5 @@
 import { Plugin, PluginContext } from './plugin.js';
-import { Document, Paragraph, Heading, List, Link, Fence } from './nodes.js';
+import { document, paragraph, heading, list, link, fence } from './nodes.js';
 
 export * from './interfaces.js';
 export * from './nodes.js';
@@ -17,10 +17,10 @@ export { resolvePageUrl, extractHeadings } from './util.js';
 export { Plugin, PluginContext };
 
 export const nodes = {
-  document: new Document(),
-  heading: new Heading(),
-  paragraph: new Paragraph(),
-  list: new List(),
-  link: new Link(),
-  fence: new Fence(),
+  document,
+  heading,
+  paragraph,
+  list,
+  link,
+  fence,
 };

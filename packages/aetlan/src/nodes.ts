@@ -1,22 +1,33 @@
-import markdoc from '@markdoc/markdoc';
+import Markdoc, { Node, Schema, Config } from '@markdoc/markdoc';
 import nodePath, { dirname } from 'path';
 
-const { Tag } = markdoc;
+const { Tag, nodes } = Markdoc;
 
-export class Document {
-  transform(node: any, config: any) {
-    return new Tag(config.variables.context, node.attributes, node.transformChildren(config));
+export const makeTransform = (name: string) => (node: Node, config: Config) =>
+  new Tag(
+    `${config.variables?.context}.${name}`,
+    node.transformAttributes(config),
+    node.transformChildren(config)
+  );
+
+export const document: Schema = {
+  transform(node, config) {
+    return new Tag(config.variables?.context, node.attributes, node.transformChildren(config));
   }
 }
 
-export class Heading {
-  readonly children = ['inline'];
-  readonly attributes = {
-    id: { type: String },
-    level: { type: Number, required: true, default: 1 }
-  }
+export const tagName = (name: string, config: Config) => `${config.variables?.context}.${name}`;
 
-  transform(node: any, config: any) {
+
+export const heading: Schema = {
+  attributes: {
+    level: {
+      type: 'Number',
+      required: true,
+      render: true,
+    }
+  },
+  transform(node, config) {
     const attributes = node.transformAttributes(config);
     const children = node.transformChildren(config);
 
@@ -34,57 +45,30 @@ export class Heading {
 
     attributes.id = generateID();
 
-    return new Tag(`${config.variables.context}.heading`, attributes, children);
+    return new Tag(tagName('heading', config), attributes, children);
   }
 }
 
-export class Paragraph {
-  transform(node: any, config: any) {
-    return new Tag(`${config.variables.context}.paragraph`, node.attributes, node.transformChildren(config));
+export const paragraph: Schema = {
+  ...nodes.paragraph,
+  transform: makeTransform('paragraph'),
+}
+
+export const fence: Schema = {
+  attributes: nodes.fence.attributes,
+  transform(node, config) {
+    return new Tag(tagName('fence', config), node.attributes, node.transformChildren(config));
   }
 }
 
-export class Fence {
-  readonly attributes = {
-    content: {
-      type: String
-    },
-    language: {
-      type: String
-    },
-    process: {
-      type: Boolean
-    }
-  };
-
-  transform(node: any, config: any) {
-    return new Tag(`${config.variables.context}.fence`, node.attributes, node.transformChildren(config));
-  }
+export const list: Schema = {
+  ...nodes.list,
+  transform: makeTransform('list'),
 }
 
-export class List {
-  readonly attributes = {
-    ordered: {
-      type: Boolean
-    }
-  };
-
-  transform(node: any, config: any) {
-    return new Tag(`${config.variables.context}.list`, node.attributes, node.transformChildren(config));
-  }
-}
-
-export class Link {
-  readonly attributes = {
-    href: {
-      type: String
-    },
-    title: {
-      type: String
-    }
-  };
-
-  transform(node: any, config: any) {
+export const link: Schema = {
+  ...nodes.list,
+  transform(node, config) {
     const { urls, path, context } = config.variables || {};
     const dirName = dirname(path);
     let attributes = node.attributes;
