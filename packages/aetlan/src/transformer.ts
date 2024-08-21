@@ -7,7 +7,7 @@ export class Transformer {
   private urlMap: Record<string, string> = {};
 
   constructor(
-    private customTags: Record<string, Schema>,
+    private tags: Record<string, Schema>,
   ) {}
 
   linkPath(path: string, url: string) {
@@ -19,21 +19,13 @@ export class Transformer {
   }
 
   transform(ast: Node, config: ContentTransform, extraVars: Document) {
-    const { tags: tagnames, nodes, render } = config;
-
-    const tags = tagnames.reduce((tags, name) => {
-      tags[name] = this.customTags[name];
-      return tags;
-    }, {} as Record<string, Schema>);
-
     const variables = {
-      context: render,
       urls: this.urlMap,
       ...extraVars,
     }
 
     return {
-      tag: Markdoc.transform(ast, { tags, nodes, variables }) as Tag,
+      tag: Markdoc.transform(ast, { tags: this.tags, nodes: config.nodes, variables }) as Tag,
       variables,
     }
   }

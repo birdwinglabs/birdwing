@@ -1,7 +1,7 @@
 import { join, dirname } from 'path';
 import { Plugin, extractHeadings, nodes, resolvePageUrl } from '@aetlan/aetlan';
 import { extractLinks, makePageData, Summary } from './summary.js';
-import Markdoc from '@markdoc/markdoc';
+import Markdoc, { Schema } from '@markdoc/markdoc';
 
 const { Tag } = Markdoc;
 
@@ -15,6 +15,23 @@ interface DocFragments {
   menu: typeof Tag;
 }
 
+export const docPage: Schema = {
+  children: undefined,
+  transform(node, config) {
+    const variables = { ...config.variables, context: 'Documentation' };
+
+    return new Tag('Documentation', node.transformAttributes(config), node.transformChildren({...config, variables }));
+  }
+}
+
+export const docSummary: Schema = {
+  children: undefined,
+  transform(node, config) {
+    const variables = { ...config.variables, context: 'DocumentationSummary' };
+
+    return new Tag('DocumentationSummary', node.transformAttributes(config), node.transformChildren({...config, variables }));
+  }
+}
 
 export default function(config: DocsConfig) {
   return new Plugin()
@@ -33,10 +50,8 @@ export default function(config: DocsConfig) {
     .fragment(join(config.path, 'SUMMARY.md'), ({ frontmatter, ast, path }) => {
       return {
         name: 'summary',
-        render: 'DocumentationSummary',
         url: join('/', dirname(path)),
-        nodes,
-        tags: [],
+        nodes: { ...nodes, document: docSummary },
         data: async () => frontmatter,
         output: (tag, {urls}) => {
           const links = extractLinks(ast, config.path, urls);
@@ -50,10 +65,8 @@ export default function(config: DocsConfig) {
       const url = resolvePageUrl(path, frontmatter.slug, config.path);
 
       return {
-        render: 'Documentation',
         url,
-        nodes,
-        tags: ['hint'],
+        nodes: { ...nodes, document: docPage },
         data: async ({ summary, menu }: DocFragments) => ({
           ...summary.data(url),
           ...frontmatter,

@@ -1,10 +1,10 @@
-import markdoc from '@markdoc/markdoc';
+import markdoc, { Tag } from '@markdoc/markdoc';
 import React from 'react';
 
 export class Renderer {
   constructor(private components: any) {}
 
-  render(renderable: any) {
+  render(renderable: Tag) {
     const namespace = (name: string) => {
       if (name.includes('.')) {
         const ns = name.split('.');

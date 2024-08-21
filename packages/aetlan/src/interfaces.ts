@@ -22,13 +22,9 @@ export interface PageData {
 }
 
 export interface ContentTransform {
-  render: string;
-
   url: string;
 
   nodes: Document;
-
-  tags: string[];
 
   data(fragments: Document): Promise<Document>;
 }
