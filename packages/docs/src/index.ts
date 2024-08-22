@@ -16,36 +16,22 @@ interface DocFragments {
 }
 
 export const docPage: Schema = {
-  children: undefined,
-  transform(node, config) {
-    const variables = { ...config.variables, context: 'Documentation' };
-
-    return new Tag('Documentation', node.transformAttributes(config), node.transformChildren({...config, variables }));
-  }
+  render: 'Documentation',
 }
 
 export const docSummary: Schema = {
-  children: undefined,
-  transform(node, config) {
-    const variables = { ...config.variables, context: 'DocumentationSummary' };
-
-    return new Tag('DocumentationSummary', node.transformAttributes(config), node.transformChildren({...config, variables }));
-  }
+  render: 'DocumentationSummary',
 }
 
 export default function(config: DocsConfig) {
   return new Plugin()
     .tag('hint', {
+      render: 'Hint',
       attributes: {
         style: {
           type: String
         }
       },
-      transform(node, config) {
-        const variables = { ...config.variables, context: 'Hint' };
-
-        return new Tag('Hint', node.transformAttributes(config), node.transformChildren({...config, variables }));
-      }
     })
     .fragment(join(config.path, 'SUMMARY.md'), ({ frontmatter, ast, path }) => {
       return {

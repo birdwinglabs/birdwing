@@ -18,11 +18,11 @@ function transformList(node: Node, config: Config) {
       .slice(softbreakIndex + 1)
       .map((c => markdoc.transform(c, config)));
 
-    childTags.push(new Tag('Feature.dt', {}, term));
-    childTags.push(new Tag('Feature.dd', {}, data));
+    childTags.push(new Tag('dt', {}, term));
+    childTags.push(new Tag('dd', {}, data));
   }
 
-  return new Tag('Feature.dl', {}, childTags);
+  return new Tag('dl', {}, childTags);
 }
 
 function transformChild(node: Node, config: Config) {
@@ -35,19 +35,18 @@ function transformChild(node: Node, config: Config) {
 export const feature: Schema = {
   transform(node, config) {
     const splitIndex = node.children.findIndex(child => child.type === 'hr');
-    const variables = { ...config.variables, context: 'Feature' };
 
     if (splitIndex >= 0) {
       const body = node.children
         .slice(0, splitIndex)
-        .map(node => transformChild(node, {...config, variables }));
+        .map(node => transformChild(node, config));
 
       const side = node.children
         .slice(splitIndex + 1)
-        .map(node => transformChild(node, {...config, variables }));
+        .map(node => transformChild(node, config));
 
       return new Tag('Feature', { side }, body);
     }
-    return new Tag('Feature', {}, node.transformChildren({...config, variables }));
+    return new Tag('Feature', {}, node.transformChildren(config));
   }
 }
