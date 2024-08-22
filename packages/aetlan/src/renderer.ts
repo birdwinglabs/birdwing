@@ -1,39 +1,9 @@
 import Markdoc from '@markdoc/markdoc';
 import React from 'react';
 
-const { Tag } = Markdoc;
-
-function isUppercase(word: string){
-  return /^\p{Lu}/u.test(word);
-}
-
 export class Renderer {
   constructor(private components: any) {}
 
-  applyNamespace(tag: any, component?: string) {
-    if (!isUppercase(tag.name) && component) {
-      tag.name = `${component}.${tag.name}`;
-    } else {
-      component = tag.name;
-    }
-    for (const attr of Object.values(tag.attributes)) {
-      if (attr instanceof Tag) {
-        this.applyNamespace(attr, component);
-      }
-      if (Array.isArray(attr)) {
-        for (const child of attr) {
-          if (child instanceof Tag) {
-            this.applyNamespace(child, component);
-          }
-        }
-      }
-    }
-    for (const child of tag.children) {
-      if (child instanceof Tag) {
-        this.applyNamespace(child, component);
-      }
-    }
-  }
 
   isComponent(name: string) {
     return name in this.components;
@@ -44,8 +14,6 @@ export class Renderer {
   }
 
   render(renderable: any) {
-    this.applyNamespace(renderable);
-
     const namespace = (name: string) => {
       if (name.includes('.')) {
         const ns = name.split('.');

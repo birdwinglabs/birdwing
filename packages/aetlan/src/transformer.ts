@@ -1,7 +1,40 @@
-import Markdoc, { Node, Schema, Tag } from "@markdoc/markdoc";
+import Markdoc, { Node, Schema } from "@markdoc/markdoc";
 import { Document } from '@tashmet/tashmet';
 
 import { ContentTransform } from "./interfaces.js";
+
+const { Tag } = Markdoc;
+
+function isUppercase(word: string){
+  return /^\p{Lu}/u.test(word);
+}
+
+function applyNamespace(tag: any, component?: string) {
+  if (!isUppercase(tag.name) && component) {
+    tag.name = `${component}.${tag.name}`;
+  } else {
+    component = tag.name;
+  }
+  for (const attr of Object.values(tag.attributes || {})) {
+    if (Tag.isTag(attr)) {
+      applyNamespace(attr, component);
+    }
+    if (Array.isArray(attr)) {
+      for (const child of attr) {
+        if (Tag.isTag(child)) {
+          applyNamespace(child, component);
+        }
+      }
+    }
+  }
+  for (const child of tag.children || []) {
+    if (Tag.isTag(child)) {
+      applyNamespace(child, component);
+    }
+  }
+
+  return tag;
+}
 
 export class Transformer {
   private urlMap: Record<string, string> = {};
@@ -24,8 +57,10 @@ export class Transformer {
       ...extraVars,
     }
 
+    const tag = Markdoc.transform(ast, { tags: this.tags, nodes: config.nodes, variables }) as any;
+
     return {
-      tag: Markdoc.transform(ast, { tags: this.tags, nodes: config.nodes, variables }) as Tag,
+      tag: applyNamespace(tag),
       variables,
     }
   }
