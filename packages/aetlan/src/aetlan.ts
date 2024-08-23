@@ -22,6 +22,8 @@ export interface AetlanConfig {
   content: ContentMountPoint[];
 
   plugins: Plugin[];
+
+  variables: Document;
 }
 
 export class Aetlan extends EventEmitter {
@@ -112,6 +114,6 @@ export class Aetlan extends EventEmitter {
     const { tags, nodes, documents } = this.config;
     const content = await this.cache.find().toArray();
     const fileNodes = content.map(c => this.contentLoader.load(c));
-    return new Compiler(fileNodes, new Transformer(tags, nodes, documents));
+    return new Compiler(fileNodes, new Transformer(tags, nodes, documents, this.config.variables));
   }
 }

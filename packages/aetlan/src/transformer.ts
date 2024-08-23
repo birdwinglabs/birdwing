@@ -41,6 +41,7 @@ export class Transformer {
     private tags: Record<string, Schema>,
     private nodes: Record<string, Schema>,
     private documents: Record<string, Schema>,
+    private variables: Record<string, any> = {}
   ) {}
 
   linkPath(path: string, url: string) {
@@ -54,6 +55,7 @@ export class Transformer {
   transform(ast: Node, extraVars: Document) {
     const variables = {
       urls: this.urlMap,
+      ...this.variables,
       ...extraVars,
     }
 

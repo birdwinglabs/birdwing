@@ -11,17 +11,19 @@ import { ContentMountPoint } from '@aetlan/aetlan/dist/loader';
 
 interface ConfigFile {
   content: ContentMountPoint[];
+
+  variables: Record<string, any>;
 }
 
 function configure(file: string): AetlanConfig {
   const configFile = yaml.load(fs.readFileSync(file).toString()) as ConfigFile;
-  //const pluginCtx = new PluginContext([docs(), pages()]);
   return {
     tags,
     nodes,
     documents,
     plugins: [docs(), pages()],
     content: configFile.content,
+    variables: configFile.variables || {},
   };
 }
 
