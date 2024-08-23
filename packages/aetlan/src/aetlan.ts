@@ -2,11 +2,12 @@ import { Database, Filter, Collection, Document } from '@tashmet/tashmet';
 import { PageData, Route, TargetFile } from "./interfaces.js";
 
 import ev from "eventemitter3";
-import { ContentLoader, FileHandler, FileMatcher } from './loader.js';
+import { ContentLoader, ContentMountPoint } from './loader.js';
 import { Pipeline } from './pipeline.js';
 import { Compiler, ContentTarget } from './compiler.js';
 import { Transformer } from './transformer.js';
 import { Schema } from '@markdoc/markdoc';
+import { Plugin } from './plugin.js';
 
 const { EventEmitter } = ev;
 
@@ -18,9 +19,9 @@ export interface AetlanConfig {
 
   documents: Record<string, Schema>;
 
-  fileHandlers: Record<string, FileHandler>;
+  content: ContentMountPoint[];
 
-  matchers: FileMatcher[];
+  plugins: Plugin[];
 }
 
 export class Aetlan extends EventEmitter {
@@ -34,7 +35,7 @@ export class Aetlan extends EventEmitter {
     private config: AetlanConfig,
   ) {
     super();
-    this.contentLoader = new ContentLoader(config.fileHandlers, config.matchers);
+    this.contentLoader = ContentLoader.configure(config.plugins, config.content);
   }
 
   static async load(db: Database, config: AetlanConfig): Promise<Aetlan> {

@@ -1,60 +1,47 @@
 import { join, dirname } from 'path';
 import { Plugin, extractHeadings, resolvePageUrl } from '@aetlan/aetlan';
 import { extractLinks, makePageData, Summary } from './summary.js';
-import Markdoc, { Schema } from '@markdoc/markdoc';
-
-const { Tag } = Markdoc;
-
-interface DocsConfig {
-  path: string;
-}
+import { Tag } from '@markdoc/markdoc';
 
 interface DocFragments {
-  docsummary: Summary;
+  docsummary?: Summary;
 
-  menu: typeof Tag;
+  menu?: Tag;
+
+  footer?: Tag;
 }
 
-
-const rootPath = 'docs';
-
 export default function() {
-  return new Plugin()
-    //.tag('hint', {
-      //render: 'Hint',
-      //attributes: {
-        //style: {
-          //type: String
-        //}
-      //},
-    //})
-    .fragment('docsummary', ({ frontmatter, ast, path }) => {
+  return new Plugin('docs')
+    .fragment('docsummary', 'SUMMARY.md', (mountPath, { frontmatter, ast, path }) => {
       return {
-        //name: 'summary',
         url: join('/', dirname(path)),
-        //nodes: { ...nodes, document: docSummary },
         data: async () => frontmatter,
         output: (tag, {urls}) => {
-          const links = extractLinks(ast, rootPath, urls);
+          const links = extractLinks(ast, mountPath, urls);
           const data = makePageData(links);
 
           return new Summary(tag, data);
         }
       }
     })
-    .page('docpage', ({ frontmatter, path, ast }) => {
-      const url = resolvePageUrl(path, frontmatter.slug, rootPath);
+    .page('docpage', '**/*.md', (mountPath, { frontmatter, path, ast }) => {
+      const url = resolvePageUrl(path, frontmatter.slug, mountPath);
 
       return {
         url,
-        //nodes: { ...nodes, document: docPage },
-        data: async ({ docsummary, menu }: DocFragments) => ({
-          ...docsummary.data(url),
-          ...frontmatter,
-          headings: extractHeadings(ast),
-          summary: docsummary.renderable,
-          menu: menu,
-        }),
+        data: async ({ docsummary, footer, menu }: DocFragments) => {
+          let data = {
+            ...frontmatter,
+            menu,
+            footer,
+            headings: extractHeadings(ast),
+          }
+          if (docsummary) {
+            data = Object.assign({ ...docsummary.data(url), summary: docsummary.renderable }, data);
+          }
+          return data;
+        }
       }
     })
 }

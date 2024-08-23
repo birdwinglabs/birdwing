@@ -1,28 +1,22 @@
 import { join, dirname } from 'path';
 import { Plugin, resolvePageUrl } from '@aetlan/aetlan';
-//import { feature } from './schema/feature.js';
-//import { cta } from './schema/cta.js';
-//import { menu } from './schema/menu.js';
-//import { page } from './schema/page.js';
-import Markdoc from '@markdoc/markdoc';
-
-const { Tag } = Markdoc;
+import { Tag } from '@markdoc/markdoc';
 
 interface PageFragments {
-  menu: typeof Tag;
+  menu?: Tag;
+
+  footer?: Tag;
 }
 
 export default function pages() {
-  return new Plugin()
-    //.tag('cta', cta)
-    //.tag('feature', feature)
-    .fragment('menu', ({ frontmatter, path }) => ({
+  return new Plugin('pages')
+    .fragment('menu', 'MENU.md', (mountPath, { frontmatter, path }) => ({
       url: join('/', dirname(path)),
       data: async () => frontmatter,
       output: tag => tag,
     }))
-    .page('page', ({ frontmatter, path }) => ({
-      url: resolvePageUrl(path, frontmatter.slug),
-      data: async ({ menu }: PageFragments) => ({ ...frontmatter, menu }),
+    .page('page', '**/*.md', (mountPath, { frontmatter, path }) => ({
+      url: resolvePageUrl(path, frontmatter.slug, mountPath),
+      data: async ({ menu, footer }: PageFragments) => ({ ...frontmatter, menu, footer }),
     }));
 }

@@ -1,4 +1,4 @@
-import { Plugin, PluginContext } from './plugin.js';
+import { Plugin } from './plugin.js';
 
 export * from './interfaces.js';
 
@@ -11,4 +11,4 @@ export { Fragment } from './fragment.js';
 export { ContentLoader } from './loader.js';
 export { resolvePageUrl, extractHeadings } from './util.js';
 
-export { Plugin, PluginContext };
+export { Plugin };

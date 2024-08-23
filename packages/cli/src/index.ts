@@ -5,24 +5,23 @@ import docs from '@aetlan/docs';
 import pages from '@aetlan/pages';
 import yaml from 'js-yaml';
 import fs from 'fs';
-import { PluginContext } from '@aetlan/aetlan';
 import { AetlanConfig } from '@aetlan/aetlan/dist/aetlan';
 import { tags, nodes, documents } from '@aetlan/schema';
-import { FileMatcher } from '@aetlan/aetlan/dist/loader';
+import { ContentMountPoint } from '@aetlan/aetlan/dist/loader';
 
 interface ConfigFile {
-  content: FileMatcher[];
+  content: ContentMountPoint[];
 }
 
 function configure(file: string): AetlanConfig {
   const configFile = yaml.load(fs.readFileSync(file).toString()) as ConfigFile;
-  const pluginCtx = new PluginContext([docs(), pages()]);
+  //const pluginCtx = new PluginContext([docs(), pages()]);
   return {
     tags,
     nodes,
     documents,
-    fileHandlers: pluginCtx.handlers,
-    matchers: configFile.content,
+    plugins: [docs(), pages()],
+    content: configFile.content,
   };
 }
 
