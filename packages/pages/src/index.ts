@@ -15,6 +15,11 @@ export default function pages() {
       data: async () => frontmatter,
       output: tag => tag,
     }))
+    .fragment('footer', '**/FOOTER.md', (mountPath, { frontmatter, path }) => ({
+      url: join('/', dirname(path)),
+      data: async () => frontmatter,
+      output: tag => tag,
+    }))
     .page('page', '**/*.md', (mountPath, { frontmatter, path }) => ({
       url: resolvePageUrl(path, frontmatter.slug, mountPath),
       data: async ({ menu, footer }: PageFragments) => ({ ...frontmatter, menu, footer }),
