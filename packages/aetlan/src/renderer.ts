@@ -1,4 +1,4 @@
-import Markdoc from '@markdoc/markdoc';
+import Markdoc, { Tag } from '@markdoc/markdoc';
 import React from 'react';
 
 export class Renderer {
@@ -13,7 +13,7 @@ export class Renderer {
     return this.isComponent(component) && name in this.components[component];
   }
 
-  render(renderable: any) {
+  render(renderable: Tag) {
     const namespace = (name: string) => {
       if (name.includes('.')) {
         const ns = name.split('.');

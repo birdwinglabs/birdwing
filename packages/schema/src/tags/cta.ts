@@ -3,6 +3,7 @@ import Markdoc, { Schema } from '@markdoc/markdoc';
 const { Tag } = Markdoc;
 
 export const cta: Schema = {
+  render: 'CallToAction',
   transform(node, config) {
     const splitIndex = node.children.findIndex(child => child.type === 'hr');
 
@@ -39,6 +40,6 @@ export const cta: Schema = {
       }
     }
 
-    return new Tag('Cta', { side, actions }, body);
+    return new Tag(this.render, { side, actions }, body);
   }
 }

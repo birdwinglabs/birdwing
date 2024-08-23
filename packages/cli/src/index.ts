@@ -5,39 +5,25 @@ import docs from '@aetlan/docs';
 import pages from '@aetlan/pages';
 import yaml from 'js-yaml';
 import fs from 'fs';
-import { Plugin } from '@aetlan/aetlan';
-
-interface Module {
-  type: string;
-
-  path: string;
-}
+import { PluginContext } from '@aetlan/aetlan';
+import { AetlanConfig } from '@aetlan/aetlan/dist/aetlan';
+import { tags, nodes, documents } from '@aetlan/schema';
+import { FileMatcher } from '@aetlan/aetlan/dist/loader';
 
 interface ConfigFile {
-  modules: Module[];
+  content: FileMatcher[];
 }
 
-function parseConfig(file: string): ConfigFile {
-  return yaml.load(fs.readFileSync(file).toString()) as ConfigFile;
-}
-
-function getPlugin(name: string, config: any) {
-  switch (name) {
-    case 'documentation':
-      return docs(config);
-    default:
-      return null;
-  }
-}
-
-function getPlugins(config: ConfigFile) {
-  return config.modules.reduce((plugins, {type, ...cfg}) => {
-    const plugin = getPlugin(type, cfg);
-    if (plugin) {
-      plugins.push(plugin);
-    }
-    return plugins;
-  }, [] as Plugin[])
+function configure(file: string): AetlanConfig {
+  const configFile = yaml.load(fs.readFileSync(file).toString()) as ConfigFile;
+  const pluginCtx = new PluginContext([docs(), pages()]);
+  return {
+    tags,
+    nodes,
+    documents,
+    fileHandlers: pluginCtx.handlers,
+    matchers: configFile.content,
+  };
 }
 
 export function cli() {
@@ -45,10 +31,7 @@ export function cli() {
     .command('build')
     .argument('<path>', 'path to config file')
     .action(async (cfgPath: string) => {
-      const build = await Build.create(path.dirname(cfgPath), [
-        ...getPlugins(parseConfig(cfgPath)),
-        pages(),
-      ]);
+      const build = await Build.create(path.dirname(cfgPath), configure(cfgPath));
       await build.run();
     });
 
@@ -56,10 +39,7 @@ export function cli() {
     .command('watch')
     .argument('<path>', 'path to config file')
     .action(async (cfgPath: string) => {
-      const devServer = await DevServer.create(path.dirname(cfgPath), [
-        ...getPlugins(parseConfig(cfgPath)),
-        pages(),
-      ]);
+      const devServer = await DevServer.create(path.dirname(cfgPath), configure(cfgPath));
       await devServer.run();
     });
 

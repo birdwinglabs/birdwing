@@ -24,14 +24,10 @@ export interface PageData {
 export interface ContentTransform {
   url: string;
 
-  nodes: Document;
-
   data(fragments: Document): Promise<Document>;
 }
 
 export interface FragmentConfig extends ContentTransform {
-  name: string;
-
   output: (tag: Tag, variables: Document) => any;
 }
 

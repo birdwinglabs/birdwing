@@ -42,8 +42,8 @@ export const paragraph: Schema = {
 export const fence: Schema = {
   render: 'fence',
   attributes: nodes.fence.attributes,
-  transform(node, config) {
-    return new Tag(this.render, node.attributes, node.transformChildren(config));
+  transform(node) {
+    return new Tag(this.render, node.attributes, []);
   }
 }
 

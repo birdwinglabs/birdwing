@@ -1,7 +1,7 @@
+import minimatch from 'minimatch';
 import { PageData } from "./interfaces.js";
 import { Page } from "./page.js";
 import { Fragment } from "./fragment.js";
-import { PluginContext } from "./plugin.js";
 import { Transformer } from "./transformer.js";
 
 export interface FileNode {
@@ -12,23 +12,36 @@ export interface FileNode {
   transform(transformer: Transformer): Page | Fragment;
 }
 
-export interface FileHandler {
-  glob: string;
+export type FileHandler = (content: PageData) => FileNode;
 
-  createNode(content: PageData): FileNode;
+export interface FileMatcher {
+  type: string;
+
+  match: string;
 }
 
-
 export class ContentLoader {
-  constructor(private pluginContext: PluginContext) {}
+  constructor(
+    private fileHandlers: Record<string, FileHandler>,
+    private matchers: FileMatcher[]
+  ) {}
+
+  private getFileHandler(content: PageData): FileHandler | null {
+    for (const { match, type } of this.matchers) {
+      if (minimatch(content.path, match)) {
+        return this.fileHandlers[type];
+      }
+    }
+    return null;
+  }
 
   load(content: PageData): FileNode {
-    const handler = this.pluginContext.getFileHandler(content);
+    const handler = this.getFileHandler(content);
 
     if (!handler) {
       throw Error('No handler for content');
     }
 
-    return handler.createNode(content)
+    return handler(content);
   }
 }

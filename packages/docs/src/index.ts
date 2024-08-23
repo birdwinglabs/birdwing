@@ -1,5 +1,5 @@
 import { join, dirname } from 'path';
-import { Plugin, extractHeadings, nodes, resolvePageUrl } from '@aetlan/aetlan';
+import { Plugin, extractHeadings, resolvePageUrl } from '@aetlan/aetlan';
 import { extractLinks, makePageData, Summary } from './summary.js';
 import Markdoc, { Schema } from '@markdoc/markdoc';
 
@@ -10,54 +10,49 @@ interface DocsConfig {
 }
 
 interface DocFragments {
-  summary: Summary;
+  docsummary: Summary;
 
   menu: typeof Tag;
 }
 
-export const docPage: Schema = {
-  render: 'Documentation',
-}
 
-export const docSummary: Schema = {
-  render: 'DocumentationSummary',
-}
+const rootPath = 'docs';
 
-export default function(config: DocsConfig) {
+export default function() {
   return new Plugin()
-    .tag('hint', {
-      render: 'Hint',
-      attributes: {
-        style: {
-          type: String
-        }
-      },
-    })
-    .fragment(join(config.path, 'SUMMARY.md'), ({ frontmatter, ast, path }) => {
+    //.tag('hint', {
+      //render: 'Hint',
+      //attributes: {
+        //style: {
+          //type: String
+        //}
+      //},
+    //})
+    .fragment('docsummary', ({ frontmatter, ast, path }) => {
       return {
-        name: 'summary',
+        //name: 'summary',
         url: join('/', dirname(path)),
-        nodes: { ...nodes, document: docSummary },
+        //nodes: { ...nodes, document: docSummary },
         data: async () => frontmatter,
         output: (tag, {urls}) => {
-          const links = extractLinks(ast, config.path, urls);
+          const links = extractLinks(ast, rootPath, urls);
           const data = makePageData(links);
 
           return new Summary(tag, data);
         }
       }
     })
-    .page(join(config.path, '**/*.md'), ({ frontmatter, path, ast }) => {
-      const url = resolvePageUrl(path, frontmatter.slug, config.path);
+    .page('docpage', ({ frontmatter, path, ast }) => {
+      const url = resolvePageUrl(path, frontmatter.slug, rootPath);
 
       return {
         url,
-        nodes: { ...nodes, document: docPage },
-        data: async ({ summary, menu }: DocFragments) => ({
-          ...summary.data(url),
+        //nodes: { ...nodes, document: docPage },
+        data: async ({ docsummary, menu }: DocFragments) => ({
+          ...docsummary.data(url),
           ...frontmatter,
           headings: extractHeadings(ast),
-          summary: summary.renderable,
+          summary: docsummary.renderable,
           menu: menu,
         }),
       }

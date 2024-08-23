@@ -13,6 +13,7 @@ import { Aetlan, ContentTarget, Plugin, Route } from '@aetlan/aetlan';
 import { StorageEngine } from '@tashmet/engine';
 import TashmetServer from '@tashmet/server';
 import { Document } from '@tashmet/tashmet';
+import { AetlanConfig } from '@aetlan/aetlan/dist/aetlan.js';
 
 class DevContentTarget implements ContentTarget {
   constructor(private aetlan: Aetlan) {}
@@ -38,11 +39,11 @@ export class DevServer {
   ) {
   }
 
-  static async create(root: string, plugins: Plugin[]) {
+  static async create(root: string, config: AetlanConfig) {
     const store = await createStorageEngine();
     const db = await createDatabase(store, root, true);
 
-    const aetlan = await Aetlan.load(db, plugins);
+    const aetlan = await Aetlan.load(db, config);
 
     return new DevServer(aetlan, store, root);
   }

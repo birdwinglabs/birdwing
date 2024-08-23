@@ -2,12 +2,26 @@ import { Database, Filter, Collection, Document } from '@tashmet/tashmet';
 import { PageData, Route, TargetFile } from "./interfaces.js";
 
 import ev from "eventemitter3";
-import { Plugin, PluginContext } from './plugin.js';
-import { ContentLoader } from './loader.js';
+import { ContentLoader, FileHandler, FileMatcher } from './loader.js';
 import { Pipeline } from './pipeline.js';
 import { Compiler, ContentTarget } from './compiler.js';
+import { Transformer } from './transformer.js';
+import { Schema } from '@markdoc/markdoc';
 
 const { EventEmitter } = ev;
+
+
+export interface AetlanConfig {
+  tags: Record<string, Schema>;
+
+  nodes: Record<string, Schema>;
+
+  documents: Record<string, Schema>;
+
+  fileHandlers: Record<string, FileHandler>;
+
+  matchers: FileMatcher[];
+}
 
 export class Aetlan extends EventEmitter {
   private contentLoader: ContentLoader;
@@ -17,13 +31,13 @@ export class Aetlan extends EventEmitter {
     private cache: Collection<PageData>,
     private routes: Collection<Route>,
     private target: Collection<TargetFile>,
-    private pluginContext: PluginContext,
+    private config: AetlanConfig,
   ) {
     super();
-    this.contentLoader = new ContentLoader(pluginContext);
+    this.contentLoader = new ContentLoader(config.fileHandlers, config.matchers);
   }
 
-  static async load(db: Database, plugins: Plugin[]): Promise<Aetlan> {
+  static async load(db: Database, config: AetlanConfig): Promise<Aetlan> {
     const source = db.collection('pagesource');
     const cache = db.collection<PageData>('pagecache');
     const routes = db.collection<Route>('routes');
@@ -34,7 +48,7 @@ export class Aetlan extends EventEmitter {
       { $out: cache.collectionName }
     ]).toArray();
 
-    return new Aetlan(source, cache, routes, target, new PluginContext(plugins));
+    return new Aetlan(source, cache, routes, target, config);
   }
 
   async reloadContent(file: string) {
@@ -94,8 +108,9 @@ export class Aetlan extends EventEmitter {
   }
 
   private async createCompiler() {
+    const { tags, nodes, documents } = this.config;
     const content = await this.cache.find().toArray();
-    const nodes = content.map(c => this.contentLoader.load(c));
-    return new Compiler(nodes, this.pluginContext.tags);
+    const fileNodes = content.map(c => this.contentLoader.load(c));
+    return new Compiler(fileNodes, new Transformer(tags, nodes, documents));
   }
 }

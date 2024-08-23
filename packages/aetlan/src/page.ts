@@ -1,16 +1,16 @@
 import { relative, isAbsolute } from 'path';
 import { Node, Tag } from "@markdoc/markdoc";
 import { Document } from '@tashmet/tashmet';
-import { ContentTransform, PageData } from "./interfaces.js";
+import { ContentTransform } from "./interfaces.js";
 import { Transformer } from './transformer.js';
 import { Fragment } from './fragment.js';
-import { FileHandler } from './loader.js';
 
 export class PageNode {
   constructor(
+    private type: string,
     private ast: Node,
     public readonly path: string,
-    private config: ContentTransform
+    private config: ContentTransform,
   ) {}
 
   get url() {
@@ -18,7 +18,7 @@ export class PageNode {
   }
 
   transform(transformer: Transformer): Page {
-    const { tag } = transformer.transform(this.ast, this.config, { path: this.path });
+    const { tag } = transformer.transform(this.ast, { document: this.type, path: this.path });
 
     function isSubPath(dir: string, root: string) {
       const rel = relative(root, dir);
@@ -37,19 +37,6 @@ export class PageNode {
     });
   }
 }
-
-
-export class PageFileHandler implements FileHandler  {
-  constructor(
-    public readonly glob: string,
-    private config: (doc: PageData) => ContentTransform,
-  ) {}
-
-  public createNode(content: PageData) {
-    return new PageNode(content.ast, content.path, this.config(content));
-  }
-}
-
 
 export class Page {
   constructor(

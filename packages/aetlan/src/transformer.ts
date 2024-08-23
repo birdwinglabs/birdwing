@@ -1,8 +1,6 @@
 import Markdoc, { Node, Schema } from "@markdoc/markdoc";
 import { Document } from '@tashmet/tashmet';
 
-import { ContentTransform } from "./interfaces.js";
-
 const { Tag } = Markdoc;
 
 function isUppercase(word: string){
@@ -41,6 +39,8 @@ export class Transformer {
 
   constructor(
     private tags: Record<string, Schema>,
+    private nodes: Record<string, Schema>,
+    private documents: Record<string, Schema>,
   ) {}
 
   linkPath(path: string, url: string) {
@@ -51,13 +51,17 @@ export class Transformer {
     delete this.urlMap[path];
   }
 
-  transform(ast: Node, config: ContentTransform, extraVars: Document) {
+  transform(ast: Node, extraVars: Document) {
     const variables = {
       urls: this.urlMap,
       ...extraVars,
     }
 
-    const tag = Markdoc.transform(ast, { tags: this.tags, nodes: config.nodes, variables }) as any;
+    const tag = Markdoc.transform(ast, {
+      tags: this.tags,
+      nodes: { ...this.nodes, document: this.documents[extraVars.document] },
+      variables
+    }) as any;
 
     return {
       tag: applyNamespace(tag),

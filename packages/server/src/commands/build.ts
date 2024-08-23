@@ -6,13 +6,14 @@ import * as esbuild from 'esbuild'
 
 import { generateCss } from '../css.js';
 import { createDatabase, createStorageEngine } from '../database.js';
-import { Aetlan, Renderer, Plugin, PluginContext, Transformer, ContentLoader } from '@aetlan/aetlan';
+import { Aetlan, Renderer } from '@aetlan/aetlan';
 import vm from 'vm';
 import { createRequire } from 'module';
 import { fileURLToPath } from 'url';
 import React from 'react';
 
 import { JSDOM } from 'jsdom';
+import { AetlanConfig } from '@aetlan/aetlan/dist/aetlan.js';
 
 export class Build {
   constructor(
@@ -20,11 +21,11 @@ export class Build {
     private root: string
   ) {}
 
-  static async create(root: string, plugins: Plugin[]) {
+  static async create(root: string, config: AetlanConfig) {
     const store = await createStorageEngine();
     const db = await createDatabase(store, root, false);
 
-    const aetlan = await Aetlan.load(db, plugins);
+    const aetlan = await Aetlan.load(db, config);
 
     return new Build(aetlan, root);
   }

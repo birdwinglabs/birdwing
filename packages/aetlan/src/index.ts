@@ -1,8 +1,6 @@
 import { Plugin, PluginContext } from './plugin.js';
-import { paragraph, heading, list, link, fence, item, em, strong } from './nodes.js';
 
 export * from './interfaces.js';
-export * from './nodes.js';
 
 export { Aetlan } from './aetlan.js';
 export { Renderer } from './renderer.js';
@@ -14,14 +12,3 @@ export { ContentLoader } from './loader.js';
 export { resolvePageUrl, extractHeadings } from './util.js';
 
 export { Plugin, PluginContext };
-
-export const nodes = {
-  heading,
-  paragraph,
-  list,
-  item,
-  em,
-  strong,
-  link,
-  fence,
-};
