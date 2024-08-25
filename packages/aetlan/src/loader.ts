@@ -1,6 +1,6 @@
 import minimatch from 'minimatch';
 import { join } from 'path';
-import { PageData } from "./interfaces.js";
+import { ParsedDocument } from "./interfaces.js";
 import { Page } from "./page.js";
 import { Fragment } from "./fragment.js";
 import { Transformer } from "./transformer.js";
@@ -24,14 +24,14 @@ export interface FileHandlerConfig {
   handler: FileHandler;
 }
 
-export type FileHandler = (mountPath: string, content: PageData) => FileNode;
+export type FileHandler = (mountPath: string, content: ParsedDocument) => FileNode;
 
 export interface FileMatcher {
   type: string;
 
   match: string;
 
-  handler: (content: PageData) => FileNode;
+  handler: (content: ParsedDocument) => FileNode;
 }
 
 export interface ContentMountPoint {
@@ -80,7 +80,7 @@ export class ContentLoader {
     return new ContentLoader(matchers);
   }
 
-  load(content: PageData): FileNode {
+  load(content: ParsedDocument): FileNode {
     for (const { match, handler } of this.matchers) {
       if (minimatch(content.path, match)) {
         return handler(content);

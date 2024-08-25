@@ -23,25 +23,29 @@ export async function createDatabase(store: StorageEngine, root: string, dev: bo
   const tashmet = await Tashmet.connect(store.proxy());
   const db = tashmet.db('aetlan');
   const pagesPath = path.join(root, 'src/pages');
+  const srcPath = path.join(root, 'src');
 
-  await db.createCollection('pagesource', {
+  await db.createCollection('source', {
     storageEngine: {
       glob: {
-        pattern: path.join(pagesPath, '**/*.md'),
+        pattern: path.join(srcPath, '**/*.md'),
         format: {
           frontmatter: {
             format: 'yaml',
           }
         },
+
         construct: {
           path: {
-            $relativePath: [pagesPath, '$_id']
+            $relativePath: [srcPath, '$_id']
           }
+
         },
       }
     }
   });
-  await db.createCollection('pagecache');
+  await db.createCollection('pages');
+  await db.createCollection('partials');
   await db.createCollection('routes');
 
   const targetOptions = dev

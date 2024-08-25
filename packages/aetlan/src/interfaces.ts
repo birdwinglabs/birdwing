@@ -1,24 +1,18 @@
-import { Node, RenderableTreeNode, Tag } from "@markdoc/markdoc";
+import { Node, Tag } from "@markdoc/markdoc";
 import { Document } from "@tashmet/tashmet";
 
-export interface RenderableDocument {
+export interface SourceDocument {
   _id: string;
 
-  renderable: any;
-}
-
-export interface PageData {
-  _id: string;
+  frontmatter: Document;
 
   path: string;
 
   body: string;
+}
 
+export interface ParsedDocument extends SourceDocument {
   ast: Node;
-
-  renderable: RenderableTreeNode | undefined;
-
-  frontmatter: Document;
 }
 
 export interface ContentTransform {

@@ -1,11 +1,11 @@
-import { PageData } from "./interfaces.js";
+import { ParsedDocument } from "./interfaces.js";
 import { Collection } from "@tashmet/tashmet";
 import { ContentLoader } from "./loader.js";
 import { Compiler, ContentTarget } from "./compiler.js";
 
 export class Pipeline {
   constructor(
-    private source: Collection<PageData>,
+    private source: Collection<ParsedDocument>,
     private target: ContentTarget,
     private compiler: Compiler,
     private loader: ContentLoader,
@@ -17,7 +17,7 @@ export class Pipeline {
     });
   }
 
-  async pushContent(content: PageData) {
+  async pushContent(content: ParsedDocument) {
     const res = this.compiler.pushNode(this.loader.load(content));
 
     if (res.changeType === 'attributes') {

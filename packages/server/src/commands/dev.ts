@@ -49,12 +49,12 @@ export class DevServer {
   }
 
   async run() {
-    const pageWatcher = chokidar.watch(path.join(this.root, 'src/pages/**/*.md'));
+    const contentWatcher = chokidar.watch(path.join(this.root, 'src/**/*.md'));
     const srcWatcher = chokidar.watch(path.join(this.root, 'src/**/*.jsx'));
 
     await this.aetlan.watch(new DevContentTarget(this.aetlan));
 
-    pageWatcher.on('change', async filePath => {
+    contentWatcher.on('change', async filePath => {
       await this.aetlan.reloadContent(filePath);
     });
 

@@ -41,6 +41,7 @@ export class Transformer {
     private tags: Record<string, Schema>,
     private nodes: Record<string, Schema>,
     private documents: Record<string, Schema>,
+    private partials: Record<string, Node> = {},
     private variables: Record<string, any> = {}
   ) {}
 
@@ -62,6 +63,7 @@ export class Transformer {
     const tag = Markdoc.transform(ast, {
       tags: this.tags,
       nodes: { ...this.nodes, document: this.documents[extraVars.document] },
+      partials: this.partials,
       variables
     }) as any;
 
