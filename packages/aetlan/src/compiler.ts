@@ -1,4 +1,4 @@
-import { Route } from "./interfaces.js";
+import { ParsedDocument, Route } from "./interfaces.js";
 import { Page } from "./page.js";
 import { Fragment } from "./fragment.js";
 import { Transformer } from "./transformer.js";
@@ -41,6 +41,11 @@ export class Compiler {
     } else {
       return new TransformResult('attributes', this.pages, this.fragments);
     }
+  }
+
+  pushPartial(content: ParsedDocument) {
+    console.log('updating partial: ' + content.path);
+    return new TransformResult('attributes', this.pages, this.fragments);
   }
 
   private get pages(): Page[] {

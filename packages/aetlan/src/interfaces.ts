@@ -11,8 +11,16 @@ export interface SourceDocument {
   body: string;
 }
 
-export interface ParsedDocument extends SourceDocument {
+export interface ParsedDocument {
+  type: 'page' | 'fragment' | 'partial';
+
+  path: string;
+
+  frontmatter: Document;
+
   ast: Node;
+
+  partials: string[];
 }
 
 export interface ContentTransform {

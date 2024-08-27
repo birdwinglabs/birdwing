@@ -19,11 +19,11 @@ class DevContentTarget implements ContentTarget {
   constructor(private aetlan: Aetlan) {}
 
   mount(route: Route) {
-    this.aetlan.updateRoute(route);
+    this.aetlan.store.updateRoute(route);
   }
 
   mountAttributes(url: string, attributes: Document): void {
-    this.aetlan.updateRouteAttributes(url, attributes);
+    this.aetlan.store.updateRouteAttributes(url, attributes);
   }
 
   unmount(url: string): void {
@@ -55,7 +55,7 @@ export class DevServer {
     await this.aetlan.watch(new DevContentTarget(this.aetlan));
 
     contentWatcher.on('change', async filePath => {
-      await this.aetlan.reloadContent(filePath);
+      await this.aetlan.store.reloadContent(path.relative(path.join(this.root, 'src'), filePath));
     });
 
     const files = await glob.glob(path.join(this.root, 'src/tags/**/*.jsx'));
@@ -122,9 +122,9 @@ export class DevServer {
 
     const buildRes = await ctx.rebuild();
     if (buildRes.outputFiles) {
-      await this.aetlan.write('/app.js', buildRes.outputFiles[0].text);
+      await this.aetlan.store.write('/app.js', buildRes.outputFiles[0].text);
     }
-    await this.aetlan.write('/main.css', await generateCss(this.root));
+    await this.aetlan.store.write('/main.css', await generateCss(this.root));
 
     this.store.logger.inScope('server').info("Done");
   }
@@ -132,13 +132,13 @@ export class DevServer {
   private createServer() {
     return http.createServer(async (req, res) => {
       const url = req.url || '';
-      const route = await this.aetlan.getRoute(url);
+      const route = await this.aetlan.store.getRoute(url);
 
       if (route) {
         var stream = fs.createReadStream(path.join(this.root, 'src/main.html'));
         stream.pipe(res);
       } else {
-        const content = await this.aetlan.getOutput(req.url || '');
+        const content = await this.aetlan.store.getOutput(req.url || '');
         res.write(content || '');
         res.end();
       }

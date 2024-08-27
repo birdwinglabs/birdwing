@@ -1,24 +1,31 @@
-import { ParsedDocument } from "./interfaces.js";
-import { Collection } from "@tashmet/tashmet";
+import { SourceDocument } from "./interfaces.js";
 import { ContentLoader } from "./loader.js";
 import { Compiler, ContentTarget } from "./compiler.js";
+import { ContentParser, Store } from "./store.js";
 
 export class Pipeline {
   constructor(
-    private source: Collection<ParsedDocument>,
+    private store: Store,
     private target: ContentTarget,
     private compiler: Compiler,
+    private parser: ContentParser,
     private loader: ContentLoader,
   ) {
-    this.source.watch().on('change', async change => {
-      if (change.operationType === 'replace' && change.fullDocument) {
-        this.pushContent(change.fullDocument);
-      }
+    this.store.watch().on('content-changed', async change => {
+      this.pushContent(change);
     });
   }
 
-  async pushContent(content: ParsedDocument) {
-    const res = this.compiler.pushNode(this.loader.load(content));
+  async pushContent(content: SourceDocument) {
+    const parsed = this.parser.parse(content);
+
+    if (!parsed) {
+      return;
+    }
+
+    const res = parsed.type !== 'partial'
+      ? this.compiler.pushNode(this.loader.load(parsed))
+      : this.compiler.pushPartial(parsed);
 
     if (res.changeType === 'attributes') {
       for (const page of res.pages) {

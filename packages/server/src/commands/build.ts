@@ -117,6 +117,6 @@ export class Build {
   }
 
   private async updateFile(name: string, content: string) {
-    await this.aetlan.write(path.join(this.root, 'out', name), content);
+    await this.aetlan.store.write(path.join(this.root, 'out', name), content);
   }
 }
