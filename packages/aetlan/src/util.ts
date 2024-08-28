@@ -1,5 +1,5 @@
 import { Node } from '@markdoc/markdoc';
-import { basename, dirname, extname, join } from 'path';
+import { basename, dirname, extname, join, relative, isAbsolute } from 'path';
 
 export function resolvePageUrl(path: string, slug?: string, root: string = '/') {
   const dirName = join('/', dirname(path));
@@ -30,4 +30,9 @@ export function extractHeadings(ast: Node): Heading[] {
     }
   }
   return headings;
+}
+
+export function isSubPath(dir: string, root: string) {
+  const rel = relative(root, dir);
+  return dir === root || (rel && !rel.startsWith('..') && !isAbsolute(rel));
 }

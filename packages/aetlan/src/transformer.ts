@@ -53,6 +53,10 @@ export class Transformer {
     delete this.urlMap[path];
   }
 
+  setPartial(path: string, ast: Node) {
+    this.partials[path] = ast;
+  }
+
   transform(ast: Node, extraVars: Document) {
     const variables = {
       urls: this.urlMap,

@@ -12,6 +12,8 @@ export interface SourceDocument {
 }
 
 export interface ParsedDocument {
+  id: string;
+
   type: 'page' | 'fragment' | 'partial';
 
   path: string;

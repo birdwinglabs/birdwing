@@ -29,14 +29,15 @@ export class ContentParser {
       const path = match[2];
       const basename = match[6];
 
-      const isFragment = basename.toUpperCase() === basename && basename !== 'README';
-
       if (folder === 'partials') {
-        return { type: 'partial', path, ast, frontmatter, partials };
+        return { id: `partial:${path}`, type: 'partial', path, ast, frontmatter, partials };
       }
 
       if (folder === 'pages') {
-        return { type: isFragment ? 'fragment' : 'page', path, ast, frontmatter, partials }
+        const type = basename.toUpperCase() === basename && basename !== 'README'
+          ? 'fragment'
+          : 'page';
+        return { id: `${type}:${path}`, type, path, ast, frontmatter, partials }
       }
     }
 
