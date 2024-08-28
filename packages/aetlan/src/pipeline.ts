@@ -1,58 +1,41 @@
-import { SourceDocument } from "./interfaces.js";
+import { ParsedDocument, SourceDocument } from "./interfaces.js";
 import { ContentLoader } from "./loader.js";
 import { Compiler, ContentTarget, TransformResult } from "./compiler.js";
-import { ContentParser, Store } from "./store.js";
-import { DependencyGraph } from "./aetlan.js";
 import { Transformer } from "./transformer.js";
+import { ContentCache } from "./cache.js";
 
 export class Pipeline {
   constructor(
-    private store: Store,
+    private cache: ContentCache,
     private target: ContentTarget,
     private compiler: Compiler,
     private transformer: Transformer,
-    private parser: ContentParser,
     private loader: ContentLoader,
-    private depGraph: DependencyGraph,
   ) {
-    this.store.watch().on('content-changed', async change => {
-      this.pushContent(change);
-    });
+    this.cache.watch()
+      .on('page-changed', change => {
+        this.onPageChanged(change);
+      })
+      .on('partial-changed', ({ doc, affected }) => {
+        this.onPartialChanged(doc, affected);
+      });
+  }
+
+  private async onPageChanged(doc: ParsedDocument) {
+    const res = this.compiler.pushNode(this.loader.load(doc));
+    await this.handleTransformResult(res);
+  }
+
+  private async onPartialChanged({path, ast}: ParsedDocument, affected: ParsedDocument[]) {
+    this.transformer.setPartial(path, ast);
+    for (const page of affected.filter(doc => doc.type !== 'partial')) {
+      const res = this.compiler.pushNode(this.loader.load(page));
+      await this.handleTransformResult(res);
+    }
   }
 
   async pushContent(content: SourceDocument) {
-    const parsed = this.parser.parse(content);
-
-    if (!parsed) {
-      return;
-    }
-
-    if (parsed.type === 'partial') {
-      this.transformer.setPartial(parsed.path, parsed.ast);
-
-      const dependants = this.depGraph.dependants(parsed.id);
-
-      for (const doc of dependants) {
-        const split = doc.split(':');
-        if (split[0] === 'page') {
-          this.store.reloadContent(`pages/${split[1]}`);
-        }
-      }
-    }
-
-    const res = parsed.type !== 'partial'
-      ? this.compiler.pushNode(this.loader.load(parsed))
-      : this.compiler.pushPartial(parsed);
-
-    if (res.changeType === 'attributes') {
-      for (const page of res.pages) {
-        this.target.mountAttributes(page.url, await page.attributes(res.fragments));
-      }
-    } else {
-      for (const route of await res.compileRoutes()) {
-        this.target.mount(route);
-      }
-    }
+    this.cache.update(content);
   }
 
   private async handleTransformResult(res: TransformResult) {
