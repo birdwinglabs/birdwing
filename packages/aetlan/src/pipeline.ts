@@ -16,17 +16,28 @@ export class Pipeline {
       .on('page-changed', change => {
         this.onPageChanged(change);
       })
+      .on('fragment-changed', ({ doc, affected }) => {
+        this.onFragmentChanged(doc, affected);
+      })
       .on('partial-changed', ({ doc, affected }) => {
         this.onPartialChanged(doc, affected);
       });
   }
 
   private async onPageChanged(doc: ParsedDocument) {
+    //console.log(`page changed: ${doc.path}`);
+    const res = this.compiler.pushNode(this.loader.load(doc));
+    await this.handleTransformResult(res);
+  }
+
+  private async onFragmentChanged(doc: ParsedDocument, affected: ParsedDocument[]) {
+    //console.log(`fragment changed: ${doc.path}`);
     const res = this.compiler.pushNode(this.loader.load(doc));
     await this.handleTransformResult(res);
   }
 
   private async onPartialChanged({path, ast}: ParsedDocument, affected: ParsedDocument[]) {
+    //console.log(`partial changed: ${path}`);
     this.transformer.setPartial(path, ast);
     for (const page of affected.filter(doc => doc.type !== 'partial')) {
       const res = this.compiler.pushNode(this.loader.load(page));

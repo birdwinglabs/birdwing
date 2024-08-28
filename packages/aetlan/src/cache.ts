@@ -50,8 +50,15 @@ export interface PartialChangedEvent {
   affected: ParsedDocument[];
 }
 
+export interface FragmentChangedEvent {
+  doc: ParsedDocument;
+
+  affected: ParsedDocument[];
+}
+
 export interface CacheWatcher {
   on(event: 'page-changed', handler: (doc: ParsedDocument) => void): this;
+  on(event: 'fragment-changed', handler: (event: FragmentChangedEvent) => void): this;
   on(event: 'partial-changed', handler: (event: PartialChangedEvent) => void): this;
 }
 
@@ -108,17 +115,24 @@ export class ContentCache {
 
     this.contentMap[parsed.id] = parsed;
 
-    if (parsed.type === 'partial') {
-      const affectedIds = this.depGraph.dependants(parsed.id);
-      const affected = affectedIds.reduce((affected, id) => {
+    const affected = (id: string) => {
+      const affectedIds = this.depGraph.dependants(id);
+      return affectedIds.reduce((affected, id) => {
         affected.push(this.contentMap[id]);
         return affected;
       }, [] as ParsedDocument[]);
-      this.watcher.emit('partial-changed', { doc: parsed, affected });
     }
 
-    if (parsed.type === 'page') {
-      this.watcher.emit('page-changed', parsed);
+    switch (parsed.type) {
+      case 'partial':
+        this.watcher.emit('partial-changed', { doc: parsed, affected: affected(parsed.id) });
+        break;
+      case 'page':
+        this.watcher.emit('page-changed', parsed);
+        break;
+      case 'fragment':
+        this.watcher.emit('fragment-changed', { doc: parsed, affected: affected(parsed.id) });
+        break;
     }
   }
 }

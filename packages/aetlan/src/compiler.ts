@@ -43,11 +43,6 @@ export class Compiler {
     }
   }
 
-  pushPartial(content: ParsedDocument) {
-    console.log('updating partial: ' + content.path);
-    return new TransformResult('attributes', this.pages, this.fragments);
-  }
-
   private get pages(): Page[] {
     return Object.values(this.fileNodes)
       .map(n => n.transformed)
