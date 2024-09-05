@@ -7,7 +7,7 @@ import yaml from 'js-yaml';
 import fs from 'fs';
 import { AetlanConfig } from '@aetlan/aetlan/dist/aetlan';
 import { tags, nodes, documents } from '@aetlan/schema';
-import { ContentMountPoint } from '@aetlan/aetlan/dist/loader';
+import { ContentMountPoint } from '@aetlan/aetlan';
 
 interface ConfigFile {
   content: ContentMountPoint[];
@@ -21,7 +21,7 @@ function configure(file: string): AetlanConfig {
     tags,
     nodes,
     documents,
-    plugins: [docs(), pages()],
+    plugins: [docs, pages],
     content: configFile.content,
     variables: configFile.variables || {},
   };

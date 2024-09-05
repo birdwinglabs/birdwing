@@ -1,32 +1,29 @@
-import { FragmentNode } from "./fragment.js";
-import { ContentTransform, FragmentConfig, ParsedDocument } from "./interfaces.js";
-import { FileHandlerConfig } from "./loader.js";
-import { PageNode } from "./page.js";
+import { FragmentDocument, PageDocument, Route } from "./interfaces.js";
+import { Transformer } from "./transformer.js";
+
+export type RouteCallback<T extends Route<any>> = (route: T) => void;
+
+type FragmentTransform<T extends Route<any>> = (fragment: FragmentDocument) => RouteCallback<T>;
+
+export interface PluginConfig<T extends Route<any>> {
+  page(page: PageDocument): T;
+
+  fragments: Record<string, FragmentTransform<T>>;
+} 
+
+export type PluginMounter<T extends Route<any>> = (transformer: Transformer, path: string) => PluginConfig<T>;
+
+export function createPlugin<T extends Route<any>>(
+  name: string,
+  mount: PluginMounter<T>
+) {
+  return new Plugin(name, mount);
+}
 
 export class Plugin {
-  public handlers: FileHandlerConfig[] = [];
+  constructor(public name: string, private mounter: PluginMounter<any>) {}
 
-  constructor(public name: string) {}
-
-  page(name: string, match: string, config: (mountPath: string, doc: ParsedDocument) => ContentTransform) {
-    this.handlers.push({
-      name,
-      type: 'page',
-      match,
-      handler: (mountPath: string, content: ParsedDocument) =>
-        new PageNode(name, content.ast, content.path, config(mountPath, content)),
-    });
-    return this;
-  }
-
-  fragment(name: string, match: string, config: (mountPath: string, doc: ParsedDocument) => FragmentConfig) {
-    this.handlers.push({
-      name,
-      type: 'fragment',
-      match,
-      handler: (mountPath: string, content: ParsedDocument) =>
-        new FragmentNode(name, content.ast, content.path, config(mountPath, content)),
-    });
-    return this;
+  mount(path: string, transformer: Transformer) {
+    return this.mounter(transformer, path);
   }
 }

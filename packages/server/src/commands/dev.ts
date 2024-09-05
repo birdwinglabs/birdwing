@@ -19,6 +19,7 @@ class DevContentTarget implements ContentTarget {
   constructor(private aetlan: Aetlan) {}
 
   mount(route: Route) {
+    console.log('mount: ' + route.url);
     this.aetlan.store.updateRoute(route);
   }
 
@@ -133,6 +134,9 @@ export class DevServer {
     return http.createServer(async (req, res) => {
       const url = req.url || '';
       const route = await this.aetlan.store.getRoute(url);
+
+      console.log(url);
+      console.log(route);
 
       if (route) {
         var stream = fs.createReadStream(path.join(this.root, 'src/main.html'));

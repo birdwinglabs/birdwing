@@ -14,11 +14,13 @@ export const cta: Schema = {
     if (splitIndex >= 0) {
       body = node.children
         .slice(0, splitIndex)
-        .map(node => Markdoc.transform(node, config));
+        .map(node => Markdoc.transform(node, config))
+        .flat()
 
       side = node.children
         .slice(splitIndex + 1)
-        .map(node => Markdoc.transform(node, config));
+        .map(node => Markdoc.transform(node, config))
+        .flat();
     }
 
     const actionsIndex = body.findIndex((c: any) => {

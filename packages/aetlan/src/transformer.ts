@@ -1,7 +1,7 @@
-import Markdoc, { Node, Schema } from "@markdoc/markdoc";
+import Markdoc, { Node, Schema, Tag } from "@markdoc/markdoc";
 import { Document } from '@tashmet/tashmet';
 
-const { Tag } = Markdoc;
+const { Tag: MarkdocTag } = Markdoc;
 
 function isUppercase(word: string){
   return /^\p{Lu}/u.test(word);
@@ -14,19 +14,19 @@ function applyNamespace(tag: any, component?: string) {
     component = tag.name;
   }
   for (const attr of Object.values(tag.attributes || {})) {
-    if (Tag.isTag(attr)) {
+    if (MarkdocTag.isTag(attr)) {
       applyNamespace(attr, component);
     }
     if (Array.isArray(attr)) {
       for (const child of attr) {
-        if (Tag.isTag(child)) {
+        if (MarkdocTag.isTag(child)) {
           applyNamespace(child, component);
         }
       }
     }
   }
   for (const child of tag.children || []) {
-    if (Tag.isTag(child)) {
+    if (MarkdocTag.isTag(child)) {
       applyNamespace(child, component);
     }
   }
@@ -34,8 +34,16 @@ function applyNamespace(tag: any, component?: string) {
   return tag;
 }
 
+export interface TransformConfig {
+  node: string;
+
+  variables?: Document;
+
+  path?: string
+}
+
 export class Transformer {
-  private urlMap: Record<string, string> = {};
+  public readonly urlMap: Record<string, string> = {};
 
   constructor(
     private tags: Record<string, Schema>,
@@ -57,23 +65,16 @@ export class Transformer {
     this.partials[path] = ast;
   }
 
-  transform(ast: Node, extraVars: Document) {
-    const variables = {
-      urls: this.urlMap,
-      ...this.variables,
-      ...extraVars,
-    }
+  transform(ast: Node, config: TransformConfig): Tag {
+    Object.assign(config.variables || {}, this.variables, { urls: this.urlMap });
 
     const tag = Markdoc.transform(ast, {
       tags: this.tags,
-      nodes: { ...this.nodes, document: this.documents[extraVars.document] },
+      nodes: { ...this.nodes, document: this.documents[config.node] },
       partials: this.partials,
-      variables
+      variables: config.variables,
     }) as any;
 
-    return {
-      tag: applyNamespace(tag),
-      variables,
-    }
+    return applyNamespace(tag);
   }
 }

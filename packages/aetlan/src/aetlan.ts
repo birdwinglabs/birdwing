@@ -1,13 +1,11 @@
 import { Database, Document } from '@tashmet/tashmet';
-import { ParsedDocument, Route } from "./interfaces.js";
+import { ContentMountPoint, PartialDocument, Route } from "./interfaces.js";
 
 import ev from "eventemitter3";
-import { ContentLoader, ContentMountPoint } from './loader.js';
-import { Pipeline } from './pipeline.js';
 import { Compiler, ContentTarget } from './compiler.js';
 import { Transformer } from './transformer.js';
 import { Schema } from '@markdoc/markdoc';
-import { Plugin } from './plugin.js';
+import { Plugin, PluginConfig } from './plugin.js';
 import { Store } from './store.js';
 import { ContentCache } from './cache.js';
 
@@ -29,14 +27,11 @@ export interface AetlanConfig {
 }
 
 export class Aetlan extends EventEmitter {
-  private contentLoader: ContentLoader;
-
   constructor(
     public store: Store,
     private config: AetlanConfig,
   ) {
     super();
-    this.contentLoader = ContentLoader.configure(config.plugins, config.content);
   }
 
   static async load(db: Database, config: AetlanConfig): Promise<Aetlan> {
@@ -45,40 +40,41 @@ export class Aetlan extends EventEmitter {
 
   async compile(): Promise<Route[]> {
     const cache = await ContentCache.load(this.store);
-
-    const fileNodes = cache.content
-      .filter(c => c.type !== 'partial')
-      .map(p => this.contentLoader.load(p));
-
     const transformer = this.createTransformer(cache.partials);
+    const plugins = this.createPlugins(transformer);
 
-    return new Compiler(fileNodes, transformer)
-      .transform()
-      .compileRoutes();
+    return new Compiler(plugins, transformer, cache).transform();
   }
 
   async watch(target: ContentTarget) {
     const cache = await ContentCache.load(this.store);
-
-    const fileNodes = cache.content
-      .filter(c => c.type !== 'partial')
-      .map(p => this.contentLoader.load(p));
-
     const transformer = this.createTransformer(cache.partials);
-    const compiler = new Compiler(fileNodes, transformer);
+    const plugins = this.createPlugins(transformer);
+    const compiler = new Compiler(plugins, transformer, cache);
 
-    for (const route of await compiler.transform().compileRoutes()) {
-      target.mount(route);
-    }
-    return new Pipeline(cache, target, compiler, transformer, this.contentLoader);
+    compiler.watch(target);
+
+    return cache;
   }
 
-  private createTransformer(partials: ParsedDocument[] = []) {
+  private createTransformer(partials: PartialDocument[] = []) {
     const { tags, nodes, documents, variables } = this.config;
     const transformer = new Transformer(tags, nodes, documents, {}, variables);
     for (const {path, ast} of partials) {
       transformer.setPartial(path, ast);
     }
     return transformer;
+  }
+
+  private createPlugins(transformer: Transformer) {
+    return this.config.content.reduce((pluginMap, config) => {
+      const plugin = this.config.plugins.find(p => p.name === config.plugin);
+
+      if (plugin) {
+        pluginMap[config.path] = plugin.mount(config.path, transformer);
+      }
+
+      return pluginMap;
+    }, {} as Record<string, PluginConfig<Route>>)
   }
 }

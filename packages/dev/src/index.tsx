@@ -41,7 +41,7 @@ export default function App({ path, components }: any): JSX.Element {
       }
       db
         .collection('routes')
-        .findOne({ _id: slug })
+        .findOne({ url: slug })
         .then(doc => {
           if (doc) {
             setContent(doc.tag);
@@ -70,7 +70,7 @@ export default function App({ path, components }: any): JSX.Element {
         const routes = database.collection('routes');
         const devtarget = database.collection('devtarget');
 
-        const doc = await routes.findOne({ _id: currentUrl() });
+        const doc = await routes.findOne({ url: currentUrl() });
 
         if (doc) {
           setContent(doc.tag);
@@ -81,7 +81,7 @@ export default function App({ path, components }: any): JSX.Element {
 
         docWatcher.on('change', change => {
           const doc = change.fullDocument;
-          if (doc && doc._id === currentUrl()) {
+          if (doc && doc.url === currentUrl()) {
             setContent(doc.tag);
           }
         });

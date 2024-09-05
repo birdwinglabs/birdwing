@@ -1,5 +1,5 @@
 import { Schema } from '@markdoc/markdoc';
 
-export const docsummary: Schema = {
+export const summary: Schema = {
   render: 'DocumentationSummary',
 }

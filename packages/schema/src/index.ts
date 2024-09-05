@@ -6,7 +6,7 @@ import { feature } from './tags/feature.js';
 import { page } from './documents/page.js';
 import { menu } from './documents/menu.js';
 import { docpage } from './documents/docpage.js';
-import { docsummary } from './documents/docsummary.js';
+import { summary } from './documents/summary.js';
 import { hint } from './tags/hint.js';
 import { footer } from './documents/footer.js';
 
@@ -15,7 +15,7 @@ export const documents = {
   menu,
   footer,
   docpage,
-  docsummary,
+  summary,
 }
 
 export const tags = {

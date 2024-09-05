@@ -1,34 +1,35 @@
 import { dirname } from 'path';
-import { ParsedDocument, SourceDocument } from "./interfaces.js";
+import { AbstractDocument, FragmentDocument, PageDocument, PartialDocument, SourceDocument } from "./interfaces.js";
 
 import ev from "eventemitter3";
 import { isSubPath } from './util.js';
-import { ContentParser, Store } from './store.js';
+import { Store } from './store.js';
+import { ContentParser } from './parser.js';
 
 const { EventEmitter } = ev;
 
 
-function partialIds(content: ParsedDocument) {
-  return new Set(content.partials.map(p => `partial:${p}`));
+function partialIds(doc: AbstractDocument) {
+  return new Set(doc.partials.map(p => `partial:${p}`));
 }
 
-function fragmentIds(content: ParsedDocument, fragments: ParsedDocument[]) {
-  if (content.type === 'page') {
-    return new Set(fragments
-      .filter(f => isSubPath(content.path, dirname(f.path)))
-      .map(f => f.id));
-  } else {
-    return new Set<string>();
-  }
+function fragmentIds(doc: PageDocument, fragments: FragmentDocument[]) {
+  return new Set(fragments
+    .filter(f => isSubPath(doc.path, dirname(f.path)))
+    .map(f => f.id));
 }
 
 export class DependencyGraph {
   private dependencies: Record<string, Set<string>> = {};
 
-  constructor(content: ParsedDocument[]) {
-    const fragments = content.filter(c => c.type === 'fragment');
+  constructor(content: AbstractDocument[]) {
+    const fragments = content.filter(c => c instanceof FragmentDocument) as FragmentDocument[];
     for (const doc of content) {
-      this.dependencies[doc.id] = new Set([...partialIds(doc), ...fragmentIds(doc, fragments)]);
+      let deps = partialIds(doc);
+      if (doc instanceof PageDocument) {
+        deps = new Set([...deps, ...fragmentIds(doc, fragments)]);
+      }
+      this.dependencies[doc.id] = deps;
     }
   }
 
@@ -45,32 +46,32 @@ export class DependencyGraph {
 }
 
 export interface PartialChangedEvent {
-  doc: ParsedDocument;
+  doc: PartialDocument;
 
-  affected: ParsedDocument[];
+  affected: AbstractDocument[];
 }
 
 export interface FragmentChangedEvent {
-  doc: ParsedDocument;
+  doc: FragmentDocument;
 
-  affected: ParsedDocument[];
+  affected: PageDocument[];
 }
 
 export interface CacheWatcher {
-  on(event: 'page-changed', handler: (doc: ParsedDocument) => void): this;
+  on(event: 'page-changed', handler: (doc: PageDocument) => void): this;
   on(event: 'fragment-changed', handler: (event: FragmentChangedEvent) => void): this;
   on(event: 'partial-changed', handler: (event: PartialChangedEvent) => void): this;
 }
 
 export class ContentCache {
   private watcher = new EventEmitter();
-  private contentMap: Record<string, ParsedDocument> = {}
+  private contentMap: Record<string, AbstractDocument> = {}
   private depGraph: DependencyGraph;
 
   static async load(store: Store) {
     const parser = new ContentParser();
     const content = await store.findContent({}).toArray();
-    const parsedContent: ParsedDocument[] = [];
+    const parsedContent: AbstractDocument[] = [];
 
     for (const c of content) {
       const parsed = parser.parse(c);
@@ -88,7 +89,7 @@ export class ContentCache {
     return cache;
   }
 
-  constructor(documents: ParsedDocument[], private parser: ContentParser) {
+  constructor(documents: AbstractDocument[], private parser: ContentParser) {
     for (const doc of documents) {
       this.contentMap[doc.id] = doc;
     }
@@ -104,7 +105,7 @@ export class ContentCache {
   }
 
   get partials() {
-    return this.content.filter(c => c.type === 'partial');
+    return this.content.filter(c => c instanceof PartialDocument);
   }
 
   update(doc: SourceDocument) {
@@ -120,7 +121,7 @@ export class ContentCache {
       return affectedIds.reduce((affected, id) => {
         affected.push(this.contentMap[id]);
         return affected;
-      }, [] as ParsedDocument[]);
+      }, [] as AbstractDocument[]);
     }
 
     switch (parsed.type) {
