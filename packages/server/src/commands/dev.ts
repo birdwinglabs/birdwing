@@ -9,28 +9,28 @@ import * as chokidar from 'chokidar';
 import { generateCss } from '../css.js';
 import { createDatabase, createStorageEngine } from '../database.js';
 
-import { Aetlan, ContentTarget, Plugin, Route } from '@aetlan/aetlan';
+import { Aetlan, Route } from '@aetlan/aetlan';
 import { StorageEngine } from '@tashmet/engine';
 import TashmetServer from '@tashmet/server';
 import { Document } from '@tashmet/tashmet';
 import { AetlanConfig } from '@aetlan/aetlan/dist/aetlan.js';
 
-class DevContentTarget implements ContentTarget {
-  constructor(private aetlan: Aetlan) {}
+//class DevContentTarget implements ContentTarget {
+  //constructor(private aetlan: Aetlan) {}
 
-  mount(route: Route) {
-    console.log('mount: ' + route.url);
-    this.aetlan.store.updateRoute(route);
-  }
+  //mount(route: Route) {
+    //console.log('mount: ' + route.url);
+    //this.aetlan.store.updateRoute(route);
+  //}
 
-  mountAttributes(url: string, attributes: Document): void {
-    this.aetlan.store.updateRouteAttributes(url, attributes);
-  }
+  //mountAttributes(url: string, attributes: Document): void {
+    //this.aetlan.store.updateRouteAttributes(url, attributes);
+  //}
 
-  unmount(url: string): void {
+  //unmount(url: string): void {
     
-  }
-}
+  //}
+//}
 
 export class DevServer {
   constructor(
@@ -53,7 +53,10 @@ export class DevServer {
     const contentWatcher = chokidar.watch(path.join(this.root, 'src/**/*.md'));
     const srcWatcher = chokidar.watch(path.join(this.root, 'src/**/*.jsx'));
 
-    await this.aetlan.watch(new DevContentTarget(this.aetlan));
+    const compileCtx = await this.aetlan.watch();
+
+    compileCtx.on('route-compiled', route => this.aetlan.store.updateRoute(route));
+    compileCtx.transform();
 
     contentWatcher.on('change', async filePath => {
       await this.aetlan.store.reloadContent(path.relative(path.join(this.root, 'src'), filePath));

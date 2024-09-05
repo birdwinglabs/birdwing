@@ -2,7 +2,7 @@ import { Database, Document } from '@tashmet/tashmet';
 import { ContentMountPoint, PartialDocument, Route } from "./interfaces.js";
 
 import ev from "eventemitter3";
-import { Compiler, ContentTarget } from './compiler.js';
+import { Compiler } from './compiler.js';
 import { Transformer } from './transformer.js';
 import { Schema } from '@markdoc/markdoc';
 import { Plugin, PluginConfig } from './plugin.js';
@@ -46,15 +46,13 @@ export class Aetlan extends EventEmitter {
     return new Compiler(plugins, transformer, cache).transform();
   }
 
-  async watch(target: ContentTarget) {
+  async watch() {
     const cache = await ContentCache.load(this.store);
     const transformer = this.createTransformer(cache.partials);
     const plugins = this.createPlugins(transformer);
     const compiler = new Compiler(plugins, transformer, cache);
 
-    compiler.watch(target);
-
-    return cache;
+    return compiler.watch();
   }
 
   private createTransformer(partials: PartialDocument[] = []) {

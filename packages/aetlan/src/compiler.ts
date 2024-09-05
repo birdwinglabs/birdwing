@@ -1,11 +1,13 @@
-import { Document } from "@tashmet/tashmet";
 import { dirname } from 'path';
+import ev from "eventemitter3";
 
-import { FragmentDocument, PageDocument, Route } from "./interfaces.js";
+import { FragmentDocument, PageDocument, Route, SourceDocument } from "./interfaces.js";
 import { Transformer } from "./transformer.js";
 import { PluginConfig, RouteCallback } from "./plugin.js";
 import { isSubPath } from "./util.js";
 import { ContentCache } from "./cache.js";
+
+const { EventEmitter } = ev;
 
 //function getPlugin(doc: AbstractDocument, pluginMap: Record<string, PluginConfig<Renderable<any>>>) {
   //for (const [path, plugin] of Object.entries(pluginMap)) {
@@ -25,6 +27,35 @@ import { ContentCache } from "./cache.js";
   //return '/';
 //}
 
+export class CompileContext {
+  constructor(
+    private watcher: any,
+    private cache: ContentCache,
+    private compiler: Compiler,
+  ) {}
+
+  on(event: 'route-compiled' | 'route-removed', handler: (route: Route) => void) {
+    switch (event) {
+      case 'route-compiled':
+        this.watcher.on('route-compiled', handler);
+        return this;
+      case 'route-removed':
+        this.watcher.on('route-removed', handler);
+        return this;
+    }
+  }
+
+  transform() {
+    for (const route of this.compiler.transform()) {
+      this.watcher.emit('route-compiled', route);
+    }
+  }
+
+  pushContent(doc: SourceDocument) {
+    this.cache.update(doc);
+  }
+}
+
 export class Compiler {
   private routes: Record<string, Route<any>> = {};
   private injectors: Record<string, RouteCallback<any>> = {};
@@ -41,16 +72,16 @@ export class Compiler {
     }
   }
 
-  watch(target: ContentTarget) {
-    for (const route of this.transform()) {
-      target.mount(route);
-    }
+  watch(): CompileContext {
+    const watcher = new EventEmitter();
+    const ctx = new CompileContext(watcher as any, this.cache, this);
+
 
     const updatePage = (page: PageDocument) => {
       this.transformer.linkPath(page.path, page.url);
       const route = this.transformPage(page);
       this.routes[page.path] = route;
-      target.mount(route);
+      watcher.emit('route-compiled', route);
     }
 
     const updateFragment = (fragment: FragmentDocument, affected: PageDocument[]) => {
@@ -63,7 +94,7 @@ export class Compiler {
 
         for (const route of routes) {
           injector(route);
-          target.mount(route);
+          watcher.emit('route-compiled', route);
         }
       }
     }
@@ -84,6 +115,8 @@ export class Compiler {
       .on('fragment-changed', ({ doc, affected }) => {
         updateFragment(doc, affected);
       });
+
+    return ctx;
   }
 
   transform() {
@@ -138,10 +171,4 @@ export class Compiler {
       }
     }
   }
-}
-
-export interface ContentTarget {
-  mount(route: Route): void;
-
-  unmount(url: string): void;
 }
