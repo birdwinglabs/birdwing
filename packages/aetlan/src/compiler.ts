@@ -9,23 +9,6 @@ import { ContentCache } from "./cache.js";
 
 const { EventEmitter } = ev;
 
-//function getPlugin(doc: AbstractDocument, pluginMap: Record<string, PluginConfig<Renderable<any>>>) {
-  //for (const [path, plugin] of Object.entries(pluginMap)) {
-    //if (isSubPath(doc.path, path)) {
-      //return plugin;
-    //}
-  //}
-  //throw Error('No plugin');
-//}
-
-//function getRoot(doc: AbstractDocument, pluginMap: Record<string, PluginConfig<Renderable<any>>>) {
-  //for (const path of Object.keys(pluginMap)) {
-    //if (isSubPath(doc.path, path)) {
-      //return path;
-    //}
-  //}
-  //return '/';
-//}
 
 export class CompileContext {
   constructor(
@@ -76,7 +59,6 @@ export class Compiler {
     const watcher = new EventEmitter();
     const ctx = new CompileContext(watcher as any, this.cache, this);
 
-
     const updatePage = (page: PageDocument) => {
       this.transformer.linkPath(page.path, page.url);
       const route = this.transformPage(page);
@@ -90,7 +72,7 @@ export class Compiler {
         this.injectors[fragment.path] = injector;
 
         const routes = Object.values(this.routes)
-          .filter(r => affected.findIndex(a => a.url === r.url) > 0)
+          .filter(r => affected.findIndex(a => a.url === r.url) >= 0)
 
         for (const route of routes) {
           injector(route);
@@ -109,7 +91,7 @@ export class Compiler {
           updatePage(page);
         }
         for (const fragment of affected.filter(doc => doc.type === 'fragment') as FragmentDocument[]) {
-          //updateFragment(fragment);
+          updateFragment(fragment, this.cache.dependants(fragment) as PageDocument[]);
         }
       })
       .on('fragment-changed', ({ doc, affected }) => {

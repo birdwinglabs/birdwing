@@ -9,28 +9,10 @@ import * as chokidar from 'chokidar';
 import { generateCss } from '../css.js';
 import { createDatabase, createStorageEngine } from '../database.js';
 
-import { Aetlan, Route } from '@aetlan/aetlan';
+import { Aetlan } from '@aetlan/aetlan';
 import { StorageEngine } from '@tashmet/engine';
 import TashmetServer from '@tashmet/server';
-import { Document } from '@tashmet/tashmet';
 import { AetlanConfig } from '@aetlan/aetlan/dist/aetlan.js';
-
-//class DevContentTarget implements ContentTarget {
-  //constructor(private aetlan: Aetlan) {}
-
-  //mount(route: Route) {
-    //console.log('mount: ' + route.url);
-    //this.aetlan.store.updateRoute(route);
-  //}
-
-  //mountAttributes(url: string, attributes: Document): void {
-    //this.aetlan.store.updateRouteAttributes(url, attributes);
-  //}
-
-  //unmount(url: string): void {
-    
-  //}
-//}
 
 export class DevServer {
   constructor(
@@ -137,9 +119,6 @@ export class DevServer {
     return http.createServer(async (req, res) => {
       const url = req.url || '';
       const route = await this.aetlan.store.getRoute(url);
-
-      console.log(url);
-      console.log(route);
 
       if (route) {
         var stream = fs.createReadStream(path.join(this.root, 'src/main.html'));

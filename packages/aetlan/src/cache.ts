@@ -108,6 +108,14 @@ export class ContentCache {
     return this.content.filter(c => c instanceof PartialDocument);
   }
 
+  dependants(doc: AbstractDocument): AbstractDocument[] {
+    const affectedIds = this.depGraph.dependants(doc.id);
+    return affectedIds.reduce((affected, id) => {
+      affected.push(this.contentMap[id]);
+      return affected;
+    }, [] as AbstractDocument[]);
+  }
+
   update(doc: SourceDocument) {
     const parsed = this.parser.parse(doc);
     if (!parsed) {
@@ -116,23 +124,15 @@ export class ContentCache {
 
     this.contentMap[parsed.id] = parsed;
 
-    const affected = (id: string) => {
-      const affectedIds = this.depGraph.dependants(id);
-      return affectedIds.reduce((affected, id) => {
-        affected.push(this.contentMap[id]);
-        return affected;
-      }, [] as AbstractDocument[]);
-    }
-
     switch (parsed.type) {
       case 'partial':
-        this.watcher.emit('partial-changed', { doc: parsed, affected: affected(parsed.id) });
+        this.watcher.emit('partial-changed', { doc: parsed, affected: this.dependants(parsed) });
         break;
       case 'page':
         this.watcher.emit('page-changed', parsed);
         break;
       case 'fragment':
-        this.watcher.emit('fragment-changed', { doc: parsed, affected: affected(parsed.id) });
+        this.watcher.emit('fragment-changed', { doc: parsed, affected: this.dependants(parsed) });
         break;
     }
   }
