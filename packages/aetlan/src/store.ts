@@ -1,5 +1,5 @@
 import { Database, Filter, Collection, Document } from '@tashmet/tashmet';
-import { Route, SourceDocument, TargetFile } from "./interfaces.js";
+import { Route, SourceDocument, TargetFile } from "@aetlan/core";
 
 import ev from "eventemitter3";
 

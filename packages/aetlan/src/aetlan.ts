@@ -1,13 +1,12 @@
 import { Database, Document } from '@tashmet/tashmet';
-import { ContentMountPoint, PartialDocument, Route } from "./interfaces.js";
 
 import ev from "eventemitter3";
 import { Compiler } from './compiler.js';
-import { Transformer } from './transformer.js';
+import { ContentMountPoint, PartialDocument, Route, Transformer, Plugin, PluginConfig } from '@aetlan/core';
 import { Schema } from '@markdoc/markdoc';
-import { Plugin, PluginConfig } from './plugin.js';
 import { Store } from './store.js';
 import { ContentCache } from './cache.js';
+import { MarkdocTransformer } from './transformer.js';
 
 const { EventEmitter } = ev;
 
@@ -57,7 +56,7 @@ export class Aetlan extends EventEmitter {
 
   private createTransformer(partials: PartialDocument[] = []) {
     const { tags, nodes, documents, variables } = this.config;
-    const transformer = new Transformer(tags, nodes, documents, {}, variables);
+    const transformer = new MarkdocTransformer(tags, nodes, documents, {}, variables);
     for (const {path, ast} of partials) {
       transformer.setPartial(path, ast);
     }

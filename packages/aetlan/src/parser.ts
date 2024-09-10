@@ -4,7 +4,7 @@ import {
   PageDocument,
   PartialDocument,
   SourceDocument
-} from "./interfaces.js";
+} from "@aetlan/core";
 
 import Markdoc from '@markdoc/markdoc';
 

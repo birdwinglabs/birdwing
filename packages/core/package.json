@@ -1,5 +1,5 @@
 {
-  "name": "@aetlan/pages",
+  "name": "@aetlan/core",
   "version": "0.1.0",
   "private": true,
   "description": "",
@@ -9,6 +9,9 @@
     "lint": "eslint --cache --ext .js,.ts src/",
     "start": "node ./dist/index.js"
   },
+  "bin": {
+    "aetlan": "./bin/cli.js"
+  },
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "author": "Björn Andersson",
@@ -16,11 +19,5 @@
   "publishConfig": {
     "access": "public"
   },
-  "dependencies": {
-    "@markdoc/markdoc": "0.4.0",
-    "@aetlan/core": "0.1.0"
-  },
-  "devDependencies": {
-    "@types/node": "20.12.12"
-  }
+  "dependencies": {}
 }

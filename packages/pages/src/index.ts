@@ -1,4 +1,4 @@
-import { createPlugin, Route } from '@aetlan/aetlan';
+import { createPlugin, Route } from '@aetlan/core';
 import { Tag } from '@markdoc/markdoc';
 
 export interface PageAttributes {

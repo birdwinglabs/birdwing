@@ -10,6 +10,23 @@ export interface Tab {
   body: Node[];
 }
 
+/**
+ * Tabs component
+ * 
+ * Turns level 1 headings into tabs
+ * 
+ * @example
+ * 
+ * ```markdoc
+ * {% tabs %}
+ * # Tab 1
+ * Content for tab 1
+ * 
+ * # Tab 2
+ * Content for tab 2
+ * {% /tabs %}
+ * ```
+ */
 export const tabs: Schema = {
   render: 'Tabs',
   transform(node, config) {

@@ -1,10 +1,9 @@
 import { dirname } from 'path';
 import ev from "eventemitter3";
 
-import { FragmentDocument, PageDocument, Route, SourceDocument } from "./interfaces.js";
-import { Transformer } from "./transformer.js";
-import { PluginConfig, RouteCallback } from "./plugin.js";
-import { isSubPath } from "./util.js";
+import { FragmentDocument, PageDocument, Route, SourceDocument } from "@aetlan/core";
+import { Transformer, PluginConfig, RouteCallback } from "@aetlan/core";
+import { isSubPath } from "@aetlan/core";
 import { ContentCache } from "./cache.js";
 
 const { EventEmitter } = ev;

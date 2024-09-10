@@ -1,5 +1,4 @@
-import { FragmentDocument, PageDocument, Route } from "./interfaces.js";
-import { Transformer } from "./transformer.js";
+import { FragmentDocument, PageDocument, Route, Transformer } from "./interfaces.js";
 
 export type RouteCallback<T extends Route<any>> = (route: T) => void;
 

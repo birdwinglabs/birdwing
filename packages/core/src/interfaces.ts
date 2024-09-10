@@ -1,11 +1,11 @@
-import { Node, Tag } from "@markdoc/markdoc";
-import { Document } from "@tashmet/tashmet";
+import { Node, Tag, Schema } from "@markdoc/markdoc";
 import { resolvePageUrl } from "./util.js";
+import { Plugin } from "./plugin.js";
 
 export interface SourceDocument {
   _id: string;
 
-  frontmatter: Document;
+  frontmatter: Record<string, any>;
 
   path: string;
 
@@ -17,7 +17,7 @@ export abstract class AbstractDocument {
 
   constructor(
     public readonly path: string,
-    public readonly frontmatter: Document,
+    public readonly frontmatter: Record<string, any>,
     public readonly ast: Node
   ) {}
 
@@ -76,4 +76,31 @@ export interface TargetFile {
   _id: string;
 
   content: string;
+}
+
+export interface TransformConfig {
+  node: string;
+
+  variables?: Record<string, any>;
+
+  path?: string
+}
+
+export interface Transformer {
+  readonly urlMap: Record<string, string>;
+
+  linkPath(path: string, url: string): void;
+
+  unlinkPath(path: string): void;
+
+  setPartial(path: string, ast: Node): void;
+
+  transform(ast: Node, config: TransformConfig): Tag;
+}
+
+export interface Theme {
+  tags: Record<string, Schema>;
+  nodes: Record<string, Schema>;
+  documents: Record<string, Schema>;
+  plugins: Plugin[];
 }

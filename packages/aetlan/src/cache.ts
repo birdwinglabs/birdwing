@@ -1,8 +1,8 @@
 import { dirname } from 'path';
-import { AbstractDocument, FragmentDocument, PageDocument, PartialDocument, SourceDocument } from "./interfaces.js";
+import { AbstractDocument, FragmentDocument, PageDocument, PartialDocument, SourceDocument } from "@aetlan/core";
 
 import ev from "eventemitter3";
-import { isSubPath } from './util.js';
+import { isSubPath } from '@aetlan/core';
 import { Store } from './store.js';
 import { ContentParser } from './parser.js';
 

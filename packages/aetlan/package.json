@@ -17,6 +17,7 @@
     "access": "public"
   },
   "dependencies": {
+    "@aetlan/core": "0.1.0",
     "@markdoc/markdoc": "0.4.0",
     "@tashmet/tashmet": "^1.0.2",
     "@types/react": "18.2.73",

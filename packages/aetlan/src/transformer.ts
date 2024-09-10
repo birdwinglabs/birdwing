@@ -1,5 +1,5 @@
 import Markdoc, { Node, Schema, Tag } from "@markdoc/markdoc";
-import { Document } from '@tashmet/tashmet';
+import { TransformConfig, Transformer } from '@aetlan/core';
 
 const { Tag: MarkdocTag } = Markdoc;
 
@@ -34,15 +34,8 @@ function applyNamespace(tag: any, component?: string) {
   return tag;
 }
 
-export interface TransformConfig {
-  node: string;
 
-  variables?: Document;
-
-  path?: string
-}
-
-export class Transformer {
+export class MarkdocTransformer implements Transformer {
   public readonly urlMap: Record<string, string> = {};
 
   constructor(
