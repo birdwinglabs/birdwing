@@ -4,15 +4,15 @@ import postcss from 'postcss';
 import path from 'path';
 import fs from 'fs';
 
-export async function generateCss(root: string) {
+export async function generateCss(themePath: string, outPath: string) {
   const cssProc = postcss([
     tailwind({
-      config: path.join(root, 'tailwind.config.js'),
+      config: path.join(themePath, 'tailwind.config.js'),
     })
   ]);
 
-  const cssPath = path.join(root, 'src/main.css');
-  const css = await cssProc.process(fs.readFileSync(cssPath), { from: cssPath, to: path.join(root, 'out/main.css') });
+  const cssPath = path.join(themePath, 'main.css');
+  const css = await cssProc.process(fs.readFileSync(cssPath), { from: cssPath, to: path.join(outPath, 'main.css') });
 
   return css.css;
 }

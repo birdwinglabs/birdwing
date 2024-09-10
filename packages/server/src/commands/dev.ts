@@ -32,8 +32,8 @@ export class DevServer {
   }
 
   async run() {
-    const contentWatcher = chokidar.watch(path.join(this.root, 'src/**/*.md'));
-    const srcWatcher = chokidar.watch(path.join(this.root, 'src/**/*.jsx'));
+    const contentWatcher = chokidar.watch(path.join(this.root, 'theme/**/*.md'));
+    const srcWatcher = chokidar.watch(path.join(this.root, 'theme/**/*.jsx'));
 
     const compileCtx = await this.aetlan.watch();
 
@@ -41,17 +41,17 @@ export class DevServer {
     compileCtx.transform();
 
     contentWatcher.on('change', async filePath => {
-      await this.aetlan.store.reloadContent(path.relative(path.join(this.root, 'src'), filePath));
+      await this.aetlan.store.reloadContent(path.relative(path.join(this.root, 'theme'), filePath));
     });
 
-    const files = await glob.glob(path.join(this.root, 'src/tags/**/*.jsx'));
+    const files = await glob.glob(path.join(this.root, 'theme/tags/**/*.jsx'));
     const code = this.createClientCode(files);
 
     let ctx = await esbuild.context({
       stdin: {
         contents: code,
         loader: 'jsx',
-        resolveDir: path.join(this.root, 'src'),
+        resolveDir: path.join(this.root, 'theme'),
       },
       bundle: true,
       outfile: path.join(this.root, 'out/client.js'),
@@ -78,7 +78,7 @@ export class DevServer {
   private createClientCode(jsxFiles: string[]) {
     const imports = jsxFiles.map(f => {
       const name = path.basename(f, path.extname(f));
-      const file = path.relative(path.join(this.root, 'src'), f)
+      const file = path.relative(path.join(this.root, 'theme'), f)
 
       return { name, file };
     });
@@ -110,7 +110,7 @@ export class DevServer {
     if (buildRes.outputFiles) {
       await this.aetlan.store.write('/app.js', buildRes.outputFiles[0].text);
     }
-    await this.aetlan.store.write('/main.css', await generateCss(this.root));
+    await this.aetlan.store.write('/main.css', await generateCss(path.join(this.root, 'theme'), path.join(this.root, 'out')));
 
     this.store.logger.inScope('server').info("Done");
   }
@@ -121,7 +121,7 @@ export class DevServer {
       const route = await this.aetlan.store.getRoute(url);
 
       if (route) {
-        var stream = fs.createReadStream(path.join(this.root, 'src/main.html'));
+        var stream = fs.createReadStream(path.join(this.root, 'theme/main.html'));
         stream.pipe(res);
       } else {
         const content = await this.aetlan.store.getOutput(req.url || '');

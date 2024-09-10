@@ -22,13 +22,11 @@ export async function createStorageEngine(): Promise<StorageEngine> {
 export async function createDatabase(store: StorageEngine, root: string, dev: boolean): Promise<Database> {
   const tashmet = await Tashmet.connect(store.proxy());
   const db = tashmet.db('aetlan');
-  const pagesPath = path.join(root, 'src/pages');
-  const srcPath = path.join(root, 'src');
 
   await db.createCollection('source', {
     storageEngine: {
       glob: {
-        pattern: path.join(srcPath, '**/*.md'),
+        pattern: path.join(root, '**/*.md'),
         format: {
           frontmatter: {
             format: 'yaml',
@@ -37,9 +35,8 @@ export async function createDatabase(store: StorageEngine, root: string, dev: bo
 
         construct: {
           path: {
-            $relativePath: [srcPath, '$_id']
+            $relativePath: [root, '$_id']
           }
-
         },
       }
     }

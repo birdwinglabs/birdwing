@@ -45,7 +45,7 @@ export class Build {
     for (const route of routes) {
       const body = application(routes, route.path);
 
-      const html = fs.readFileSync(path.join(this.root, 'src/main.html')).toString();
+      const html = fs.readFileSync(path.join(this.root, 'theme/main.html')).toString();
       const dom = new JSDOM(html);
       const app = dom.window.document.getElementById('app');
       if (app) {
@@ -54,15 +54,15 @@ export class Build {
       await this.updateFile(path.join(route.path, 'index.html'), dom.serialize());
     }
 
-    await this.updateFile('main.css', await generateCss(this.root));
+    await this.updateFile('main.css', await generateCss(path.join(this.root, 'theme'), path.join(this.root, 'out')));
   }
 
   private async buildApp() {
-    const files = await glob.glob(path.join(this.root, 'src/tags/**/*.jsx'));
+    const files = await glob.glob(path.join(this.root, 'theme/tags/**/*.jsx'));
 
     const imports = files.map(f => {
       const name = path.basename(f, path.extname(f));
-      const file = path.relative(path.join(this.root, 'src'), f)
+      const file = path.relative(path.join(this.root, 'theme'), f)
 
       return { name, file };
     });
@@ -90,7 +90,7 @@ export class Build {
       stdin: {
         contents: code,
         loader: 'jsx',
-        resolveDir: path.join(this.root, 'src'),
+        resolveDir: path.join(this.root, 'theme'),
       },
       bundle: true,
       format: 'cjs',

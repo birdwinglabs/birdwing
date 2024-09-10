@@ -12,16 +12,20 @@ import { AetlanConfig } from '@aetlan/aetlan/dist/aetlan';
 import { ContentMountPoint, Theme } from '@aetlan/core';
 
 interface ConfigFile {
+  theme?: string;
+
   content: ContentMountPoint[];
 
   variables: Record<string, any>;
 }
 
 async function configure(file: string): Promise<AetlanConfig> {
+  const configFile = yaml.load(fs.readFileSync(file).toString()) as ConfigFile;
   const dirname = path.dirname(file);
+  const themePath = path.join(dirname, configFile.theme || 'theme');
 
   let build = await esbuild.build({
-    entryPoints: [path.join(dirname, 'src/index.ts')],
+    entryPoints: [path.join(themePath, 'index.ts')],
     platform: 'node',
     bundle: true,
     format: 'cjs',
@@ -59,8 +63,6 @@ async function configure(file: string): Promise<AetlanConfig> {
   Object.values(tags).forEach(s => ensureFunctions(s));
   Object.values(nodes).forEach(s => ensureFunctions(s));
   Object.values(documents).forEach(s => ensureFunctions(s));
-
-  const configFile = yaml.load(fs.readFileSync(file).toString()) as ConfigFile;
 
   return {
     tags,
