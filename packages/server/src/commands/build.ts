@@ -6,14 +6,14 @@ import * as esbuild from 'esbuild'
 
 import { generateCss } from '../css.js';
 import { createDatabase, createStorageEngine } from '../database.js';
-import { Aetlan, Renderer } from '@aetlan/aetlan';
+import { Aetlan, AetlanConfig } from '@aetlan/aetlan';
+import { Renderer } from '@aetlan/renderer';
 import vm from 'vm';
 import { createRequire } from 'module';
 import { fileURLToPath } from 'url';
 import React from 'react';
 
 import { JSDOM } from 'jsdom';
-import { AetlanConfig } from '@aetlan/aetlan/dist/aetlan.js';
 
 export class Build {
   constructor(

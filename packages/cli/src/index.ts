@@ -8,7 +8,7 @@ import { Schema } from '@markdoc/markdoc';
 import path from 'path';
 import yaml from 'js-yaml';
 import fs from 'fs';
-import { AetlanConfig } from '@aetlan/aetlan/dist/aetlan';
+import { AetlanConfig } from '@aetlan/aetlan';
 import { ContentMountPoint, Theme } from '@aetlan/core';
 
 interface ConfigFile {

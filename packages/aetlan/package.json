@@ -17,9 +17,7 @@
     "access": "public"
   },
   "dependencies": {
-    "@aetlan/core": "0.1.0",
     "@markdoc/markdoc": "0.4.0",
-    "@tashmet/tashmet": "^1.0.2",
     "@types/react": "18.2.73",
     "react": "18.3.1",
     "react-dom": "18.3.1",
@@ -27,7 +25,6 @@
   },
   "devDependencies": {
     "@types/node": "20.0.0",
-    "@types/react-dom": "18.3.0",
-    "magic-string": "0.30.9"
+    "@types/react-dom": "18.3.0"
   }
 }

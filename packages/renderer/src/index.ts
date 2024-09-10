@@ -4,7 +4,6 @@ import React from 'react';
 export class Renderer {
   constructor(private components: any) {}
 
-
   isComponent(name: string) {
     return name in this.components;
   }
