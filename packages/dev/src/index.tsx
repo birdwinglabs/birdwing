@@ -49,7 +49,7 @@ export default function App({ path, components }: any): JSX.Element {
 
         const database = tashmet.db('aetlan');
         const routes = database.collection('routes');
-        const devtarget = database.collection('devtarget');
+        const devtarget = database.collection('target');
 
         const doc = await routes.findOne({ url: currentUrl() });
 
