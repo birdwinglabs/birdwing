@@ -20,7 +20,7 @@ function fragmentIds(doc: PageDocument, fragments: FragmentDocument[]) {
 }
 
 export class DependencyGraph {
-  private dependencies: Record<string, Set<string>> = {};
+  private deps: Record<string, Set<string>> = {};
 
   constructor(content: AbstractDocument[]) {
     const fragments = content.filter(c => c instanceof FragmentDocument) as FragmentDocument[];
@@ -29,12 +29,16 @@ export class DependencyGraph {
       if (doc instanceof PageDocument) {
         deps = new Set([...deps, ...fragmentIds(doc, fragments)]);
       }
-      this.dependencies[doc.id] = deps;
+      this.deps[doc.id] = deps;
     }
   }
 
+  dependencies(id: string): string[] {
+    return Array.from(this.deps[id]);
+  }
+
   dependants(id: string): string[] {
-    const set = Object.entries(this.dependencies).reduce((dependants, [p, deps]) => {
+    const set = Object.entries(this.deps).reduce((dependants, [p, deps]) => {
       if (deps.has(id)) {
         return new Set<string>([...dependants, ...this.dependants(p), p]);
       }
@@ -106,6 +110,14 @@ export class ContentCache {
 
   get partials() {
     return this.content.filter(c => c instanceof PartialDocument);
+  }
+
+  dependencies(doc: AbstractDocument): AbstractDocument[] {
+    const affectedIds = this.depGraph.dependencies(doc.id);
+    return affectedIds.reduce((affected, id) => {
+      affected.push(this.contentMap[id]);
+      return affected;
+    }, [] as AbstractDocument[]);
   }
 
   dependants(doc: AbstractDocument): AbstractDocument[] {

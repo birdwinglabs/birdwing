@@ -63,6 +63,16 @@ export class Compiler {
       this.transformer.linkPath(page.path, page.url);
       const route = this.transformPage(page);
       this.routes[page.path] = route;
+
+      const fragments = this.cache
+        .dependencies(page)
+        .filter(doc => doc.type === 'fragment') as FragmentDocument[];
+
+      for (const f of fragments) {
+        const injector = this.injectors[f.path];
+        injector(route);
+      }
+
       watcher.emit('route-compiled', route);
     }
 
