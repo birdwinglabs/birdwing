@@ -2,6 +2,7 @@ import { heading, paragraph, fence, list, item, em, strong, link } from './nodes
 
 import { cta } from './tags/cta.js';
 import { feature } from './tags/feature.js';
+import { tabs } from './tags/tabs.js';
 
 import { page } from './documents/page.js';
 import { menu } from './documents/menu.js';
@@ -22,6 +23,7 @@ export const tags = {
   cta,
   feature,
   hint,
+  tabs,
 }
 
 export const nodes = {
