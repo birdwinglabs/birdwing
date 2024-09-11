@@ -10,6 +10,7 @@ import { generateCss } from '../css.js';
 import { createDatabase, createStorageEngine } from '../database.js';
 
 import { Aetlan } from '@aetlan/aetlan';
+import { Store } from '@aetlan/store';
 import { StorageEngine } from '@tashmet/engine';
 import TashmetServer from '@tashmet/server';
 import { AetlanConfig } from '@aetlan/aetlan/dist/aetlan.js';
@@ -26,7 +27,7 @@ export class DevServer {
     const store = await createStorageEngine();
     const db = await createDatabase(store, root, true);
 
-    const aetlan = await Aetlan.load(db, config);
+    const aetlan = new Aetlan(Store.fromDatabase(db), config);
 
     return new DevServer(aetlan, store, root);
   }

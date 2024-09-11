@@ -1,5 +1,3 @@
-import { Database, Document } from '@tashmet/tashmet';
-import ev from "eventemitter3";
 import { ContentMountPoint, PartialDocument, Route, Transformer, Plugin, PluginConfig } from '@aetlan/core';
 import { Store } from '@aetlan/store';
 import { Schema } from '@markdoc/markdoc';
@@ -7,8 +5,6 @@ import { Schema } from '@markdoc/markdoc';
 import { Compiler } from './compiler.js';
 import { ContentCache } from './cache.js';
 import { MarkdocTransformer } from './transformer.js';
-
-const { EventEmitter } = ev;
 
 
 export interface AetlanConfig {
@@ -22,20 +18,14 @@ export interface AetlanConfig {
 
   plugins: Plugin[];
 
-  variables: Document;
+  variables: Record<string, any>;
 }
 
-export class Aetlan extends EventEmitter {
+export class Aetlan {
   constructor(
     public store: Store,
     private config: AetlanConfig,
-  ) {
-    super();
-  }
-
-  static async load(db: Database, config: AetlanConfig): Promise<Aetlan> {
-    return new Aetlan(Store.fromDatabase(db), config);
-  }
+  ) {}
 
   async compile(): Promise<Route[]> {
     const cache = await ContentCache.load(this.store);

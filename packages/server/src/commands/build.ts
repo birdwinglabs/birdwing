@@ -7,6 +7,7 @@ import * as esbuild from 'esbuild'
 import { generateCss } from '../css.js';
 import { createDatabase, createStorageEngine } from '../database.js';
 import { Aetlan, AetlanConfig } from '@aetlan/aetlan';
+import { Store } from '@aetlan/store';
 import { Renderer } from '@aetlan/renderer';
 import vm from 'vm';
 import { createRequire } from 'module';
@@ -25,7 +26,7 @@ export class Build {
     const store = await createStorageEngine();
     const db = await createDatabase(store, root, false);
 
-    const aetlan = await Aetlan.load(db, config);
+    const aetlan = new Aetlan(Store.fromDatabase(db), config);
 
     return new Build(aetlan, root);
   }
