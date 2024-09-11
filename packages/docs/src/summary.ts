@@ -1,5 +1,7 @@
-import { join } from 'path';
+import pb from 'path-browserify';
 import { Node, Tag } from '@markdoc/markdoc';
+
+const { join } = pb;
 
 export interface SummaryLink {
   href: string;

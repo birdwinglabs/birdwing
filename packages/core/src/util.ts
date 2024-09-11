@@ -1,5 +1,7 @@
+import pb from 'path-browserify';
 import { Node } from '@markdoc/markdoc';
-import { basename, dirname, extname, join, relative, isAbsolute } from 'path';
+
+const { basename, dirname, extname, join, relative, isAbsolute } = pb;
 
 export function resolvePageUrl(path: string, slug?: string, root: string = '/') {
   const dirName = join('/', dirname(path));

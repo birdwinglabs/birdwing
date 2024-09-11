@@ -1,6 +1,7 @@
+import pb from 'path-browserify';
 import Markdoc, { Schema } from '@markdoc/markdoc';
-import nodePath, { dirname } from 'path';
 
+const { dirname, join } = pb;
 const { Tag, nodes } = Markdoc;
 
 export const heading: Schema = {
@@ -96,7 +97,7 @@ export const link: Schema = {
     const dirName = dirname(path);
     let attributes = node.attributes;
     const absPath = dirName !== '/'
-      ? nodePath.join(dirName, node.attributes.href)
+      ? join(dirName, node.attributes.href)
       : node.attributes.href;
 
     if (absPath in (urls || {})) {

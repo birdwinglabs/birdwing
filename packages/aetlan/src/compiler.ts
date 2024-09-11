@@ -1,4 +1,4 @@
-import { dirname } from 'path';
+import pb from 'path-browserify';
 import ev from "eventemitter3";
 
 import { FragmentDocument, PageDocument, Route, SourceDocument } from "@aetlan/core";
@@ -7,6 +7,7 @@ import { isSubPath } from "@aetlan/core";
 import { ContentCache } from "./cache.js";
 
 const { EventEmitter } = ev;
+const { dirname } = pb;
 
 
 export class CompileContext {

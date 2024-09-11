@@ -1,8 +1,10 @@
+import pb from 'path-browserify';
 import { Route, createPlugin, extractHeadings } from '@aetlan/core';
 import { extractLinks, makePageData, SummaryPageData } from './summary.js';
 import { Tag } from '@markdoc/markdoc';
 import { Heading } from '@aetlan/aetlan/dist/util.js';
-import { dirname } from 'path';
+
+const { dirname } = pb;
 
 export interface PageAttributes {
   title: string;

@@ -1,4 +1,4 @@
-import { dirname } from 'path';
+import pb from 'path-browserify';
 import { AbstractDocument, FragmentDocument, PageDocument, PartialDocument, SourceDocument, isSubPath } from "@aetlan/core";
 
 import ev from "eventemitter3";
@@ -6,6 +6,7 @@ import { Store } from '@aetlan/store';
 import { ContentParser } from './parser.js';
 
 const { EventEmitter } = ev;
+const { dirname } = pb;
 
 
 function partialIds(doc: AbstractDocument) {
