@@ -1,35 +1,23 @@
 import React from 'react';
-import Tashmet, { Database } from '@tashmet/tashmet';
+import { Tag } from '@markdoc/markdoc';
 import { Renderer } from '@aetlan/renderer';
-import ServerProxy from '@tashmet/proxy';
-import {
-  useLocation
-} from "react-router-dom";
+import { Store } from '@aetlan/store';
+import { useLocation } from "react-router-dom";
 
 
-export default function App({ path, components }: any): JSX.Element {
-  const [content, setContent] = React.useState(null);
-  const [db, setDb] = React.useState<Database | null>(null);
+export default function App({ components }: any): JSX.Element {
+  const [content, setContent] = React.useState<Tag | null>(null);
+  const [store, setStore] = React.useState<Store | null>(null);
   const location = useLocation();
 
   const renderer = new Renderer(components);
   
   React.useEffect(() => {
-    if (db) {
-      let slug = window.location.pathname;
-      if (slug !== '/' && slug.endsWith('/')) {
-        slug = slug.slice(0, -1);
-      }
-      db
-        .collection('routes')
-        .findOne({ url: slug })
-        .then(doc => {
-          if (doc) {
-            setContent(doc.tag);
-          }
-        });
+    if (store) {
+      store.getRoute(location.pathname).then(route => {
+        setContent(route ? route.tag : null);
+      });
     }
-
   }, [location]);
 
   function currentUrl() {
@@ -41,41 +29,35 @@ export default function App({ path, components }: any): JSX.Element {
   }
 
   React.useEffect(() => {
-    const tashmet = new Tashmet(new ServerProxy('http://localhost:3000'));
+    Store.connect('http://localhost:3000').then(async s => {
+      setStore(s);
+      console.log('connected to store');
 
-    tashmet.connect()
-      .then(async tashmet =>  {
-        console.log('connected to dev server');
+      const route = await s.getRoute(window.location.pathname);
 
-        const database = tashmet.db('aetlan');
-        const routes = database.collection('routes');
-        const devtarget = database.collection('target');
+      if (route) {
+        setContent(route.tag);
+      }
 
-        const doc = await routes.findOne({ url: currentUrl() });
-
-        if (doc) {
-          setContent(doc.tag);
-        }
-
-        const docWatcher = routes.watch();
-        const fileWatcher = devtarget.watch();
-
-        docWatcher.on('change', change => {
-          const doc = change.fullDocument;
-          if (doc && doc.url === currentUrl()) {
-            setContent(doc.tag);
+      s.watch()
+        .on('route-changed', route => {
+          console.log(`route changed: ${route.url}`);
+          if (route.url === currentUrl()) {
+            setContent(route.tag);
           }
-        });
-        fileWatcher.on('change', change => {
-          if (change.documentKey?._id === '/main.css') {
-            tashmet.close();
+        })
+        .on('target-changed', file => {
+          if (file._id === '/main.css') {
+            s.dispose();
             window.location.reload();
           }
         });
-        setDb(database);
-      });
+    });
+
     return () => {
-      tashmet.close();
+      if (store) {
+        store.dispose();
+      }
     }
   }, []);
 

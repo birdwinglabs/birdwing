@@ -32,16 +32,18 @@ export class DevServer {
   }
 
   async run() {
-    const contentWatcher = chokidar.watch(path.join(this.root, 'theme/**/*.md'));
+    const contentWatcher = chokidar.watch(path.join(this.root, '**/*.md'));
     const srcWatcher = chokidar.watch(path.join(this.root, 'theme/**/*.jsx'));
 
     const compileCtx = await this.aetlan.watch();
 
-    compileCtx.on('route-compiled', route => this.aetlan.store.updateRoute(route));
+    compileCtx.on('route-compiled', route => {
+      this.aetlan.store.updateRoute(route)
+    });
     compileCtx.transform();
 
     contentWatcher.on('change', async filePath => {
-      await this.aetlan.store.reloadContent(path.relative(path.join(this.root, 'theme'), filePath));
+      await this.aetlan.store.reloadContent(path.relative(this.root, filePath));
     });
 
     const files = await glob.glob(path.join(this.root, 'theme/tags/**/*.jsx'));
