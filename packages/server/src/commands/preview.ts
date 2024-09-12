@@ -14,8 +14,8 @@ export class Preview {
       },
       bundle: true,
       format: 'cjs',
-      outfile: path.join(this.root, 'out/app.js'),
-      write: true,
+      outfile: path.join(this.root, 'out/dummy.js'),
+      write: false,
     });
 
     ctx.serve({

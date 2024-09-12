@@ -13,7 +13,7 @@ import { Aetlan } from '@aetlan/aetlan';
 import { Store } from '@aetlan/store';
 import { StorageEngine } from '@tashmet/engine';
 import TashmetServer from '@tashmet/server';
-import { AetlanConfig } from '@aetlan/aetlan/dist/aetlan.js';
+import { loadConfig } from '../config.js';
 
 export class DevServer {
   constructor(
@@ -23,7 +23,9 @@ export class DevServer {
   ) {
   }
 
-  static async create(root: string, config: AetlanConfig) {
+  static async configure(configFile: string) {
+    const config = await loadConfig(configFile);
+    const root = path.dirname(configFile);
     const store = await createStorageEngine();
     const db = await createDatabase(store, root, true);
 
