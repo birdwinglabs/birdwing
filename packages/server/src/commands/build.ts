@@ -16,6 +16,7 @@ import { fileURLToPath } from 'url';
 import React from 'react';
 
 import { JSDOM } from 'jsdom';
+import { buildSvelteApp } from '../svelte.js';
 
 export class Build {
   constructor(
@@ -36,7 +37,15 @@ export class Build {
   }
 
   async run() {
-    await this.buildClientApp();
+    console.log('Building client app...');
+    const files = await glob.glob(path.join(this.root, 'theme/client/**/*.svelte'));
+    const clientApp = await buildSvelteApp(this.root, files, 'theme');
+
+    if (clientApp) {
+      await this.updateFile('client.js', clientApp);
+    }
+
+    console.log('Building server app...');
     const { app: application, components } = await this.buildServerApp();
     const renderer = new Renderer(components);
 
@@ -49,73 +58,19 @@ export class Build {
       const html = fs.readFileSync(path.join(this.root, 'theme/main.html')).toString();
       const dom = new JSDOM(html);
       const app = dom.window.document.getElementById('app');
-      const jsonElement = dom.window.document.createElement("script");
-      jsonElement.setAttribute('id', 'data');
-      jsonElement.setAttribute('type', 'application/json');
-      jsonElement.text = JSON.stringify(route.tag);
 
-      dom.window.document.head.appendChild(jsonElement);
+      const clientScriptElem = dom.window.document.createElement('script');
+      clientScriptElem.setAttribute('type', 'module');
+      clientScriptElem.setAttribute('src', '/client.js');
+      dom.window.document.body.appendChild(clientScriptElem);
 
       if (app) {
         app.innerHTML = body;
       }
       await this.updateFile(path.join(route.url, 'index.html'), dom.serialize());
-      await this.updateFile(path.join(route.url, 'data.json'), JSON.stringify(route.tag));
     }
 
     await this.updateFile('main.css', await generateCss(path.join(this.root, 'theme'), path.join(this.root, 'out')));
-  }
-
-  private createClientCode(jsxFiles: string[]) {
-    const imports = jsxFiles.map(f => {
-      const name = path.basename(f, path.extname(f));
-      const file = path.relative(path.join(this.root, 'theme'), f)
-
-      return { name, file };
-    });
-
-    return `
-      import React from 'react';
-      import ReactDOM from 'react-dom/client';
-      import { hydrateRoot } from 'react-dom/client';
-      import { createBrowserRouter, RouterProvider, useLoaderData } from "react-router-dom";
-      import { Renderer } from '@aetlan/renderer';
-      ${imports.map(({ name, file}) => `import ${name} from './${file}';`).join('\n')}
-
-      const components = { ${imports.map(({ name }) => `${name}: new ${name}()`).join(', ')} };
-
-      const container = document.getElementById('app');
-      const dataElement = document.getElementById('data');
-      const data = JSON.parse(dataElement.text);
-
-      const renderer = new Renderer(components);
-      const reactNode = renderer.render(data);
-
-      function App() {
-        const tag = useLoaderData();
-        return renderer.render(tag);
-      }
-
-      const router = createBrowserRouter([{
-        path: '*',
-        element: <App/>,
-        loader: async ({ params }) => {
-          let path = params['*'];
-          if (!path.endsWith('/')) {
-            path = path + '/'; 
-          }
-          const res = await fetch('/' + path + 'data.json');
-          const data = await res.json();
-
-          return data;
-        }
-      }]);
-
-      ReactDOM.createRoot(container).render(<RouterProvider router={router} />);
-
-      //const root = hydrateRoot(container, reactNode);
-      //ReactDOM.createRoot(container).render(reactNode);
-    `;
   }
 
   private createServerCode(jsxFiles: string[]) {
@@ -144,24 +99,6 @@ export class Build {
         );
       }
     `;
-  }
-
-  private async buildClientApp() {
-    const files = await glob.glob(path.join(this.root, 'theme/tags/**/*.jsx'));
-    const code = this.createClientCode(files);
-
-    let build = await esbuild.build({
-      stdin: {
-        contents: code,
-        loader: 'jsx',
-        resolveDir: path.join(this.root, 'theme'),
-      },
-      minify: true,
-      bundle: true,
-      format: 'cjs',
-      outfile: 'out/app.js',
-      write: true,
-    });
   }
 
   private async buildServerApp() {
@@ -199,6 +136,7 @@ export class Build {
   }
 
   private async updateFile(name: string, content: string) {
+    console.log(`write: ${name}`);
     await this.aetlan.store.write(path.join(this.root, 'out', name), content);
   }
 }

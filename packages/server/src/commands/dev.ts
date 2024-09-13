@@ -5,6 +5,7 @@ import fs from 'fs';
 import * as glob from 'glob';
 import * as esbuild from 'esbuild'
 import * as chokidar from 'chokidar';
+import { JSDOM } from 'jsdom';
 
 import { generateCss } from '../css.js';
 import { createDatabase, createStorageEngine } from '../database.js';
@@ -14,6 +15,7 @@ import { Store } from '@aetlan/store';
 import { StorageEngine } from '@tashmet/engine';
 import TashmetServer from '@tashmet/server';
 import { loadConfig } from '../config.js';
+import { buildSvelteApp } from '../svelte.js';
 
 export class DevServer {
   constructor(
@@ -69,6 +71,15 @@ export class DevServer {
 
     await this.rebuild(ctx);
 
+    const clientFiles = await glob.glob(path.join(this.root, 'theme/client/**/*.svelte'));
+    const clientApp = await buildSvelteApp(this.root, clientFiles, 'theme');
+    if (clientApp) {
+      await this.aetlan.store.write('/client.js', clientApp);
+    }
+
+    const html = this.createHtml();
+    await this.aetlan.store.write('/main.html', html);
+
     this.store.logger.inScope('server').info("Starting server...");
 
     const port = 3000;
@@ -78,6 +89,22 @@ export class DevServer {
     new TashmetServer(this.store, server).listen();
 
     server.listen(port);
+  }
+
+  private createHtml() {
+    const html = fs.readFileSync(path.join(this.root, 'theme/main.html')).toString();
+    const dom = new JSDOM(html);
+
+    const clientScriptElem = dom.window.document.createElement('script');
+    clientScriptElem.setAttribute('type', 'module');
+    clientScriptElem.setAttribute('src', '/client.js');
+    dom.window.document.body.appendChild(clientScriptElem);
+
+    const devScriptElem = dom.window.document.createElement('script');
+    devScriptElem.setAttribute('src', '/dev.js');
+    dom.window.document.body.appendChild(devScriptElem);
+
+    return dom.serialize();
   }
 
   private createClientCode(jsxFiles: string[]) {
@@ -113,7 +140,7 @@ export class DevServer {
 
     const buildRes = await ctx.rebuild();
     if (buildRes.outputFiles) {
-      await this.aetlan.store.write('/app.js', buildRes.outputFiles[0].text);
+      await this.aetlan.store.write('/dev.js', buildRes.outputFiles[0].text);
     }
     await this.aetlan.store.write('/main.css', await generateCss(path.join(this.root, 'theme'), path.join(this.root, 'out')));
 
@@ -126,10 +153,15 @@ export class DevServer {
       const route = await this.aetlan.store.getRoute(url);
 
       if (route) {
-        var stream = fs.createReadStream(path.join(this.root, 'theme/main.html'));
-        stream.pipe(res);
+        const content = await this.aetlan.store.getOutput('/main.html');
+        res.setHeader('Content-Type', 'text/html');
+        res.write(content || '');
+        res.end();
       } else {
         const content = await this.aetlan.store.getOutput(req.url || '');
+        if (req.url?.endsWith('.js')) {
+          res.setHeader('Content-Type', 'text/javascript')
+        }
         res.write(content || '');
         res.end();
       }
