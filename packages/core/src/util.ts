@@ -20,7 +20,7 @@ export interface Heading {
 
 export function extractHeadings(ast: Node): Heading[] {
   const headings: any[] = [];
-  for (const node of ast.walk()) {
+  for (const node of ast.children) {
     if (node.type === 'heading') {
       let title = '';
       for (const child of node.walk()) {
