@@ -16,7 +16,8 @@ import { fileURLToPath } from 'url';
 import React from 'react';
 
 import { JSDOM } from 'jsdom';
-import { buildSvelteApp } from '../svelte.js';
+import { configureSvelte } from '../builders/svelte.js';
+import { configureProdApp } from '../builders/prodapp.js';
 
 export class Build {
   constructor(
@@ -39,10 +40,12 @@ export class Build {
   async run() {
     console.log('Building client app...');
     const files = await glob.glob(path.join(this.root, 'theme/client/**/*.svelte'));
-    const clientApp = await buildSvelteApp(this.root, files, 'theme');
+    const buildOptions = configureSvelte(this.root, files, 'theme');
 
-    if (clientApp) {
-      await this.updateFile('client.js', clientApp);
+    const clientRes = await esbuild.build(buildOptions)
+
+    if (clientRes.outputFiles) {
+      await this.updateFile('client.js', clientRes.outputFiles[0].text);
     }
 
     console.log('Building server app...');
@@ -76,49 +79,9 @@ export class Build {
     await this.updateFile('main.css', await generateCss(path.join(this.root, 'theme'), path.join(this.root, 'out')));
   }
 
-  private createServerCode(jsxFiles: string[]) {
-    const imports = jsxFiles.map(f => {
-      const name = path.basename(f, path.extname(f));
-      const file = path.relative(path.join(this.root, 'theme'), f)
-
-      return { name, file };
-    });
-
-    return `
-      import { Routes, Route } from 'react-router-dom';
-      import { StaticRouter } from "react-router-dom/server";
-      import ReactDOMServer from "react-dom/server";
-
-      ${imports.map(({ name, file}) => `import ${name} from './${file}';`).join('\n')}
-
-      components = { ${imports.map(({ name }) => `${name}: new ${name}()`).join(', ')} };
-      app = (routes, path) => {
-        return ReactDOMServer.renderToString(
-          <StaticRouter location={path}>
-            <Routes>
-              { routes.map(r => <Route path={r.path} element={r.element} />)}
-            </Routes>
-          </StaticRouter>
-        );
-      }
-    `;
-  }
-
   private async buildServerApp() {
     const files = await glob.glob(path.join(this.root, 'theme/tags/**/*.jsx'));
-    const serverCode = this.createServerCode(files);
-
-    let build = await esbuild.build({
-      stdin: {
-        contents: serverCode,
-        loader: 'jsx',
-        resolveDir: path.join(this.root, 'theme'),
-      },
-      bundle: true,
-      format: 'cjs',
-      outfile: 'out.js',
-      write: false,
-    });
+    const build = await esbuild.build(configureProdApp(this.root, files));
 
     const sandbox = {
       require: createRequire(import.meta.url),
@@ -132,6 +95,10 @@ export class Build {
       app: (routes: any, path: string): string => { return ''; },
       React,
     };
+
+    if (!build.outputFiles) {
+      throw Error('No output files from build');
+    }
 
     vm.runInNewContext(build.outputFiles[0].text, sandbox);
 

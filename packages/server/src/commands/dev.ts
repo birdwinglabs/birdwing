@@ -15,7 +15,8 @@ import { Store } from '@aetlan/store';
 import { StorageEngine } from '@tashmet/engine';
 import TashmetServer from '@tashmet/server';
 import { loadConfig } from '../config.js';
-import { buildSvelteApp } from '../svelte.js';
+import { configureSvelte } from '../builders/svelte.js';
+import { configureDevClient } from '../builders/devclient.js';
 
 export class DevServer {
   constructor(
@@ -37,8 +38,14 @@ export class DevServer {
   }
 
   async run() {
-    const contentWatcher = chokidar.watch(path.join(this.root, '**/*.md'));
-    const srcWatcher = chokidar.watch(path.join(this.root, 'theme/**/*.jsx'));
+    const tagsGlob = path.join(this.root, 'theme/tags/**/*.jsx');
+    const jsxGlob = path.join(this.root, 'theme/**/*.jsx');
+    const clientGlob = path.join(this.root, 'theme/client/**/*.svelte');
+    const contentGlob = path.join(this.root, '**/*.md');
+
+    const contentWatcher = chokidar.watch(contentGlob);
+    const jsxWatcher = chokidar.watch(jsxGlob);
+    const svelteWatcher = chokidar.watch(clientGlob);
 
     const compileCtx = await this.aetlan.watch();
 
@@ -51,31 +58,20 @@ export class DevServer {
       await this.aetlan.store.reloadContent(path.relative(this.root, filePath));
     });
 
-    const files = await glob.glob(path.join(this.root, 'theme/tags/**/*.jsx'));
-    const code = this.createClientCode(files);
+    const devCtx = await esbuild.context(configureDevClient(this.root, await glob.glob(tagsGlob)))
+    const clientCtx = await esbuild.context(configureSvelte(this.root, await glob.glob(clientGlob), 'theme'));
 
-    let ctx = await esbuild.context({
-      stdin: {
-        contents: code,
-        loader: 'jsx',
-        resolveDir: path.join(this.root, 'theme'),
-      },
-      bundle: true,
-      outfile: path.join(this.root, 'out/client.js'),
-      write: false,
+    jsxWatcher.on('change', async () => {
+      await this.rebuildDev(devCtx);
+    });
+    svelteWatcher.on('change', async () => {
+      // TODO: Currently breaks the UI. need to figure out why.
+      //await this.rebuildClient(devCtx);
     });
 
-    srcWatcher.on('change', async () => {
-      await this.rebuild(ctx);
-    });
+    await this.rebuildDev(devCtx);
+    await this.rebuildClient(clientCtx);
 
-    await this.rebuild(ctx);
-
-    const clientFiles = await glob.glob(path.join(this.root, 'theme/client/**/*.svelte'));
-    const clientApp = await buildSvelteApp(this.root, clientFiles, 'theme');
-    if (clientApp) {
-      await this.aetlan.store.write('/client.js', clientApp);
-    }
 
     const html = this.createHtml();
     await this.aetlan.store.write('/main.html', html);
@@ -107,40 +103,24 @@ export class DevServer {
     return dom.serialize();
   }
 
-  private createClientCode(jsxFiles: string[]) {
-    const imports = jsxFiles.map(f => {
-      const name = path.basename(f, path.extname(f));
-      const file = path.relative(path.join(this.root, 'theme'), f)
-
-      return { name, file };
-    });
-
-    return `
-      import App from '@aetlan/dev';
-      import React from 'react';
-      import ReactDOM from 'react-dom/client';
-      import { createBrowserRouter, RouterProvider } from "react-router-dom";
-      ${imports.map(({ name, file}) => `import ${name} from './${file}';`).join('\n')}
-
-      const components = { ${imports.map(({ name }) => `${name}: new ${name}()`).join(', ')} };
-
-      const container = document.getElementById('app');
-
-      const router = createBrowserRouter([{
-        path: '*',
-        element: <App components={components}/>
-      }]);
-
-      ReactDOM.createRoot(container).render(<RouterProvider router={router} />);
-    `;
-  }
-
-  private async rebuild(ctx: esbuild.BuildContext) {
-    this.store.logger.inScope('server').info("Building...");
+  private async rebuildDev(ctx: esbuild.BuildContext) {
+    this.store.logger.inScope('server').info("Building React...");
 
     const buildRes = await ctx.rebuild();
     if (buildRes.outputFiles) {
       await this.aetlan.store.write('/dev.js', buildRes.outputFiles[0].text);
+    }
+    await this.aetlan.store.write('/main.css', await generateCss(path.join(this.root, 'theme'), path.join(this.root, 'out')));
+
+    this.store.logger.inScope('server').info("Done");
+  }
+
+  private async rebuildClient(ctx: esbuild.BuildContext) {
+    this.store.logger.inScope('server').info("Building Svelte...");
+
+    const buildRes = await ctx.rebuild();
+    if (buildRes.outputFiles) {
+      await this.aetlan.store.write('/client.js', buildRes.outputFiles[0].text);
     }
     await this.aetlan.store.write('/main.css', await generateCss(path.join(this.root, 'theme'), path.join(this.root, 'out')));
 

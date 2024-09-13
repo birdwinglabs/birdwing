@@ -4,7 +4,7 @@ import * as esbuild from 'esbuild'
 import sveltePlugin from 'esbuild-svelte';
 
 
-export async function buildSvelteApp(root: string, files: string[], tagnamePrefix: string) {
+export function configureSvelte(root: string, files: string[], tagnamePrefix: string): esbuild.BuildOptions {
   function camelCaseToDash (str: string) {
     return str.replace(/([a-zA-Z])(?=[A-Z])/g, '$1-').toLowerCase()
   }
@@ -30,7 +30,7 @@ export async function buildSvelteApp(root: string, files: string[], tagnamePrefi
     `).join('\n')}
   `;
 
-  let build = await esbuild.build({
+  return {
     stdin: {
       contents: code,
       resolveDir: path.join(root, 'theme'),
@@ -45,10 +45,5 @@ export async function buildSvelteApp(root: string, files: string[], tagnamePrefi
         compilerOptions: { customElement: true }
       })
     ],
-  });
-
-  if (build.outputFiles)
-    return build.outputFiles[0].text;
-  else
-    return null;
+  }
 }
