@@ -5,7 +5,6 @@ import Tashmet, { Database } from '@tashmet/tashmet';
 import { StorageEngine } from '@tashmet/engine';
 import { terminal } from '@tashmet/terminal';
 
-import markdocPlugin from './markdoc.js';
 import path from 'path';
 
 export async function createStorageEngine(): Promise<StorageEngine> {
@@ -15,7 +14,6 @@ export async function createStorageEngine(): Promise<StorageEngine> {
       logFormat: terminal(),
     })
     .use(mingo())
-    .use(markdocPlugin())
     .bootstrap();
 }
 
@@ -32,7 +30,6 @@ export async function createDatabase(store: StorageEngine, root: string, dev: bo
             format: 'yaml',
           }
         },
-
         construct: {
           path: {
             $relativePath: [root, '$_id']
