@@ -1,5 +1,5 @@
 import pb from 'path-browserify';
-import { Node, Tag } from '@markdoc/markdoc';
+import { Node } from '@markdoc/markdoc';
 
 const { join } = pb;
 
@@ -16,7 +16,7 @@ export interface SummaryPageData {
   next: SummaryLink | undefined;
 }
 
-export function extractLinks(ast: Node, basePath: string, urls: Record<string, string>): SummaryLink[] {
+export function makeSummary(ast: Node, basePath: string, urls: Record<string, string>) {
   let heading: string | undefined;
   const links: SummaryLink[] = [];
 
@@ -41,10 +41,6 @@ export function extractLinks(ast: Node, basePath: string, urls: Record<string, s
         break;
     }
   }
-  return links;
-}
-
-export function makePageData(links: SummaryLink[]) {
   const prev = (i: number) => i >= 1 ? links[i - 1] : undefined;
   const next = (i: number) => i < (links.length - 1) ? links[i + 1] : undefined;
 
@@ -52,15 +48,4 @@ export function makePageData(links: SummaryLink[]) {
     data[href] = { title, topic, prev: prev(i), next: next(i) }
     return data;
   }, {} as Record<string, SummaryPageData>)
-}
-
-export class Summary {
-  constructor(
-    public readonly renderable: Tag,
-    private readonly dataMap: Record<string, SummaryPageData>
-  ) {}
-
-  data(url: string) {
-    return this.dataMap[url];
-  }
 }

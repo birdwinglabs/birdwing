@@ -1,4 +1,4 @@
-import { createPlugin, Route } from '@aetlan/core';
+import { createPlugin } from '@aetlan/core';
 import { Tag } from '@markdoc/markdoc';
 
 export interface PageAttributes {
@@ -10,20 +10,6 @@ export interface PageAttributes {
 
   footer?: Tag;
 }
-
-//export class PageRoute extends Route<PageAttributes> {
-  //constructor(tag: Tag, url: string, private attributes: Partial<PageAttributes>) {
-    //super(tag, url)
-  //}
-
-  //setAttributes(attr: Partial<PageAttributes>): void {
-    //super.setAttributes({ ...attr, ...this.attributes });
-  //}
-
-  //get title() {
-    //return this.attributes.title || this.url;
-  //}
-//}
 
 const pages = createPlugin<PageAttributes>('pages', (transformer, path) => {
   return {
