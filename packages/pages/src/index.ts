@@ -11,33 +11,39 @@ export interface PageAttributes {
   footer?: Tag;
 }
 
-export class PageRoute extends Route<PageAttributes> {
-  constructor(tag: Tag, url: string, private attributes: Partial<PageAttributes>) {
-    super(tag, url)
-  }
+//export class PageRoute extends Route<PageAttributes> {
+  //constructor(tag: Tag, url: string, private attributes: Partial<PageAttributes>) {
+    //super(tag, url)
+  //}
 
-  setAttributes(attr: Partial<PageAttributes>): void {
-    super.setAttributes({ ...attr, ...this.attributes });
-  }
-}
+  //setAttributes(attr: Partial<PageAttributes>): void {
+    //super.setAttributes({ ...attr, ...this.attributes });
+  //}
 
-const pages = createPlugin<PageRoute>('pages', (transformer, path) => {
+  //get title() {
+    //return this.attributes.title || this.url;
+  //}
+//}
+
+const pages = createPlugin<PageAttributes>('pages', (transformer, path) => {
   return {
     page: ({ url, ast, frontmatter }) => {
       const tag = transformer.transform(ast, {
         node: 'page',
         variables: { frontmatter, path },
       });
-      return new PageRoute(tag, url, frontmatter);
+      tag.attributes = frontmatter;
+
+      return { url, title: frontmatter.title, tag };
     },
     fragments: {
       menu: ({ ast }) => {
         const tag = transformer.transform(ast, { node: 'menu', variables: { path} });
-        return route => route.setAttributes({ menu: tag });
+        return route => Object.assign(route.tag.attributes, { menu: tag });
       },
       footer: ({ ast }) => {
         const tag = transformer.transform(ast, { node: 'footer', variables: { path } });
-        return route => route.setAttributes({ footer: tag });
+        return route => Object.assign(route.tag.attributes, { footer: tag });
       }
     }
   }

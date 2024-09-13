@@ -22,27 +22,30 @@ export interface DocPageAttributes extends PageAttributes, SummaryPageData {
   summary?: Tag;
 }
 
-export class DocRoute extends Route<DocPageAttributes> {
-  constructor(tag: Tag, url: string, private attributes: Partial<DocPageAttributes>) {
-    super(tag, url)
-  }
+//export class DocRoute extends Route<DocPageAttributes> {
+  //constructor(tag: Tag, url: string, private attributes: Partial<DocPageAttributes>) {
+    //super(tag, url);
+  //}
 
-  setAttributes(attr: Partial<DocPageAttributes>): void {
-    super.setAttributes({ ...attr, ...this.attributes });
-  }
-}
+  //setAttributes(attr: Partial<DocPageAttributes>): void {
+    //super.setAttributes({ ...attr, ...this.attributes });
+  //}
 
-const docs = createPlugin<DocRoute>('docs', (transformer) => {
+  //get title() {
+    //return this.attributes.title || this.url;
+  //}
+//}
+
+const docs = createPlugin<DocPageAttributes>('docs', (transformer) => {
   return {
     page: ({ path, url, ast, frontmatter }) => {
       const tag = transformer.transform(ast, {
         node: 'docpage',
         variables: { frontmatter, path },
       });
-      return new DocRoute(tag, url, {
-        ...frontmatter,
-        headings: extractHeadings(ast),
-      });
+      Object.assign(tag.attributes, { ...frontmatter, headings: extractHeadings(ast) });
+
+      return { url, title: frontmatter.title, tag };
     },
     fragments: {
       summary: ({ path, ast }) => {
@@ -51,12 +54,12 @@ const docs = createPlugin<DocRoute>('docs', (transformer) => {
         const data = makePageData(links);
 
         return route => {
-          route.setAttributes({ summary: tag, ...data[route.url] });
+          Object.assign(route.tag.attributes, { summary: tag, ...data[route.url] })
         }
       },
       menu: ({ path, ast }) => {
         const tag = transformer.transform(ast, { node: 'menu', variables: { path } });
-        return route => route.setAttributes({ menu: tag });
+        return route => Object.assign(route.tag.attributes, { menu: tag })
       }
     }
   }

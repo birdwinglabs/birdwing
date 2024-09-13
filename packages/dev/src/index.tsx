@@ -3,6 +3,7 @@ import { Tag } from '@markdoc/markdoc';
 import { Renderer } from '@aetlan/renderer';
 import { Store } from '@aetlan/store';
 import { useLocation } from "react-router-dom";
+import { Route } from '@aetlan/core';
 
 
 export default function App({ components }: any): JSX.Element {
@@ -11,11 +12,18 @@ export default function App({ components }: any): JSX.Element {
   const location = useLocation();
 
   const renderer = new Renderer(components);
+
+  function setRoute(route: Route) {
+    setContent(route.tag);
+    window.document.title = route.title;
+  }
   
   React.useEffect(() => {
     if (store) {
       store.getRoute(location.pathname).then(route => {
-        setContent(route ? route.tag : null);
+        if (route) {
+          setRoute(route);
+        }
       });
     }
   }, [location]);
@@ -36,14 +44,14 @@ export default function App({ components }: any): JSX.Element {
       const route = await s.getRoute(window.location.pathname);
 
       if (route) {
-        setContent(route.tag);
+        setRoute(route);
       }
 
       s.watch()
         .on('route-changed', route => {
           console.log(`route changed: ${route.url}`);
           if (route.url === currentUrl()) {
-            setContent(route.tag);
+            setRoute(route);
           }
         })
         .on('target-changed', file => {

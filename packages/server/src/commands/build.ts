@@ -57,6 +57,9 @@ export class Build {
 
       const html = fs.readFileSync(path.join(this.root, 'theme/main.html')).toString();
       const dom = new JSDOM(html);
+
+      dom.window.document.title = route.title;
+
       const app = dom.window.document.getElementById('app');
 
       const clientScriptElem = dom.window.document.createElement('script');

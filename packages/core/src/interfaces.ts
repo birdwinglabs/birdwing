@@ -58,12 +58,22 @@ export class FragmentDocument extends AbstractDocument {
 }
 
 
-export class Route<T = any> {
-  constructor(public tag: Tag, public url: string) {}
+//export abstract class Route<T = any> {
+  //abstract title: string;
+
+  //constructor(public tag: Tag, public url: string) {}
   
-  setAttributes(attr: Partial<T>) {
-    Object.assign(this.tag.attributes, attr);
-  }
+  //setAttributes(attr: Partial<T>) {
+    //Object.assign(this.tag.attributes, attr);
+  //}
+//}
+
+export interface Route<T extends Record<string, any> = Record<string, any>> {
+  url: string;
+
+  title: string;
+
+  tag: Tag<string, T>;
 }
 
 export interface ContentMountPoint {
