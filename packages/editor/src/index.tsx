@@ -7,17 +7,27 @@ import { AppConfig, Route, SourceDocument } from '@aetlan/core';
 import { Aetlan, CompileContext } from '@aetlan/aetlan';
 import * as MonacoEditor from '@monaco-editor/react';
 
-export function Editor({ children, source, onChange }: any) {
-  const [postContent, setPostContent] = useState(source ? source.body : '');
+export function Editor({ children, source, onChange, onSave }: any) {
+  const [content, setContent] = useState(source);
+  const [panel, setPanel] = useState('content');
 
   function onChangeEvent(value: string) {
-    setPostContent(value);
-    onChange(value);
+    const c = { ...content, body: value };
+    setContent(c);
+    onChange(c);
+  }
+
+  function onChangeTitle(value: string) {
+    const frontmatter = content.frontmatter;
+    frontmatter.title = value;
+    const c = { ...content, frontmatter };
+    setContent(c);
+    onChange(c);
   }
 
   React.useEffect(() => {
     if (source) {
-      setPostContent(source.body);
+      setContent(source);
     }
   }, [source]);
 
@@ -25,33 +35,124 @@ export function Editor({ children, source, onChange }: any) {
     minimap: { enabled: false },
     lineNumbers: "off",
     fontSize: 10,
+    wordWrap: "on",
+    bracketPairColorization: { enabled: false },
   }
 
   MonacoEditor.loader.init().then(monaco => {
     monaco.editor.defineTheme('aetlan', {
       base: 'vs', 
       inherit: true,
-      rules: [],
+      rules: [
+        {
+          token: "",
+          foreground: "#2e2e2e"
+        },
+        {
+          token: "string",
+          foreground: "66634e"
+        },
+        {
+          token: "number",
+          foreground: "66634e"
+        },
+        {
+          token: "attribute.value",
+          foreground: "66634e"
+        },
+        {
+          token: "comment",
+          foreground: "8a8774"
+        },
+        {
+          token: "keyword",
+          foreground: "a24222"
+        },
+        {
+          token: "key",
+          foreground: "a24222"
+        },
+        {
+          token: "value",
+          foreground: "a24222"
+        },
+        {
+          token: "type",
+          foreground: "a24222"
+        }
+      ],
       colors: {
         'editor.background': '#e7e5e4',
       },
     })
   });
 
+  const tabActive = 'px-4 py-2 text-stone-900 font-semibold';
+  const tabInactive = 'px-4 py-2 text-stone-400';
 
   return (
     <div className="bg-stone-200 w-screen h-screen p-4 pl-[600px] fixed">
       <div className="fixed h-[calc(100vh-2rem)] w-[600px] left-0">
-        { postContent &&
+        <div className="w-full flex items-center gap-2 pb-4 px-6 border-b text-sm">
+          <button className="py-2 mr-2 text-stone-900">
+           <span className="material-symbols-outlined">
+            arrow_back
+          </span> 
+          </button>
+          <button onClick={() => setPanel('content')} className={ panel === 'content' ? tabActive : tabInactive}>
+            Content
+          </button>
+          <button onClick={() => setPanel('meta')} className={ panel === 'meta' ? tabActive : tabInactive}>
+            Meta
+          </button>
+          <div className="flex items-center ml-auto">
+            <button onClick={() => onSave(content)} className="rounded px-4 py-2 bg-stone-800 text-white">
+              Save
+            </button>
+          </div>
+        </div>
+        { panel === 'content' && content &&
           <MonacoEditor.Editor
             theme="aetlan"
             height="100%"
             defaultLanguage="markdown"
-            defaultValue={postContent}
-            value={postContent}
+            defaultValue={content.body}
+            value={content.body}
             onChange={onChangeEvent}
             options={options}
           />
+        }
+
+        { panel === 'meta' &&
+          <div className="px-8">
+            <label htmlFor="title" className="text-xs text-stone-500 mt-2 block">Title</label>
+            <input 
+              name="title"
+              type="text"
+              value={content.frontmatter.title}
+              onChange={(e) => onChangeTitle(e.target.value)}
+              spellCheck={false}
+              className="bg-stone-200 p-4 border-b border-stone-300 w-full outline-none"
+            />
+
+            <label htmlFor="description" className="text-xs text-stone-500 mt-2 block">Description</label>
+            <input
+              name="description"
+              type="text"
+              value={content.frontmatter.description}
+              spellCheck={false}
+              className="bg-stone-200 p-4 border-b border-stone-300 w-full outline-none"
+            />
+
+            <label htmlFor="slug" className="text-xs text-stone-500 mt-2 block">Slug</label>
+            <input
+              name="slug"
+              type="text"
+              value={content.frontmatter.slug}
+              spellCheck={false}
+              className="bg-stone-200 p-4 border-b border-stone-300 w-full outline-none"
+            />
+          </div>
         }
       </div>
       <div className="relative w-full h-full shadow-xl overflow-y-auto">
@@ -70,14 +171,19 @@ export default function App({ components, themeConfig }: any): JSX.Element {
 
   const renderer = new Renderer(components);
 
-  function onChange(value: string) {
-    if (context && source) {
-      console.log('push content');
-      context.pushContent({...source, body: value});
+  function onSave(doc: SourceDocument) {
+    if (store && source) {
+      store.saveContent(doc);
     }
   }
 
-  async function setRoute(route: Route, store: Store) {
+  function onChange(doc: SourceDocument) {
+    if (context && source) {
+      context.pushContent(doc);
+    }
+  }
+
+  async function setRoute(route: Route) {
     setContent(route.tag);
     window.document.title = route.title;
   }
@@ -86,7 +192,7 @@ export default function App({ components, themeConfig }: any): JSX.Element {
     if (store) {
       store.getRoute(location.pathname).then(async route => {
         if (route) {
-          setRoute(route, store);
+          setRoute(route);
           const source = await store.getSourceByRoute(route);
           setSource(source);
         }
@@ -115,7 +221,7 @@ export default function App({ components, themeConfig }: any): JSX.Element {
 
         ctx.on('route-compiled', route => {
           if (route.url === currentUrl()) {
-            setRoute(route, s);
+            setRoute(route);
           }
         });
         ctx.transform();
@@ -125,7 +231,7 @@ export default function App({ components, themeConfig }: any): JSX.Element {
       const route = await s.getRoute(window.location.pathname);
 
       if (route) {
-        setRoute(route, s);
+        setRoute(route);
         const source = await s.getSourceByRoute(route);
         setSource(source);
       }
@@ -134,7 +240,7 @@ export default function App({ components, themeConfig }: any): JSX.Element {
         .on('route-changed', route => {
           console.log(`route changed: ${route.url}`);
           if (route.url === currentUrl()) {
-            setRoute(route, s);
+            setRoute(route);
           }
         })
         .on('target-changed', file => {
@@ -154,7 +260,7 @@ export default function App({ components, themeConfig }: any): JSX.Element {
 
   if (content) {
     return (
-      <Editor source={source} onChange={onChange}>
+      <Editor source={source} onChange={onChange} onSave={onSave}>
         { renderer.render(content) as JSX.Element }
       </Editor>
     )

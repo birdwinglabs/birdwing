@@ -71,6 +71,10 @@ export class Store {
     return this.source.find(filter);
   }
 
+  saveContent(content: SourceDocument) {
+    return this.source.replaceOne({ _id: content._id }, content, { upsert: true });
+  }
+
   getSourceByRoute(route: Route) {
     const contentId = route.source;
     const [type, path] = contentId.split(':');
