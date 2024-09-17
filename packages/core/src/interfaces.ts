@@ -2,6 +2,14 @@ import { Node, Tag, Schema } from "@markdoc/markdoc";
 import { resolvePageUrl } from "./util.js";
 import { Plugin } from "./plugin.js";
 
+export interface AppConfig {
+  theme?: string;
+
+  content: ContentMountPoint[];
+
+  variables: Record<string, any>;
+}
+
 export interface SourceDocument {
   _id: string;
 
@@ -58,6 +66,8 @@ export class FragmentDocument extends AbstractDocument {
 }
 
 export interface Route<T extends Record<string, any> = Record<string, any>> {
+  source: string;
+
   url: string;
 
   title: string;

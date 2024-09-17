@@ -21,14 +21,14 @@ export interface DocPageAttributes extends SummaryPageData {
 
 const docs = createPlugin<DocPageAttributes>('docs', (transformer) => {
   return {
-    page: ({ path, url, ast, frontmatter }) => {
+    page: ({ id, path, url, ast, frontmatter }) => {
       const tag = transformer.transform(ast, {
         node: 'docpage',
         variables: { frontmatter, path },
       });
       Object.assign(tag.attributes, { ...frontmatter, headings: extractHeadings(ast) });
 
-      return { url, title: frontmatter.title, tag };
+      return { source: id, url, title: frontmatter.title, tag };
     },
     fragments: {
       summary: ({ path, ast }) => {

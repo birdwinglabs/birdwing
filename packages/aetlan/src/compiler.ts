@@ -153,6 +153,7 @@ export class Compiler {
         return plugin.page(doc);
       }
     }
+    console.log(this.pluginMap);
     throw Error('No plugin');
   }
 

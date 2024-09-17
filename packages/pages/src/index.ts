@@ -13,14 +13,14 @@ export interface PageAttributes {
 
 const pages = createPlugin<PageAttributes>('pages', (transformer, path) => {
   return {
-    page: ({ url, ast, frontmatter }) => {
+    page: ({ id, url, ast, frontmatter }) => {
       const tag = transformer.transform(ast, {
         node: 'page',
         variables: { frontmatter, path },
       });
       tag.attributes = frontmatter;
 
-      return { url, title: frontmatter.title, tag };
+      return { source: id, url, title: frontmatter.title, tag };
     },
     fragments: {
       menu: ({ ast }) => {

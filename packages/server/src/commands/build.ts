@@ -6,7 +6,7 @@ import * as esbuild from 'esbuild'
 
 import { generateCss } from '../css.js';
 import { createDatabase, createStorageEngine } from '../database.js';
-import { loadConfig } from '../config.js';
+import { loadThemeConfig } from '../config.js';
 import { Aetlan } from '@aetlan/aetlan';
 import { Store } from '@aetlan/store';
 import { Renderer } from '@aetlan/renderer';
@@ -26,7 +26,7 @@ export class Build {
   ) {}
 
   static async configure(configFile: string) {
-    const config = await loadConfig(configFile);
+    const config = await loadThemeConfig(configFile);
     const root = path.dirname(configFile);
 
     const store = await createStorageEngine();

@@ -35,6 +35,14 @@ export function extractHeadings(ast: Node): Heading[] {
 }
 
 export function isSubPath(dir: string, root: string) {
-  const rel = relative(root, dir);
-  return dir === root || (rel && !rel.startsWith('..') && !isAbsolute(rel));
+  if (root === '.' || root === '/') {
+    return true;
+  }
+  if (dir.startsWith(`${root}/`)) {
+    return true;
+  }
+  return false;
+  //console.log(`${dir}, ${root}`);
+  //const rel = relative(root, dir);
+  //return dir === root || (rel && !rel.startsWith('..') && !isAbsolute(rel));
 }

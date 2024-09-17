@@ -1,5 +1,5 @@
 import { program } from 'commander';
-import { Build, DevServer, Preview } from '@aetlan/server';
+import { Build, DevServer, EditorServer, Preview } from '@aetlan/server';
 import path from 'path';
 
 export function cli() {
@@ -17,6 +17,14 @@ export function cli() {
     .action(async (cfgPath: string) => {
       const devServer = await DevServer.configure(cfgPath);
       await devServer.run();
+    });
+
+  program
+    .command('edit')
+    .argument('<path>', 'path to config file')
+    .action(async (cfgPath: string) => {
+      const editServer = await EditorServer.configure(cfgPath);
+      await editServer.run();
     });
 
   program

@@ -18,7 +18,7 @@ export class Store {
   private watcher = new EventEmitter();
 
   constructor(
-    private content: Collection<SourceDocument>,
+    private source: Collection<SourceDocument>,
     private routes: Collection<Route>,
     private target: Collection<TargetFile>,
     public dispose: () => void,
@@ -61,14 +61,25 @@ export class Store {
   }
 
   async reloadContent(path: string) {
-    const doc = await this.content.findOne({ path });
+    const doc = await this.source.findOne({ path });
     if (doc) {
       this.watcher.emit('content-changed', doc);
     }
   }
 
   findContent(filter: Filter<SourceDocument>) {
-    return this.content.find(filter);
+    return this.source.find(filter);
+  }
+
+  getSourceByRoute(route: Route) {
+    const contentId = route.source;
+    const [type, path] = contentId.split(':');
+
+    if (type === 'partial') {
+      return this.source.findOne({ path: `partials/${path}`});
+    } else {
+      return this.source.findOne({ path: `pages/${path}`});
+    }
   }
 
   getRoute(url: string) {

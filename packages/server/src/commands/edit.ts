@@ -14,27 +14,29 @@ import { Aetlan } from '@aetlan/aetlan';
 import { Store } from '@aetlan/store';
 import { StorageEngine } from '@tashmet/engine';
 import TashmetServer from '@tashmet/server';
-import { loadThemeConfig } from '../config.js';
+import { loadAppConfig, loadThemeConfig } from '../config.js';
 import { configureSvelte } from '../builders/svelte.js';
-import { configureDevClient } from '../builders/devclient.js';
+import { configureEditor } from '../builders/editor.js';
+import { AppConfig } from '@aetlan/core';
 
-export class DevServer {
+export class EditorServer {
   constructor(
     private aetlan: Aetlan,
     private store: StorageEngine,
-    private root: string
-  ) {
-  }
+    private root: string,
+    private appConfig: AppConfig,
+  ) {}
 
   static async configure(configFile: string) {
     const config = await loadThemeConfig(configFile);
+    const appConfig = await loadAppConfig(configFile);
     const root = path.dirname(configFile);
     const store = await createStorageEngine();
     const db = await createDatabase(store, root, true);
 
     const aetlan = new Aetlan(Store.fromDatabase(db), config);
 
-    return new DevServer(aetlan, store, root);
+    return new EditorServer(aetlan, store, root, appConfig);
   }
 
   async run() {
@@ -58,7 +60,7 @@ export class DevServer {
       await this.aetlan.store.reloadContent(path.relative(this.root, filePath));
     });
 
-    const devCtx = await esbuild.context(configureDevClient(this.root, await glob.glob(tagsGlob)))
+    const devCtx = await esbuild.context(configureEditor(this.root, await glob.glob(tagsGlob)));
     const clientCtx = await esbuild.context(configureSvelte(this.root, await glob.glob(clientGlob), 'theme'));
 
     jsxWatcher.on('change', async () => {
@@ -72,9 +74,13 @@ export class DevServer {
     await this.rebuildDev(devCtx);
     await this.rebuildClient(clientCtx);
 
+    const editorCss = fs.readFileSync(path.join(this.root, '../../node_modules/@aetlan/editor/dist/editor.css')).toString();
+    await this.aetlan.store.write('/editor.css', editorCss);
 
     const html = this.createHtml();
     await this.aetlan.store.write('/main.html', html);
+
+    await this.aetlan.store.write('/config.json', JSON.stringify(this.appConfig));
 
     this.store.logger.inScope('server').info("Starting server...");
 
@@ -99,6 +105,11 @@ export class DevServer {
     const devScriptElem = dom.window.document.createElement('script');
     devScriptElem.setAttribute('src', '/dev.js');
     dom.window.document.body.appendChild(devScriptElem);
+
+    const editorCssElem = dom.window.document.createElement('link');
+    editorCssElem.setAttribute('href', '/editor.css');
+    editorCssElem.setAttribute('rel', 'stylesheet');
+    dom.window.document.head.appendChild(editorCssElem);
 
     return dom.serialize();
   }

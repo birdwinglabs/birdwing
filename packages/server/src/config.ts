@@ -7,20 +7,26 @@ import path from 'path';
 import yaml from 'js-yaml';
 import fs from 'fs';
 import { AetlanConfig } from '@aetlan/aetlan';
-import { ContentMountPoint, Theme } from '@aetlan/core';
+import { AppConfig, Plugin, Theme } from '@aetlan/core';
 
-interface ConfigFile {
-  theme?: string;
+export interface ThemeConfig {
+  tags: Record<string, Schema>;
 
-  content: ContentMountPoint[];
+  nodes: Record<string, Schema>;
 
-  variables: Record<string, any>;
+  documents: Record<string, Schema>;
+
+  plugins: Plugin[];
 }
 
-export async function loadConfig(file: string): Promise<AetlanConfig> {
-  const configFile = yaml.load(fs.readFileSync(file).toString()) as ConfigFile;
+export function loadAppConfig(file: string): AppConfig {
+  return yaml.load(fs.readFileSync(file).toString()) as AppConfig;
+}
+
+export async function loadThemeConfig(file: string): Promise<AetlanConfig> {
+  const appConfig = loadAppConfig(file);
   const dirname = path.dirname(file);
-  const themePath = path.join(dirname, configFile.theme || 'theme');
+  const themePath = path.join(dirname, appConfig.theme || 'theme');
 
   let build = await esbuild.build({
     entryPoints: [path.join(themePath, 'index.ts')],
@@ -66,7 +72,7 @@ export async function loadConfig(file: string): Promise<AetlanConfig> {
     nodes,
     documents,
     plugins,
-    content: configFile.content,
-    variables: configFile.variables || {},
+    content: appConfig.content,
+    variables: appConfig.variables || {},
   };
 }

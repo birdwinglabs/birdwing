@@ -1,0 +1,35 @@
+{
+  "name": "@aetlan/editor",
+  "version": "0.1.0",
+  "private": true,
+  "description": "",
+  "type": "module",
+  "scripts": {
+    "build": "tsc && npx tailwindcss -i ./src/app.css -o ./dist/editor.css",
+    "lint": "eslint --cache --ext .js,.ts src/",
+    "start": "node ./dist/index.js"
+  },
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "author": "Björn Andersson",
+  "license": "MIT",
+  "publishConfig": {
+    "access": "public"
+  },
+  "dependencies": {
+    "@aetlan/renderer": "0.1.0",
+    "@aetlan/store": "0.1.0",
+    "@markdoc/markdoc": "0.4.0",
+    "@monaco-editor/react": "4.6.0",
+    "@tashmet/proxy": "^1.0.2",
+    "@tashmet/tashmet": "^1.0.2",
+    "@types/react": "18.2.73",
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
+    "react-router-dom": "6.25.1"
+  },
+  "devDependencies": {
+    "@types/node": "20.12.12",
+    "tailwindcss": "^3.4.11"
+  }
+}
