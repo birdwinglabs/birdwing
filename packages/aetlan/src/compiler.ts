@@ -13,7 +13,7 @@ const { dirname } = pb;
 export class CompileContext {
   constructor(
     private watcher: any,
-    private cache: ContentCache,
+    public cache: ContentCache,
     private compiler: Compiler,
   ) {}
 

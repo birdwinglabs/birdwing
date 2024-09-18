@@ -10,7 +10,7 @@ const { dirname } = pb;
 
 
 function partialIds(doc: AbstractDocument) {
-  return new Set(doc.partials.map(p => `partial:${p}`));
+  return new Set(doc.partials.map(p => `partials/${p}`));
 }
 
 function fragmentIds(doc: PageDocument, fragments: FragmentDocument[]) {
@@ -102,6 +102,10 @@ export class ContentCache {
 
   watch(): CacheWatcher {
     return this.watcher;
+  }
+
+  lookup(id: string) {
+    return this.contentMap[id];
   }
 
   get content() {

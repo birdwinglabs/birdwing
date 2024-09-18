@@ -24,14 +24,11 @@ export abstract class AbstractDocument {
   abstract readonly type: string;
 
   constructor(
+    public readonly id: string,
     public readonly path: string,
     public readonly frontmatter: Record<string, any>,
     public readonly ast: Node
   ) {}
-
-  get id(): string {
-    return `${this.type}:${this.path}`
-  }
 
   get partials(): string[] {
     const partials: string[] = [];

@@ -77,13 +77,14 @@ export class Store {
 
   getSourceByRoute(route: Route) {
     const contentId = route.source;
-    const [type, path] = contentId.split(':');
+    //const [type, path] = contentId.split(':');
+    return this.source.findOne({ _id: route.source });
 
-    if (type === 'partial') {
-      return this.source.findOne({ path: `partials/${path}`});
-    } else {
-      return this.source.findOne({ path: `pages/${path}`});
-    }
+    //if (type === 'partial') {
+      //return this.source.findOne({ path: `partials/${path}`});
+    //} else {
+      //return this.source.findOne({ path: `pages/${path}`});
+    //}
   }
 
   getRoute(url: string) {

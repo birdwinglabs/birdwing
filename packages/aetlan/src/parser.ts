@@ -9,7 +9,7 @@ import {
 import Markdoc from '@markdoc/markdoc';
 
 export class ContentParser {
-  parse({ path, body, frontmatter }: SourceDocument): AbstractDocument | null {
+  parse({ _id, path, body, frontmatter }: SourceDocument): AbstractDocument | null {
     const ast = Markdoc.parse(body);
 
     const match = /^(.+?)\/(((.+?)\/)?(([^\/]+).md$))/.exec(path);
@@ -19,7 +19,7 @@ export class ContentParser {
       const basename = match[6];
 
       if (folder === 'partials') {
-        return new PartialDocument(path, frontmatter, ast);
+        return new PartialDocument(_id, path, frontmatter, ast);
       }
 
       if (folder === 'pages') {
@@ -28,9 +28,9 @@ export class ContentParser {
           : 'page';
 
         if (type === 'fragment') {
-          return new FragmentDocument(path, frontmatter, ast);
+          return new FragmentDocument(_id, path, frontmatter, ast);
         } else {
-          return new PageDocument(path, frontmatter, ast);
+          return new PageDocument(_id, path, frontmatter, ast);
         }
       }
     }

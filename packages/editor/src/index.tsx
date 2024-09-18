@@ -3,7 +3,7 @@ import { Tag } from '@markdoc/markdoc';
 import { Renderer } from '@aetlan/renderer';
 import { Store } from '@aetlan/store';
 import { useLocation } from "react-router-dom";
-import { AppConfig, Route, SourceDocument } from '@aetlan/core';
+import { AbstractDocument, AppConfig, Route, SourceDocument } from '@aetlan/core';
 import { Aetlan, CompileContext } from '@aetlan/aetlan';
 import Editor from './editor';
 
@@ -13,6 +13,7 @@ export default function App({ components, themeConfig }: any): JSX.Element {
   const [store, setStore] = React.useState<Store | null>(null);
   const [context, setContext] = React.useState<CompileContext | null>(null);
   const [source, setSource] = React.useState<SourceDocument | null>(null);
+  const [deps, setDeps] = React.useState<AbstractDocument[]>([]);
   const location = useLocation();
 
   const renderer = new Renderer(components);
@@ -33,14 +34,25 @@ export default function App({ components, themeConfig }: any): JSX.Element {
     setContent(route.tag);
     window.document.title = route.title;
   }
+
+  async function initEditor(route: Route, store: Store) {
+    setRoute(route);
+    const source = await store.getSourceByRoute(route);
+    setSource(source);
+
+    if (context && source) {
+      const doc = context.cache.lookup(source._id);
+      const d = context.cache.dependencies(doc);
+      console.log(d);
+      setDeps(d);
+    }
+  }
   
   React.useEffect(() => {
     if (store) {
       store.getRoute(location.pathname).then(async route => {
         if (route) {
-          setRoute(route);
-          const source = await store.getSourceByRoute(route);
-          setSource(source);
+          initEditor(route, store);
         }
       });
     }
@@ -77,9 +89,7 @@ export default function App({ components, themeConfig }: any): JSX.Element {
       const route = await s.getRoute(window.location.pathname);
 
       if (route) {
-        setRoute(route);
-        const source = await s.getSourceByRoute(route);
-        setSource(source);
+        initEditor(route, s);
       }
 
       s.watch()
@@ -104,9 +114,9 @@ export default function App({ components, themeConfig }: any): JSX.Element {
     }
   }, []);
 
-  if (content) {
+  if (content && source) {
     return (
-      <Editor source={source} onChange={onChange} onSave={onSave}>
+      <Editor source={source} dependencies={deps} onChange={onChange} onSave={onSave}>
         { renderer.render(content) as JSX.Element }
       </Editor>
     )
