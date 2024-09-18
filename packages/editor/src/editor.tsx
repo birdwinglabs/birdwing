@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { SourceDocument } from '@aetlan/core';
 
 import ContentEditor from './content';
+import TextInput from './components/TextInput';
 
 export default function Editor({ children, source, onChange, onSave }: any) {
   const [content, setContent] = useState(source);
@@ -12,9 +13,9 @@ export default function Editor({ children, source, onChange, onSave }: any) {
     onChange(document);
   }
 
-  function onChangeTitle(value: string) {
+  function updateFrontmatter(key: string, value: any) {
     const frontmatter = content.frontmatter;
-    frontmatter.title = value;
+    frontmatter[key] = value;
     const c = { ...content, frontmatter };
     setContent(c);
     onChange(c);
@@ -56,23 +57,15 @@ export default function Editor({ children, source, onChange, onSave }: any) {
 
         { panel === 'meta' &&
           <div className="px-8">
-            <label htmlFor="title" className="text-xs text-stone-500 mt-2 block">Title</label>
-            <input 
-              name="title"
-              type="text"
+            <TextInput
+              label="Title"
               value={content.frontmatter.title}
-              onChange={(e) => onChangeTitle(e.target.value)}
-              spellCheck={false}
-              className="bg-stone-200 p-4 border-b border-stone-300 w-full outline-none"
+              onChange={value => updateFrontmatter('title', value)}
             />
-
-            <label htmlFor="description" className="text-xs text-stone-500 mt-2 block">Description</label>
-            <input
-              name="description"
-              type="text"
+            <TextInput
+              label="Description"
               value={content.frontmatter.description}
-              spellCheck={false}
-              className="bg-stone-200 p-4 border-b border-stone-300 w-full outline-none"
+              onChange={value => updateFrontmatter('description', value)}
             />
 
             <label htmlFor="slug" className="text-xs text-stone-500 mt-2 block">Slug</label>
