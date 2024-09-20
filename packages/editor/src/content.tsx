@@ -1,13 +1,12 @@
-import { SourceDocument } from '@aetlan/core';
 import * as MonacoEditor from '@monaco-editor/react';
 
 export interface ContentEditorProps {
-  document: SourceDocument;
+  value: string;
 
-  onChange: (document: SourceDocument) => void;
+  onChange: (value: string | undefined) => void;
 }
 
-export default function ContentEditor({ document, onChange }: ContentEditorProps) {
+export default function ContentEditor({ value, onChange }: ContentEditorProps) {
   const options: any = {
     minimap: { enabled: false },
     lineNumbers: "off",
@@ -70,8 +69,8 @@ export default function ContentEditor({ document, onChange }: ContentEditorProps
       theme="aetlan"
       height="100%"
       defaultLanguage="markdown"
-      value={document.body}
-      onChange={value => onChange({ ...document, body: value || '' })}
+      value={value}
+      onChange={onChange}
       options={options}
     />
   );

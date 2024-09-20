@@ -75,16 +75,8 @@ export class Store {
     return this.source.replaceOne({ _id: content._id }, content, { upsert: true });
   }
 
-  getSourceByRoute(route: Route) {
-    const contentId = route.source;
-    //const [type, path] = contentId.split(':');
-    return this.source.findOne({ _id: route.source });
-
-    //if (type === 'partial') {
-      //return this.source.findOne({ path: `partials/${path}`});
-    //} else {
-      //return this.source.findOne({ path: `pages/${path}`});
-    //}
+  getSource(id: string) {
+    return this.source.findOne({ _id: id });
   }
 
   getRoute(url: string) {
