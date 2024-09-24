@@ -10,7 +10,6 @@ import Editor from './editor';
 export default function App({ components, themeConfig }: any): JSX.Element {
   const [store, setStore] = React.useState<Store | null>(null);
   const [route, setRoute] = React.useState<Route | null>(null);
-  const [preview, setPreview] = React.useState<JSX.Element | null>(null);
   const [context, setContext] = React.useState<CompileContext | null>(null);
   const location = useLocation();
 
@@ -18,7 +17,6 @@ export default function App({ components, themeConfig }: any): JSX.Element {
 
   async function initEditor(route: Route) {
     setRoute(route);
-    setPreview(renderer.render(route.tag) as JSX.Element);
   }
   
   React.useEffect(() => {
@@ -53,7 +51,6 @@ export default function App({ components, themeConfig }: any): JSX.Element {
         ctx.on('route-compiled', route => {
           if (route.url === currentUrl()) {
             setRoute(route);
-            setPreview(renderer.render(route.tag) as JSX.Element);
           }
         });
         ctx.transform();
@@ -74,12 +71,10 @@ export default function App({ components, themeConfig }: any): JSX.Element {
     }
   }, []);
 
-  if (route && preview && store && context) {
+  if (route && store && context) {
     return (
       <Editor pageId={route.source} store={store} compileContext={context}>
-        <Page>
-          { preview }
-        </Page>
+        <Page renderer={renderer} content={route.tag} />
       </Editor>
     )
   }

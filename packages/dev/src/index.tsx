@@ -70,7 +70,7 @@ export default function App({ components }: any): JSX.Element {
   }, []);
 
   if (content) {
-    return <PageContainer>{ renderer.render(content) as JSX.Element }</PageContainer>;
+    return <PageContainer renderer={renderer} content={content}/>;
   }
 
   return <h1>Loading...</h1>;

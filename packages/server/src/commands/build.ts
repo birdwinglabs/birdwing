@@ -18,6 +18,7 @@ import React from 'react';
 import { JSDOM } from 'jsdom';
 import { configureSvelte } from '../builders/svelte.js';
 import { configureProdApp } from '../builders/prodapp.js';
+import { Route } from '@aetlan/core';
 
 export class Build {
   constructor(
@@ -50,13 +51,13 @@ export class Build {
 
     console.log('Building server app...');
     const { app: application, components } = await this.buildServerApp();
-    const renderer = new Renderer(components);
+    //const renderer = new Renderer(components);
 
     const routes = await this.aetlan.compile();
-    const appData = routes.map(r => ({ path: r.url, element: renderer.render(r.tag)}));
+    //const appData = routes.map(r => ({ path: r.url, element: renderer.render(r.tag)}));
 
     for (const route of routes) {
-      const body = application(appData, route.url);
+      const body = application(routes, route.url);
 
       const html = fs.readFileSync(path.join(this.root, 'theme/main.html')).toString();
       const dom = new JSDOM(html);
@@ -92,7 +93,7 @@ export class Build {
       components: {},
       TextEncoder,
       URL,
-      app: (routes: any, path: string): string => { return ''; },
+      app: (routes: Route[], path: string): string => { return ''; },
       React,
     };
 

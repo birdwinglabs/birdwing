@@ -14,16 +14,19 @@ export function configureProdApp(root: string, files: string[]): esbuild.BuildOp
     import { Routes, Route } from 'react-router-dom';
     import { StaticRouter } from "react-router-dom/server";
     import ReactDOMServer from "react-dom/server";
-    import { Page as PageWrapper  } from '@aetlan/renderer';
+    import { Renderer, Page as PageWrapper  } from '@aetlan/renderer';
 
     ${imports.map(({ name, file}) => `import ${name} from './${file}';`).join('\n')}
 
     components = { ${imports.map(({ name }) => `${name}: new ${name}()`).join(', ')} };
+
+    const renderer = new Renderer(components);
+
     app = (routes, path) => {
       return ReactDOMServer.renderToString(
         <StaticRouter location={path}>
           <Routes>
-            { routes.map(r => <Route path={r.path} element={<PageWrapper>{r.element}</PageWrapper>} />)}
+            { routes.map(r => <Route path={r.url} element={<PageWrapper renderer={renderer} content={r.tag}/>} />)}
           </Routes>
         </StaticRouter>
       );

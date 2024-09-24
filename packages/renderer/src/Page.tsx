@@ -1,4 +1,6 @@
+import { Tag } from '@markdoc/markdoc';
 import { createContext, useState } from 'react';
+import { Renderer } from './renderer';
 
 export interface PageContextValue {
   setState(id: string, value: any): void;
@@ -6,9 +8,15 @@ export interface PageContextValue {
   state<T = any>(id: string, defaultValue: T): T;
 }
 
+export interface PageProps {
+  renderer: Renderer;
+
+  content: Tag;
+}
+
 export const PageContext = createContext<PageContextValue>({ setState: () => {}, state<T = any>(id: string, defaultValue: T) { return defaultValue; } });
 
-export function Page({ children }: any) {
+export function Page({ renderer, content }: PageProps) {
   const [pageState, setPageState] = useState<Record<string, any>>({});
 
   function setState(id: string, state: any) {
@@ -21,7 +29,7 @@ export function Page({ children }: any) {
 
   return (
     <PageContext.Provider value={{ state, setState }}>
-      { children }
+      { renderer.render(content) }
     </PageContext.Provider>
   );
 }
