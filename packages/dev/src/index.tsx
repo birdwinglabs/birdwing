@@ -1,6 +1,6 @@
 import React from 'react';
 import { Tag } from '@markdoc/markdoc';
-import { Renderer } from '@aetlan/renderer';
+import { Renderer, Page as PageContainer } from '@aetlan/renderer';
 import { Store } from '@aetlan/store';
 import { useLocation } from "react-router-dom";
 import { Route } from '@aetlan/core';
@@ -70,7 +70,7 @@ export default function App({ components }: any): JSX.Element {
   }, []);
 
   if (content) {
-    return renderer.render(content) as JSX.Element;
+    return <PageContainer>{ renderer.render(content) as JSX.Element }</PageContainer>;
   }
 
   return <h1>Loading...</h1>;
