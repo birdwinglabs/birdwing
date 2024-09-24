@@ -1,47 +1,38 @@
-import Markdoc, { Schema } from '@markdoc/markdoc';
+import Markdoc, { RenderableTreeNode, Tag, Schema } from '@markdoc/markdoc';
+import { NodeList, TagList } from '../util';
 
-const { Tag } = Markdoc;
+const { Tag: TagCtr } = Markdoc;
+
+
+function extractActions(body: RenderableTreeNode[]): Tag<'link'>[] | null {
+  const lastParagraph = TagList.fromNodes(body).last();
+
+  if (lastParagraph) {
+    const children = TagList.fromNodes(lastParagraph.children);
+
+    if (children.isEveryOfName('link')) {
+      children.all().forEach((c, index) => {
+        c.attributes['class'] = index === 0 ? 'primary' : 'secondary';
+      });
+      const links = children.byName('link');
+      body.splice(body.length - 1);
+      return links;
+    }
+  }
+  return null;
+}
+
 
 export const cta: Schema = {
   render: 'CallToAction',
   transform(node, config) {
-    const splitIndex = node.children.findIndex(child => child.type === 'hr');
+    const children = new NodeList(node.children);
 
-    let body = node.transformChildren(config);
-    let side = undefined;
-    let actions = undefined;
+    const body = children.beforeLastOfType('hr').transformFlat(config);
+    const side = children.afterLastOfType('hr').transformFlat(config);
 
-    if (splitIndex >= 0) {
-      body = node.children
-        .slice(0, splitIndex)
-        .map(node => Markdoc.transform(node, config))
-        .flat()
+    const actions = extractActions(body);
 
-      side = node.children
-        .slice(splitIndex + 1)
-        .map(node => Markdoc.transform(node, config))
-        .flat();
-    }
-
-    const actionsIndex = body.findIndex((c: any) => {
-      return c.name === 'paragraph' && c.children.findIndex((c: any) => c.name === 'link') >= 0;
-    });
-
-    if (actionsIndex >= 0) {
-      const t = body[actionsIndex];
-
-      if (t instanceof Tag) {
-        actions = t.children.map((c: any, index: number) => {
-          if (typeof c !== 'string' && c.name === 'link') {
-            c.attributes['class'] = index === 0 ? 'primary' : 'secondary';
-          }
-          return c;
-        });
-
-        body.splice(actionsIndex);
-      }
-    }
-
-    return new Tag(this.render, { side, actions }, body);
+    return new TagCtr(this.render, { side, actions }, body);
   }
 }
