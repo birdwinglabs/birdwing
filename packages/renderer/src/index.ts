@@ -1,6 +1,8 @@
 import Markdoc, { Tag } from '@markdoc/markdoc';
 import React from 'react';
 
+export { Page, PageContext } from './Page.js';
+
 export class Renderer {
   constructor(private components: any) {}
 

@@ -19,7 +19,8 @@
     "noUnusedLocals": false,
     "strictNullChecks": true,
     "esModuleInterop": true,
-    "downlevelIteration": true
+    "downlevelIteration": true,
+    "jsx": "react-jsx",
   },
   "compileOnSave": false,
   "exclude": [

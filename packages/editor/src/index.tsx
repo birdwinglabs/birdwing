@@ -1,5 +1,5 @@
 import React from 'react';
-import { Renderer } from '@aetlan/renderer';
+import { Page, Renderer } from '@aetlan/renderer';
 import { Store } from '@aetlan/store';
 import { useLocation } from "react-router-dom";
 import { AppConfig, Route } from '@aetlan/core';
@@ -77,7 +77,9 @@ export default function App({ components, themeConfig }: any): JSX.Element {
   if (route && preview && store && context) {
     return (
       <Editor pageId={route.source} store={store} compileContext={context}>
-        { preview }
+        <Page>
+          { preview }
+        </Page>
       </Editor>
     )
   }
