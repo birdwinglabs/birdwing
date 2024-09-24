@@ -1,5 +1,5 @@
 import Markdoc, { Schema } from '@markdoc/markdoc';
-import { NodeList } from '../util';
+import { generateIdIfMissing, NodeList } from '../util';
 
 const { Tag } = Markdoc;
 
@@ -23,12 +23,17 @@ const { Tag } = Markdoc;
 export const tabs: Schema = {
   render: 'Tabs',
   transform(node, config) {
-    const children = new NodeList(node.children)
-      .headingSections()
-      .map(({ heading, body }) =>
-        new Tag('tab', { head: Markdoc.transform(heading, config) }, body.transformFlat(config))
-      );
+    generateIdIfMissing(node, config);
 
-    return new Tag(this.render, node.transformAttributes(config), children);
+    const sections = new NodeList(node.children).headingSections();
+    const tabs = sections.map(({ heading }) => {
+      return new Tag('tab', {}, heading.transformChildren(config));
+    });
+    const panels = sections.map(({ body }) => {
+      return new Tag('tabpanel', {}, body.transformFlat(config));
+    });
+    const attributes = { ...node.transformAttributes(config), tabs };
+
+    return new Tag(this.render, attributes, panels);
   }
 }

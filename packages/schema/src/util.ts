@@ -1,5 +1,28 @@
-import Markdoc, { Node, RenderableTreeNode, Tag } from '@markdoc/markdoc';
+import Markdoc, { Config, Node, RenderableTreeNode, Tag } from '@markdoc/markdoc';
 
+
+
+export function generateIdIfMissing(node: Node, config: Config) {
+  if (!config.variables?.generatedIds) {
+    (config.variables as Record<string, any>).generatedIds = new Set<string>();
+  }
+  const generatedIds = config.variables?.generatedIds as Set<string>;
+
+  if (!node.attributes.id) {
+    const prefix = node.type === 'tag' ? node.tag : node.type;
+
+    if (node.type === 'tag') {
+      let index = 0;
+
+      while (generatedIds.has(`${prefix}-${index}`)) {
+        index++;
+      }
+      const id = `${prefix}-${index}`;
+      generatedIds.add(id);
+      node.attributes.id = id;
+    }
+  }
+}
 
 /**
 * Returns the index of the last element in the array where predicate is true, and -1
