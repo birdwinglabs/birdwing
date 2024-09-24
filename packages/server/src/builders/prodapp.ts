@@ -14,6 +14,7 @@ export function configureProdApp(root: string, files: string[]): esbuild.BuildOp
     import { Routes, Route } from 'react-router-dom';
     import { StaticRouter } from "react-router-dom/server";
     import ReactDOMServer from "react-dom/server";
+    import { Page as PageWrapper  } from '@aetlan/renderer';
 
     ${imports.map(({ name, file}) => `import ${name} from './${file}';`).join('\n')}
 
@@ -22,7 +23,7 @@ export function configureProdApp(root: string, files: string[]): esbuild.BuildOp
       return ReactDOMServer.renderToString(
         <StaticRouter location={path}>
           <Routes>
-            { routes.map(r => <Route path={r.path} element={r.element} />)}
+            { routes.map(r => <Route path={r.path} element={<PageWrapper>{r.element}</PageWrapper>} />)}
           </Routes>
         </StaticRouter>
       );
