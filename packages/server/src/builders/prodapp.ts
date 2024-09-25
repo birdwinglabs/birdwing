@@ -26,7 +26,7 @@ export function configureProdApp(root: string, files: string[]): esbuild.BuildOp
       return ReactDOMServer.renderToString(
         <StaticRouter location={path}>
           <Routes>
-            { routes.map(r => <Route path={r.url} element={<PageWrapper renderer={renderer} content={r.tag}/>} />)}
+            { routes.map(r => <Route key={r.url} path={r.url} element={<PageWrapper renderer={renderer} content={r.tag}/>} />)}
           </Routes>
         </StaticRouter>
       );

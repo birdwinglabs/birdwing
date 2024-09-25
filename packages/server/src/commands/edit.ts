@@ -18,6 +18,7 @@ import { loadAppConfig, loadThemeConfig } from '../config.js';
 import { configureSvelte } from '../builders/svelte.js';
 import { configureEditor } from '../builders/editor.js';
 import { AppConfig } from '@aetlan/core';
+import consola from 'consola';
 
 export class EditorServer {
   constructor(
@@ -40,6 +41,8 @@ export class EditorServer {
   }
 
   async run() {
+    consola.start('Starting editor...');
+
     const tagsGlob = path.join(this.root, 'theme/tags/**/*.jsx');
     const jsxGlob = path.join(this.root, 'theme/**/*.jsx');
     const clientGlob = path.join(this.root, 'theme/client/**/*.svelte');
@@ -61,18 +64,10 @@ export class EditorServer {
     });
 
     const devCtx = await esbuild.context(configureEditor(this.root, await glob.glob(tagsGlob)));
-    const clientCtx = await esbuild.context(configureSvelte(this.root, await glob.glob(clientGlob), 'theme'));
-
-    jsxWatcher.on('change', async () => {
-      await this.rebuildDev(devCtx);
-    });
-    svelteWatcher.on('change', async () => {
-      // TODO: Currently breaks the UI. need to figure out why.
-      //await this.rebuildClient(devCtx);
-    });
+    //const clientCtx = await esbuild.context(configureSvelte(this.root, await glob.glob(clientGlob), 'theme'));
 
     await this.rebuildDev(devCtx);
-    await this.rebuildClient(clientCtx);
+    //await this.rebuildClient(clientCtx);
 
     const editorCss = fs.readFileSync(path.join(this.root, '../../node_modules/@aetlan/editor/dist/editor.css')).toString();
     await this.aetlan.store.write('/editor.css', editorCss);
@@ -97,10 +92,10 @@ export class EditorServer {
     const html = fs.readFileSync(path.join(this.root, 'theme/main.html')).toString();
     const dom = new JSDOM(html);
 
-    const clientScriptElem = dom.window.document.createElement('script');
-    clientScriptElem.setAttribute('type', 'module');
-    clientScriptElem.setAttribute('src', '/client.js');
-    dom.window.document.body.appendChild(clientScriptElem);
+    //const clientScriptElem = dom.window.document.createElement('script');
+    //clientScriptElem.setAttribute('type', 'module');
+    //clientScriptElem.setAttribute('src', '/client.js');
+    //dom.window.document.body.appendChild(clientScriptElem);
 
     const devScriptElem = dom.window.document.createElement('script');
     devScriptElem.setAttribute('src', '/dev.js');
@@ -126,17 +121,17 @@ export class EditorServer {
     this.store.logger.inScope('server').info("Done");
   }
 
-  private async rebuildClient(ctx: esbuild.BuildContext) {
-    this.store.logger.inScope('server').info("Building Svelte...");
+  //private async rebuildClient(ctx: esbuild.BuildContext) {
+    //this.store.logger.inScope('server').info("Building Svelte...");
 
-    const buildRes = await ctx.rebuild();
-    if (buildRes.outputFiles) {
-      await this.aetlan.store.write('/client.js', buildRes.outputFiles[0].text);
-    }
-    await this.aetlan.store.write('/main.css', await generateCss(path.join(this.root, 'theme'), path.join(this.root, 'out')));
+    //const buildRes = await ctx.rebuild();
+    //if (buildRes.outputFiles) {
+      //await this.aetlan.store.write('/client.js', buildRes.outputFiles[0].text);
+    //}
+    //await this.aetlan.store.write('/main.css', await generateCss(path.join(this.root, 'theme'), path.join(this.root, 'out')));
 
-    this.store.logger.inScope('server').info("Done");
-  }
+    //this.store.logger.inScope('server').info("Done");
+  //}
 
   private createServer() {
     return http.createServer(async (req, res) => {
