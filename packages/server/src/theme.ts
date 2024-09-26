@@ -27,9 +27,17 @@ export class Theme {
     return this.config.plugins;
   }
 
+  get componentGlob(): string {
+    return path.join(this.path, 'tags', '**/*.jsx');
+  }
+
+  get jsxGlob(): string {
+    return path.join(this.path, '**/*.jsx');
+  }
+
   get componentNames() {
     return glob
-      .globSync(path.join(this.path, 'tags/**/*.jsx'))
+      .globSync(this.componentGlob)
       .map(f => path.basename(f, path.extname(f)));
   }
 

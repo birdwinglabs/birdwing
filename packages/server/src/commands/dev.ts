@@ -4,8 +4,6 @@ import path from 'path';
 import * as glob from 'glob';
 import * as esbuild from 'esbuild'
 import * as chokidar from 'chokidar';
-import { consola } from 'consola';
-import { colorize } from 'consola/utils';
 
 import { generateCss } from '../css.js';
 import { createDatabase, createStorageEngine } from '../database.js';
@@ -17,13 +15,14 @@ import TashmetServer from '@tashmet/server';
 import { loadAppConfig } from '../config.js';
 import { configureSvelte } from '../builders/svelte.js';
 import { configureDevClient } from '../builders/devclient.js';
-import ora from 'ora';
 import { HtmlBuilder } from '../html.js';
 import { Theme } from '../theme.js';
+import { Logger } from '../logger.js';
 
 
 export class DevCommand {
   private started: boolean = false;
+  private logger = new Logger();
 
   constructor(
     private aetlan: Aetlan,
@@ -54,8 +53,7 @@ export class DevCommand {
   }
 
   async run() {
-    console.log("Development server:\n");
-    const spinner = ora({ indent: 2 });
+    this.logger.info("Development server:\n");
 
     const tagsGlob = path.join(this.root, 'theme/tags/**/*.jsx');
     const jsxGlob = path.join(this.root, 'theme/**/*.jsx');
@@ -64,9 +62,8 @@ export class DevCommand {
 
     const contentWatcher = chokidar.watch(contentGlob);
     const jsxWatcher = chokidar.watch(jsxGlob);
-    const svelteWatcher = chokidar.watch(clientGlob);
 
-    spinner.start("Compiling routes...");
+    this.logger.start("Compiling routes...");
     const compileCtx = await this.aetlan.watch();
 
     compileCtx.on('route-compiled', route => {
@@ -74,18 +71,16 @@ export class DevCommand {
     });
     compileCtx.on('done', routes => {
       if (this.started) {
-        spinner.succeed(`${spinner.text}, ${colorize('blue', routes.length)} Routes updated`);
-        spinner.start("Watching for file changes...");
+        this.logger.success(`${this.logger.text}, ${Logger.color('blue', routes.length)} Routes updated`);
       }
     })
     compileCtx.transform();
 
-    spinner.succeed("Compiled routes");
+    this.logger.success("Compiled routes");
 
     contentWatcher.on('change', async filePath => {
       const relPath = path.relative(this.root, filePath);
-      //consola.info('File changed: `%s`', relPath)
-      spinner.start(`Content changed: ${colorize('blue', relPath)}`);
+      this.logger.start(`Content changed: ${Logger.color('blue', relPath)}`);
       await this.aetlan.store.reloadContent(relPath);
     });
 
@@ -94,47 +89,42 @@ export class DevCommand {
 
     jsxWatcher.on('change', async filePath => {
       const relPath = path.relative(this.root, filePath);
-      spinner.start(`Theme changed: ${colorize('blue', relPath)}`);
+      this.logger.start(`Theme changed: ${Logger.color('blue', relPath)}`);
       await this.rebuildDev(devCtx);
-      spinner.succeed(`${spinner.text}, application rebuilt`);
-      spinner.start('Watching for file changes...');
-    });
-    svelteWatcher.on('change', async () => {
-      // TODO: Currently breaks the UI. need to figure out why.
-      //await this.rebuildClient(devCtx);
+      this.logger.success(`${this.logger.text}, application rebuilt`);
+      //spinner.start('Watching for file changes...');
     });
 
-    spinner.start('Building app...');
+    this.logger.start('Building app...');
     await this.rebuildDev(devCtx);
     await this.rebuildClient(clientCtx);
 
-    spinner.succeed('Built app');
+    this.logger.success('Built app');
+    this.logger.start('Generating HTML...');
 
     const html = HtmlBuilder.fromFile(path.join(this.root, 'theme/main.html'))
       .script('/client.js', 'module')
       .script('/dev.js')
       .serialize();
 
+    this.logger.success('Generated HTML');
+
     await this.updateFile('/main.html', html);
 
-    spinner.start('Starting server...');
+    this.logger.start('Starting server...');
 
     const port = 3000;
     new DevServer(this.aetlan.store, this.store)
       .initialize()
       .listen(port);
 
-    spinner.succeed("Server started");
+    this.logger.success("Server started");
+    this.logger.box('Website ready at `%s`', `http://localhost:${port}`);
 
-    consola.box('Website ready at `%s`', `http://localhost:${port}`);
-
-    spinner.start("Watching for file changes...");
     this.started = true;
   }
 
   private async rebuildDev(ctx: esbuild.BuildContext) {
-    //consola.start('Building dev server...');
-
     const buildRes = await ctx.rebuild();
     if (buildRes.outputFiles) {
       await this.updateFile('/dev.js', buildRes.outputFiles[0].text);
