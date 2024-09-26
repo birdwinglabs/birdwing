@@ -14,30 +14,40 @@ import { Aetlan } from '@aetlan/aetlan';
 import { Store } from '@aetlan/store';
 import { StorageEngine } from '@tashmet/engine';
 import TashmetServer from '@tashmet/server';
-import { loadAppConfig, loadThemeConfig } from '../config.js';
+import { loadAppConfig } from '../config.js';
 import { configureSvelte } from '../builders/svelte.js';
 import { configureEditor } from '../builders/editor.js';
 import { AppConfig } from '@aetlan/core';
 import consola from 'consola';
+import { Theme } from '../theme.js';
 
 export class EditorServer {
   constructor(
     private aetlan: Aetlan,
+    private theme: Theme,
     private store: StorageEngine,
     private root: string,
     private appConfig: AppConfig,
   ) {}
 
   static async configure(configFile: string) {
-    const config = await loadThemeConfig(configFile);
-    const appConfig = await loadAppConfig(configFile);
     const root = path.dirname(configFile);
+    const config = loadAppConfig(configFile);
+    const theme = await Theme.load(path.join(root, config.theme || 'theme', 'theme.config.ts'));
+
     const store = await createStorageEngine();
     const db = await createDatabase(store, root, true);
 
-    const aetlan = new Aetlan(Store.fromDatabase(db), config);
+    const aetlan = new Aetlan(Store.fromDatabase(db), {
+      tags: theme.tags,
+      nodes: theme.nodes,
+      documents: theme.documents,
+      plugins: theme.plugins,
+      content: config.content,
+      variables: config.variables || {},
+    });
 
-    return new EditorServer(aetlan, store, root, appConfig);
+    return new EditorServer(aetlan, theme, store, root, config);
   }
 
   async run() {
@@ -49,8 +59,8 @@ export class EditorServer {
     const contentGlob = path.join(this.root, '**/*.md');
 
     const contentWatcher = chokidar.watch(contentGlob);
-    const jsxWatcher = chokidar.watch(jsxGlob);
-    const svelteWatcher = chokidar.watch(clientGlob);
+    //const jsxWatcher = chokidar.watch(jsxGlob);
+    //const svelteWatcher = chokidar.watch(clientGlob);
 
     const compileCtx = await this.aetlan.watch();
 
@@ -110,6 +120,7 @@ export class EditorServer {
   }
 
   private async rebuildDev(ctx: esbuild.BuildContext) {
+
     this.store.logger.inScope('server').info("Building React...");
 
     const buildRes = await ctx.rebuild();

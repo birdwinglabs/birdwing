@@ -6,12 +6,7 @@ import { fileURLToPath } from 'url';
 import React from 'react';
 import { Route } from '@aetlan/core';
 import { BundleBuilder } from './bundle.js';
-
-export interface Theme {
-  readonly path: string;
-
-  readonly components: string[]
-}
+import { Theme } from '../theme.js';
 
 export class SsrBuilder extends BundleBuilder {
   constructor(private theme: Theme) { super(); }
@@ -22,9 +17,9 @@ export class SsrBuilder extends BundleBuilder {
       import { StaticRouter } from "react-router-dom/server";
       import ReactDOMServer from "react-dom/server";
       import { Renderer, Page as PageWrapper  } from '@aetlan/renderer';
-      ${this.theme.components.map(c => `import ${c} from './tags/${c}.jsx';`).join('\n')}
+      ${this.theme.componentNames.map(c => `import ${c} from './tags/${c}.jsx';`).join('\n')}
 
-      const components = { ${this.theme.components.map(c => `${c}: new ${c}()`).join(', ')} };
+      const components = { ${this.theme.componentNames.map(c => `${c}: new ${c}()`).join(', ')} };
       const renderer = new Renderer(components);
 
       app = (routes, path) => {

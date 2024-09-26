@@ -6,16 +6,17 @@ import * as esbuild from 'esbuild'
 
 import { generateCss } from '../css.js';
 import { createDatabase, createStorageEngine } from '../database.js';
-import { loadThemeConfig } from '../config.js';
+import { loadAppConfig } from '../config.js';
 import { Aetlan } from '@aetlan/aetlan';
 import { Store } from '@aetlan/store';
 
 import { configureSvelte } from '../builders/svelte.js';
-import { SsrApp, SsrBuilder, SsrRunner, Theme } from '../builders/ssr.js';
+import { SsrApp, SsrBuilder, SsrRunner } from '../builders/ssr.js';
 import { Route } from '@aetlan/core';
 import { consola } from 'consola';
 import { oraPromise } from 'ora';
 import { HtmlBuilder } from '../html.js';
+import { Theme } from '../theme.js';
 
 
 async function* renderHtml(application: any, routes: Route[], html: string) {
@@ -38,21 +39,30 @@ export class Build {
 
   constructor(
     private aetlan: Aetlan,
+    private theme: Theme,
     private root: string
   ) {}
 
   static async configure(configFile: string) {
     console.log("Production build:\n");
 
-    const config = await loadThemeConfig(configFile);
     const root = path.dirname(configFile);
+    const config = loadAppConfig(configFile);
+    const theme = await Theme.load(path.join(root, config.theme || 'theme', 'theme.config.ts'));
 
     const store = await createStorageEngine();
     const db = await createDatabase(store, root, false);
 
-    const aetlan = new Aetlan(Store.fromDatabase(db), config);
+    const aetlan = new Aetlan(Store.fromDatabase(db), {
+      tags: theme.tags,
+      nodes: theme.nodes,
+      documents: theme.documents,
+      plugins: theme.plugins,
+      content: config.content,
+      variables: config.variables || {},
+    });
 
-    return new Build(aetlan, root);
+    return new Build(aetlan, theme, root);
   }
 
   async run() {
@@ -118,14 +128,7 @@ export class Build {
   }
 
   private async buildServerApp(): Promise<SsrApp> {
-    const files = await glob.glob(path.join(this.root, 'theme/tags/**/*.jsx'));
-
-    const theme: Theme = {
-      path: path.join(this.root, 'theme'),
-      components: files.map(f => path.basename(f, path.extname(f))),
-    };
-
-    const builder = new SsrBuilder(theme);
+    const builder = new SsrBuilder(this.theme);
     const runner = new SsrRunner({
       error: (message: string, ...args: any[]) => {
         this.errors.push({ message, args });

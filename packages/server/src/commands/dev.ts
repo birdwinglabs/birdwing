@@ -1,6 +1,5 @@
 import http from 'http';
 import path from 'path';
-import fs from 'fs';
 
 import * as glob from 'glob';
 import * as esbuild from 'esbuild'
@@ -15,11 +14,12 @@ import { Aetlan } from '@aetlan/aetlan';
 import { Store } from '@aetlan/store';
 import { StorageEngine } from '@tashmet/engine';
 import TashmetServer from '@tashmet/server';
-import { loadThemeConfig } from '../config.js';
+import { loadAppConfig } from '../config.js';
 import { configureSvelte } from '../builders/svelte.js';
 import { configureDevClient } from '../builders/devclient.js';
 import ora from 'ora';
 import { HtmlBuilder } from '../html.js';
+import { Theme } from '../theme.js';
 
 
 export class DevCommand {
@@ -27,20 +27,30 @@ export class DevCommand {
 
   constructor(
     private aetlan: Aetlan,
+    private theme: Theme,
     private store: StorageEngine,
     private root: string
   ) {
   }
 
   static async configure(configFile: string) {
-    const config = await loadThemeConfig(configFile);
     const root = path.dirname(configFile);
+    const config = loadAppConfig(configFile);
+    const theme = await Theme.load(path.join(root, config.theme || 'theme', 'theme.config.ts'));
+
     const store = await createStorageEngine();
     const db = await createDatabase(store, root, true);
 
-    const aetlan = new Aetlan(Store.fromDatabase(db), config);
+    const aetlan = new Aetlan(Store.fromDatabase(db), {
+      tags: theme.tags,
+      nodes: theme.nodes,
+      documents: theme.documents,
+      plugins: theme.plugins,
+      content: config.content,
+      variables: config.variables || {},
+    });
 
-    return new DevCommand(aetlan, store, root);
+    return new DevCommand(aetlan, theme, store, root);
   }
 
   async run() {

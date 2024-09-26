@@ -104,9 +104,12 @@ export interface Transformer {
   transform(ast: Node, config: TransformConfig): Tag;
 }
 
-export interface Theme {
+export interface ThemeConfig {
   tags: Record<string, Schema>;
+
   nodes: Record<string, Schema>;
+
   documents: Record<string, Schema>;
+
   plugins: Plugin[];
 }
