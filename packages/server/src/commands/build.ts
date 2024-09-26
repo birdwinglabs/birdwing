@@ -9,144 +9,27 @@ import { createDatabase, createStorageEngine } from '../database.js';
 import { loadThemeConfig } from '../config.js';
 import { Aetlan } from '@aetlan/aetlan';
 import { Store } from '@aetlan/store';
-import vm from 'vm';
-import { createRequire } from 'module';
-import { fileURLToPath } from 'url';
-import React from 'react';
 
-import { JSDOM } from 'jsdom';
 import { configureSvelte } from '../builders/svelte.js';
-import { configureProdApp } from '../builders/prodapp.js';
+import { SsrApp, SsrBuilder, SsrRunner, Theme } from '../builders/ssr.js';
 import { Route } from '@aetlan/core';
 import { consola } from 'consola';
-import log from 'npmlog';
-import ora, { Ora, oraPromise } from 'ora';
+import { oraPromise } from 'ora';
+import { HtmlBuilder } from '../html.js';
 
-//export interface ActionConfig<T> {
-  //readonly start: string;
-  //readonly success: (result: T) => string;
-  //readonly fail?: (err: Error) => string;
-//}
-
-//export abstract class Action<T> {
-  //constructor(config: ActionConfig<T>) {}
-
-  //abstract run(): Promise<T>;
-
-  //start() {
-
-  //}
-//}
-
-//type BuildOutput = Record<string, string>;
-
-//export class CompileAction implements Action<Route[]> {
-  //start = "Compiling routes...";
-
-  //constructor(private aetlan: Aetlan) {}
-
-  //async run() {
-    //return [];
-  //}
-
-  //success()
-//}
-
-//function executeAction<T>(action: Action<T>): Promise<T> {
-  //action.
-//}
-
-//class CompileRoutesAction extends Action<Route[]> {
-  //constructor(private aetlan: Aetlan) {
-    //super({
-      //start: 'Compiling routes...',
-      //success: routes => `Compiled ${routes.length} routes`
-    //});
-  //}
-
-  //async run(): Promise<Route[]> {
-    //const routes = await this.aetlan.compile();
-    //for (const route of routes) {
-      //this.aetlan.store.updateRoute(route);
-    //}
-    //return routes;
-  //}
-//}
-
-//class BuildServerAppAction extends Action<void> {
-
-//}
-  //private async buildServerApp() {
-    //const files = await glob.glob(path.join(this.root, 'theme/tags/**/*.jsx'));
-    //const build = await esbuild.build(configureProdApp(this.root, files));
-
-    //const sandbox = {
-      //require: createRequire(import.meta.url),
-      //__dirname: path.dirname(fileURLToPath(import.meta.url)),
-      //console: {
-        //error: (message: string, ...args: any[]) => {
-          //this.errors.push({ message, args });
-        //}
-      //},
-      //module: {},
-      //exports: {},
-      //components: {},
-      //TextEncoder,
-      //URL,
-      //app: (routes: Route[], path: string): string => { return ''; },
-      //React,
-    //};
-
-    //if (!build.outputFiles) {
-      //throw Error('No output files from build');
-    //}
-
-    //vm.runInNewContext(build.outputFiles[0].text, sandbox);
-
-    //return sandbox.app;
-  //}
-
-//export class BuildClientApp extends Action<BuildOutput> {
-  //start = "Building app";
-  //success = "Built app";
-
-  //constructor(private ctx: esbuild.BuildContext, private root: string) { super(); }
-
-  //async run() {
-    //const output: BuildOutput = {};
-    //const buildRes = await this.ctx.rebuild();
-    //if (buildRes.outputFiles) {
-      //output['/dev.js'] = buildRes.outputFiles[0].text;
-    //}
-
-    //output['/main.css'] = await generateCss(path.join(this.root, 'theme'), path.join(this.root, 'out'))
-
-    //return output;
-  //}
-//}
 
 async function* renderHtml(application: any, routes: Route[], html: string) {
   for (const route of routes) {
-    const body = application(routes, route.url);
+    const content = new HtmlBuilder(html)
+      .title(route.title)
+      .script('/client.js', 'module')
+      .app(application(routes, route.url))
+      .serialize()
 
-    //const html = fs.readFileSync(path.join(root, 'theme/main.html')).toString();
-    const dom = new JSDOM(html);
-
-    dom.window.document.title = route.title;
-
-    const app = dom.window.document.getElementById('app');
-
-    const clientScriptElem = dom.window.document.createElement('script');
-    clientScriptElem.setAttribute('type', 'module');
-    clientScriptElem.setAttribute('src', '/client.js');
-    dom.window.document.body.appendChild(clientScriptElem);
-
-    if (app) {
-      app.innerHTML = body;
-    }
-    const outPath = path.join(route.url, 'index.html');
-
-    yield { path: outPath, content: dom.serialize() };
+    yield {
+      path: path.join(route.url, 'index.html'),
+      content
+    };
   }
 }
 
@@ -234,34 +117,22 @@ export class Build {
     }
   }
 
-  private async buildServerApp() {
+  private async buildServerApp(): Promise<SsrApp> {
     const files = await glob.glob(path.join(this.root, 'theme/tags/**/*.jsx'));
-    const build = await esbuild.build(configureProdApp(this.root, files));
 
-    const sandbox = {
-      require: createRequire(import.meta.url),
-      __dirname: path.dirname(fileURLToPath(import.meta.url)),
-      console: {
-        error: (message: string, ...args: any[]) => {
-          this.errors.push({ message, args });
-        }
-      },
-      module: {},
-      exports: {},
-      components: {},
-      TextEncoder,
-      URL,
-      app: (routes: Route[], path: string): string => { return ''; },
-      React,
+    const theme: Theme = {
+      path: path.join(this.root, 'theme'),
+      components: files.map(f => path.basename(f, path.extname(f))),
     };
 
-    if (!build.outputFiles) {
-      throw Error('No output files from build');
-    }
+    const builder = new SsrBuilder(theme);
+    const runner = new SsrRunner({
+      error: (message: string, ...args: any[]) => {
+        this.errors.push({ message, args });
+      }
+    });
 
-    vm.runInNewContext(build.outputFiles[0].text, sandbox);
-
-    return sandbox.app;
+    return runner.run(await builder.build());
   }
 
   private async updateFile(name: string, content: string) {

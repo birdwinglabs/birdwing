@@ -1,5 +1,5 @@
 import { program } from 'commander';
-import { Build, DevServer, EditorServer, Preview } from '@aetlan/server';
+import { Build, DevCommand, EditorServer, Preview } from '@aetlan/server';
 import path from 'path';
 
 export function cli() {
@@ -15,7 +15,7 @@ export function cli() {
     .command('watch')
     .argument('<path>', 'path to config file')
     .action(async (cfgPath: string) => {
-      const devServer = await DevServer.configure(cfgPath);
+      const devServer = await DevCommand.configure(cfgPath);
       await devServer.run();
     });
 

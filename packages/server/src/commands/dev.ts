@@ -5,7 +5,6 @@ import fs from 'fs';
 import * as glob from 'glob';
 import * as esbuild from 'esbuild'
 import * as chokidar from 'chokidar';
-import { JSDOM } from 'jsdom';
 import { consola } from 'consola';
 import { colorize } from 'consola/utils';
 
@@ -20,11 +19,10 @@ import { loadThemeConfig } from '../config.js';
 import { configureSvelte } from '../builders/svelte.js';
 import { configureDevClient } from '../builders/devclient.js';
 import ora from 'ora';
+import { HtmlBuilder } from '../html.js';
 
 
-
-
-export class DevServer {
+export class DevCommand {
   private started: boolean = false;
 
   constructor(
@@ -42,7 +40,7 @@ export class DevServer {
 
     const aetlan = new Aetlan(Store.fromDatabase(db), config);
 
-    return new DevServer(aetlan, store, root);
+    return new DevCommand(aetlan, store, root);
   }
 
   async run() {
@@ -102,17 +100,19 @@ export class DevServer {
 
     spinner.succeed('Built app');
 
-    const html = this.createHtml();
+    const html = HtmlBuilder.fromFile(path.join(this.root, 'theme/main.html'))
+      .script('/client.js', 'module')
+      .script('/dev.js')
+      .serialize();
+
     await this.updateFile('/main.html', html);
 
     spinner.start('Starting server...');
 
     const port = 3000;
-    const server = this.createServer();
-
-    new TashmetServer(this.store, server).listen();
-
-    server.listen(port);
+    new DevServer(this.aetlan.store, this.store)
+      .initialize()
+      .listen(port);
 
     spinner.succeed("Server started");
 
@@ -120,22 +120,6 @@ export class DevServer {
 
     spinner.start("Watching for file changes...");
     this.started = true;
-  }
-
-  private createHtml() {
-    const html = fs.readFileSync(path.join(this.root, 'theme/main.html')).toString();
-    const dom = new JSDOM(html);
-
-    const clientScriptElem = dom.window.document.createElement('script');
-    clientScriptElem.setAttribute('type', 'module');
-    clientScriptElem.setAttribute('src', '/client.js');
-    dom.window.document.body.appendChild(clientScriptElem);
-
-    const devScriptElem = dom.window.document.createElement('script');
-    devScriptElem.setAttribute('src', '/dev.js');
-    dom.window.document.body.appendChild(devScriptElem);
-
-    return dom.serialize();
   }
 
   private async rebuildDev(ctx: esbuild.BuildContext) {
@@ -157,18 +141,31 @@ export class DevServer {
     await this.aetlan.store.write('/main.css', await generateCss(path.join(this.root, 'theme'), path.join(this.root, 'out')));
   }
 
-  private createServer() {
-    return http.createServer(async (req, res) => {
+  private async updateFile(name: string, content: string) {
+    const size = Buffer.from(content).byteLength;
+    //consola.withTag('output').ready('Cache: `%s` (%d KB)', name, size / 1000);
+    await this.aetlan.store.write(name, content);
+  }
+}
+
+class DevServer {
+  private server: http.Server;
+  private tashmetServer: TashmetServer;
+
+  constructor(private store: Store, private storageEngine: StorageEngine) {}
+
+  initialize() {
+    this.server = http.createServer(async (req, res) => {
       const url = req.url || '';
-      const route = await this.aetlan.store.getRoute(url);
+      const route = await this.store.getRoute(url);
 
       if (route) {
-        const content = await this.aetlan.store.getOutput('/main.html');
+        const content = await this.store.getOutput('/main.html');
         res.setHeader('Content-Type', 'text/html');
         res.write(content || '');
         res.end();
       } else {
-        const content = await this.aetlan.store.getOutput(req.url || '');
+        const content = await this.store.getOutput(req.url || '');
         if (req.url?.endsWith('.js')) {
           res.setHeader('Content-Type', 'text/javascript')
         }
@@ -176,11 +173,12 @@ export class DevServer {
         res.end();
       }
     });
+    this.tashmetServer = new TashmetServer(this.storageEngine, this.server)
+    return this;
   }
 
-  private async updateFile(name: string, content: string) {
-    const size = Buffer.from(content).byteLength;
-    //consola.withTag('output').ready('Cache: `%s` (%d KB)', name, size / 1000);
-    await this.aetlan.store.write(name, content);
+  listen(port: number) {
+    this.tashmetServer.listen();
+    this.server.listen(port);
   }
 }
