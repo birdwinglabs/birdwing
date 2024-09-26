@@ -17,15 +17,12 @@ export class CompileContext {
     private compiler: Compiler,
   ) {}
 
-  on(event: 'route-compiled' | 'route-removed', handler: (route: Route) => void) {
-    switch (event) {
-      case 'route-compiled':
-        this.watcher.on('route-compiled', handler);
-        return this;
-      case 'route-removed':
-        this.watcher.on('route-removed', handler);
-        return this;
-    }
+  on(event: 'route-compiled', handler: (route: Route) => void): this;
+  on(event: 'route-removed', handler: (route: Route) => void): this;
+  on(event: 'done', handler: (routes: Route[]) => void): this;
+  on(event: 'route-compiled' | 'route-removed' | 'done', handler: (...args: any[]) => void) {
+    this.watcher.on(event, handler);
+    return this;
   }
 
   transform() {
@@ -74,6 +71,7 @@ export class Compiler {
       }
 
       watcher.emit('route-compiled', route);
+      return [route];
     }
 
     const updateFragment = (fragment: FragmentDocument, affected: PageDocument[]) => {
@@ -88,24 +86,30 @@ export class Compiler {
           injector(route);
           watcher.emit('route-compiled', route);
         }
+        return routes;
       }
+      return [];
     }
 
     this.cache.watch()
       .on('page-changed', page => {
-        updatePage(page);
+        const routes = updatePage(page);
+        watcher.emit('done', routes);
       })
       .on('partial-changed', ({ doc, affected }) => {
         this.transformer.setPartial(doc.path, doc.ast);
+        const routes: Route[] = [];
         for (const page of affected.filter(doc => doc.type === 'page') as PageDocument[]) {
-          updatePage(page);
+          routes.push(...updatePage(page))
         }
         for (const fragment of affected.filter(doc => doc.type === 'fragment') as FragmentDocument[]) {
-          updateFragment(fragment, this.cache.dependants(fragment) as PageDocument[]);
+          routes.push(...updateFragment(fragment, this.cache.dependants(fragment) as PageDocument[]));
         }
+        watcher.emit('done', routes);
       })
       .on('fragment-changed', ({ doc, affected }) => {
-        updateFragment(doc, affected);
+        const routes = updateFragment(doc, affected);
+        watcher.emit('done', routes);
       });
 
     return ctx;
