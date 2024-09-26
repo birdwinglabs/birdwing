@@ -35,6 +35,7 @@ export function configureDevClient(root: string, files: string[]): esbuild.Build
       loader: 'jsx',
       resolveDir: path.join(root, 'theme'),
     },
+    logLevel: 'silent',
     bundle: true,
     outfile: 'dev.js',
     write: false,
