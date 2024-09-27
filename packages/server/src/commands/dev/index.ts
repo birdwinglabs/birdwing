@@ -15,12 +15,13 @@ import { ThemeMonitor } from './theme-monitor.js';
 import { DevServer } from './server.js';
 import { Command } from '../../command.js';
 import { Theme } from '../../theme.js';
+import { LoadThemeTask } from '../../tasks/load-theme.js';
 
 export class DevCommand extends Command {
   async execute() {
     this.logger.info("Development server:\n");
 
-    const theme = await this.loadTheme();
+    const theme = await this.executeTask(new LoadThemeTask(this.config, this.root));
     const store = await createStorageEngine();
     const db = await createDatabase(store, this.root, true);
 

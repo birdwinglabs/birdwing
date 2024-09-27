@@ -15,12 +15,13 @@ import { Theme } from '../theme.js';
 import { Command } from '../command.js';
 import { HtmlBuilder } from '../html.js';
 import { DevServer } from './dev/server.js';
+import { LoadThemeTask } from '../tasks/load-theme.js';
 
 export class EditCommand extends Command {
   async execute() {
     this.logger.info('Starting editor...\n');
 
-    const theme = await this.loadTheme();
+    const theme = await this.executeTask(new LoadThemeTask(this.config, this.root));
 
     const store = await createStorageEngine();
     const db = await createDatabase(store, this.root, true);

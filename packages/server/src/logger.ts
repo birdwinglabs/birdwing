@@ -30,6 +30,14 @@ export class Logger {
     }
   }
 
+  warn(message: string, ...args: any[]) {
+    if (this.spinner.isSpinning) {
+      this.spinner.warn(message);
+    } else {
+      consola.warn(message, ...args);
+    }
+  }
+
   error(message: string, ...args: any[]) {
     if (this.spinner.isSpinning) {
       this.spinner.fail(message);

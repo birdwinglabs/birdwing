@@ -9,32 +9,83 @@ import { Store } from '@aetlan/store';
 import { SsrApp, SsrBuilder, SsrRunner } from '../builders/ssr.js';
 import { Route } from '@aetlan/core';
 import { HtmlBuilder } from '../html.js';
-import { Command } from '../command.js';
+import { Command, Task, TaskProgress, TaskWarning } from '../command.js';
 import { Theme } from '../theme.js';
+import { LoadThemeTask } from '../tasks/load-theme.js';
 
 
-async function* renderHtml(application: any, routes: Route[], html: string) {
-  for (const route of routes) {
-    const content = new HtmlBuilder(html)
-      .title(route.title)
-      .script('/client.js', 'module')
-      .app(application(routes, route.url))
-      .serialize()
+class CompileRoutesTask extends Task<Route[]> {
+  constructor(private aetlan: Aetlan) { 
+    super('Compiling routes...', routes => `Compiled ${routes.length} routes`);
+  }
 
-    yield {
-      path: path.join(route.url, 'index.html'),
-      content
-    };
+  async *execute() {
+    try {
+      return await this.aetlan.compile();
+    } catch (err) {
+      throw new Error('Compiling routes failed');
+    }
   }
 }
 
-export class BuildCommand extends Command {
-  private errors: any[] = [];
+class BuildSsrAppTask extends Task<SsrApp> {
+  constructor(private theme: Theme, private warnings: TaskWarning[]) {
+    super('Building SSR application...', 'Built SSR application');
+  }
 
+  async *execute() {
+    const builder = new SsrBuilder(this.theme);
+    const runner = new SsrRunner({
+      error: (message: string, ...args: any[]) => {
+        this.warnings.push(new TaskWarning(message, ...args));
+        //console.log(message);
+      }
+    });
+    return runner.run(await builder.build());
+  }
+}
+
+class RenderSSRTask extends Task<void> {
+  constructor(
+    private application: SsrApp,
+    private routes: Route[],
+    private store: Store,
+    private root: string,
+    private warnings: TaskWarning[]
+  ) {
+    super('Rendering HTML...', (res, warnings) => warnings.length === 0 
+      ? 'Rendered HTML'
+      : `Rendered HTML (with ${warnings.length} warnings)`
+    );
+  }
+
+  async *execute() {
+    const html = fs.readFileSync(path.join(this.root, 'theme/main.html')).toString();
+
+    for (const route of this.routes) {
+      const content = new HtmlBuilder(html)
+        .title(route.title)
+        .script('/client.js', 'module')
+        .app(this.application(this.routes, route.url))
+        .serialize()
+
+      const relPath = path.join(route.url, 'index.html');
+      await this.store.write(path.join(this.root, 'out', relPath), content);
+      yield new TaskProgress(`Write HTML: ${relPath}`);
+    }
+
+    for (const warning of this.warnings) {
+      yield warning;
+    }
+  }
+}
+
+
+export class BuildCommand extends Command {
   async execute() {
     console.log("Production build:\n");
 
-    const theme = await this.loadTheme();
+    const theme = await this.executeTask(new LoadThemeTask(this.config, this.root));
     const store = await createStorageEngine();
     const db = await createDatabase(store, this.root, false);
 
@@ -47,42 +98,12 @@ export class BuildCommand extends Command {
       variables: this.config.variables || {},
     });
 
-    let routes: Route[] = [];
-    let application: SsrApp;
+    const warnings: TaskWarning[] = [];
 
-    try {
-      this.logger.start('Compiling routes...');
-      routes = await aetlan.compile();
-      this.logger.success(`Compiled ${routes.length} routes`);
-    } catch (err) {
-      this.logger.error('Compiling routes failed');
-      throw err;
-    }
-
-    try {
-      this.logger.start('Building server app...');
-      application = await this.buildSsrApp(theme);
-      this.logger.success('Built server app');
-    } catch(err) {
-      this.logger.error('Build server app failed');
-      throw err;
-    }
-
-    try {
-      this.logger.start('Rendering HTML...');
-      const html = fs.readFileSync(path.join(this.root, 'theme/main.html')).toString();
-
-      for await (const { path, content } of renderHtml(application, routes, html)) {
-        await this.write(path, content, aetlan.store);
-        this.logger.update(`Write HTML: ${path}`);
-      }
-      if (this.errors.length > 0) {
-        throw Error(`Rendered HTML with ${this.errors.length} errors`);
-      }
-      this.logger.success('Rendered HTML');
-    } catch (err) {
-      this.logger.error(err.message);
-    }
+    const routes = await this.executeTask(new CompileRoutesTask(aetlan));
+    const application = await this.executeTask(new BuildSsrAppTask(theme, warnings));
+  
+    await this.executeTask(new RenderSSRTask(application, routes, aetlan.store, this.root, warnings));
 
     try {
       this.logger.start('Generating CSS...');
@@ -94,22 +115,7 @@ export class BuildCommand extends Command {
       throw err;
     }
 
-    for (const err of this.errors) {
-      this.logger.error(err.message, ...err.args);
-    }
-
     this.logger.box('Build finished\n\nTo preview the app run:\n`npm run preview`');
-  }
-
-  private async buildSsrApp(theme: Theme) {
-    const builder = new SsrBuilder(theme);
-    const runner = new SsrRunner({
-      error: (message: string, ...args: any[]) => {
-        this.errors.push({ message, args });
-      }
-    });
-
-    return runner.run(await builder.build());
   }
 
   private async write(name: string, content: string, store: Store) {
