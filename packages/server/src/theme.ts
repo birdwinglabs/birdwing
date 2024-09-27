@@ -1,10 +1,5 @@
-import * as esbuild from 'esbuild';
 import * as glob from 'glob';
-import vm from 'vm';
 import path from 'path';
-import { createRequire } from 'module';
-import { fileURLToPath } from 'url';
-import { Schema } from '@markdoc/markdoc';
 import { ThemeConfig } from '@aetlan/core';
 
 
