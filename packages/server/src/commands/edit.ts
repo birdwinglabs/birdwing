@@ -10,12 +10,12 @@ import { createDatabase, createStorageEngine } from '../database.js';
 import { Aetlan } from '@aetlan/aetlan';
 import { Store } from '@aetlan/store';
 import { configureEditor } from '../builders/editor.js';
-import { Route } from '@aetlan/core';
 import { Theme } from '../theme.js';
 import { Command } from '../command.js';
 import { HtmlBuilder } from '../html.js';
 import { DevServer } from './dev/server.js';
 import { LoadThemeTask } from '../tasks/load-theme.js';
+import { CompileRoutesTask } from '../tasks/compile-routes.js';
 
 export class EditCommand extends Command {
   async execute() {
@@ -35,16 +35,7 @@ export class EditCommand extends Command {
       variables: this.config.variables || {},
     });
 
-    let routes: Route[];
-
-    try {
-      this.logger.start('Compiling routes...');
-      routes = await aetlan.compile();
-      this.logger.success(`Compiled ${routes.length} routes`);
-    } catch (err) {
-      this.logger.error('Compiling routes failed');
-      throw err;
-    }
+    const routes = this.executeTask(new CompileRoutesTask(aetlan));
 
     try {
       this.logger.start('Building server app...');
