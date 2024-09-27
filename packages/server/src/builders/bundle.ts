@@ -12,6 +12,7 @@ export abstract class BundleBuilder {
         resolveDir: this.resolveDir,
       },
       bundle: true,
+      logLevel: 'silent',
       format: 'cjs',
       outfile: 'out.js',
       write: false,

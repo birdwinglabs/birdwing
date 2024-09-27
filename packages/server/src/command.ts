@@ -12,7 +12,7 @@ export abstract class Command {
   abstract execute(): Promise<void>;
 
   async executeTask<T>(task: Task<T>): Promise<T> {
-    this.logger.start(task.name);
+    this.logger.start(task.messageStart);
 
     const warnings: TaskWarning[] = [];
 
@@ -23,12 +23,16 @@ export abstract class Command {
 
         if (it.done) {
           if (warnings.length > 0) {
-            this.logger.warn(Logger.color('yellow', task.complete(it.value, warnings)));
+            const msg = task.messageWarnings
+              ? task.messageWarnings(it.value, warnings)
+              : task.messageSuccess(it.value);
+
+            this.logger.warn(Logger.color('yellow', msg));
             for (const { message, args } of warnings) {
               this.logger.warn(message, ...args);
             }
           } else {
-            this.logger.success(task.complete(it.value, warnings));
+            this.logger.success(task.messageSuccess(it.value));
           }
           return it.value;
         } else {
@@ -39,7 +43,11 @@ export abstract class Command {
         }
       }
     } catch (err) {
-      this.logger.error(err.message);
+      if (task.messageFail) {
+        this.logger.error(task.messageFail(err));
+      } else {
+        this.logger.error(err.message);
+      }
       throw err;
     }
   }
@@ -63,11 +71,28 @@ export interface TaskResult<T> {
   value: T;
 }
 
-export abstract class Task<T> {
-  complete: (result: T, warnings: TaskWarning[]) => string;
+export interface TaskConfig<T> {
+  start: string;
+  success: ((result: T) => string) | string;
+  warnings?: ((result: T, warnings: TaskWarning[]) => string) | string;
+  fail?: string | ((err: Error) => string);
+}
 
-  constructor(public readonly name: string, complete: string | ((result: T, warnings: TaskWarning[]) => string)) {
-    this.complete = typeof complete === 'string' ? () => complete : complete;
+export abstract class Task<T> {
+  messageStart: string;
+  messageSuccess: (result: T) => string;
+  messageWarnings: ((result: T, warnings: TaskWarning[]) => string) | undefined;
+  messageFail: ((err: Error) => string) | undefined = undefined;
+
+  constructor({ start, success, warnings, fail }: TaskConfig<T>) {
+    this.messageStart = start;
+    this.messageSuccess = typeof success === 'string' ? () => success : success;
+    if (warnings) {
+      this.messageWarnings = typeof warnings === 'string' ? () => warnings : warnings;
+    }
+    if (fail) {
+      this.messageFail = typeof fail === 'string' ? () => fail : fail;
+    }
   }
 
   abstract execute(): AsyncGenerator<TaskProgress | TaskWarning, T>;

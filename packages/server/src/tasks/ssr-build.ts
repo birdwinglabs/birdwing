@@ -4,7 +4,11 @@ import { Theme } from '../theme.js';
 
 export class BuildSsrAppTask extends Task<SsrApp> {
   constructor(private theme: Theme, private warnings: TaskWarning[]) {
-    super('Building SSR application...', 'Built SSR application');
+    super({
+      start: 'Building SSR application...',
+      success: 'Built SSR application',
+      fail: 'Building SSR application failed'
+    });
   }
 
   async *execute() {

@@ -16,10 +16,11 @@ export class RenderSSRTask extends Task<void> {
     private root: string,
     private warnings: TaskWarning[]
   ) {
-    super('Rendering HTML...', (res, warnings) => warnings.length === 0 
-      ? 'Rendered HTML'
-      : `Rendered HTML (with ${warnings.length} warnings)`
-    );
+    super({
+      start: 'Rendering HTML...',
+      success: 'Rendered HTML',
+      warnings: (res, warnings) => `Rendered HTML (with ${warnings.length} warnings)`,
+    });
   }
 
   async *execute() {

@@ -9,7 +9,10 @@ import { Store } from '@aetlan/store';
 
 export class TailwindCssTask extends Task<void> {
   constructor(private theme: Theme, private store: Store, private outPath: string) {
-    super('Processing CSS...', 'Processed CSS');
+    super({
+      start: 'Processing CSS...',
+      success: 'Processed CSS'
+    });
   }
 
   async *execute() {

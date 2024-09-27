@@ -11,7 +11,10 @@ import { Task } from '../command.js';
 
 export class LoadThemeTask extends Task<Theme> {
   constructor(private config: AppConfig, private root: string) {
-    super('Loading theme...', theme => `Loaded theme: ${theme.path}`);
+    super({
+      start: 'Loading theme...',
+      success: theme => `Loaded theme: ${theme.path}`
+    });
   }
 
   async *execute() {

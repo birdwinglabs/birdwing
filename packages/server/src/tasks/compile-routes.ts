@@ -5,7 +5,10 @@ import { Task } from '../command.js';
 
 export class CompileRoutesTask extends Task<Route[]> {
   constructor(private aetlan: Aetlan) { 
-    super('Compiling routes...', routes => `Compiled ${routes.length} routes`);
+    super({
+      start: 'Compiling routes...',
+      success: routes => `Compiled ${routes.length} routes`
+    });
   }
 
   async *execute() {

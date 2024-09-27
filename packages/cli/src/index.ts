@@ -7,7 +7,7 @@ interface CommandConstructor {
   new (root: string, logger: Logger, config: AppConfig): Command;
 }
 
-function executeCommand(Cmd: CommandConstructor, cfgPath: string) {
+async function executeCommand(Cmd: CommandConstructor, cfgPath: string) {
   const root = path.dirname(cfgPath);
   const logger = new Logger();
   const config = loadAppConfig(cfgPath);
@@ -15,7 +15,7 @@ function executeCommand(Cmd: CommandConstructor, cfgPath: string) {
   const command = new Cmd(root, logger, config);
 
   try {
-    return command.execute();
+    return await command.execute();
   } catch (err) {
     logger.error(err.message);
   }
