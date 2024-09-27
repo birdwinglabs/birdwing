@@ -2,11 +2,12 @@ import path from 'path';
 
 import * as esbuild from 'esbuild'
 import consola from 'consola';
+import { Command } from '../command.js';
 
-export class Preview {
-  constructor(private root: string) {}
+export class PreviewCommand extends Command {
+  //constructor(private root: string) {}
 
-  async run() {
+  async execute() {
     consola.start("Starting static server...");
 
     const ctx = await esbuild.context({
@@ -25,6 +26,6 @@ export class Preview {
       servedir: path.join(this.root, 'out'),
     });
 
-    consola.box("Website ready at `%s`", `http://localhost:8000`);
+    this.logger.box("Website ready at `%s`", `http://localhost:8000`);
   }
 }

@@ -15,7 +15,7 @@ export function configureEditor(root: string, files: string[]): esbuild.BuildOpt
     import React from 'react';
     import ReactDOM from 'react-dom/client';
     import { createBrowserRouter, RouterProvider } from "react-router-dom";
-    import theme from './index.ts';
+    import theme from './theme.config.ts';
     ${imports.map(({ name, file}) => `import ${name} from './${file}';`).join('\n')}
 
     const components = { ${imports.map(({ name }) => `${name}: new ${name}()`).join(', ')} };

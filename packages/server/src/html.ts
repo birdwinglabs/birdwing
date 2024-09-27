@@ -27,6 +27,14 @@ export class HtmlBuilder {
     return this;
   }
 
+  link(href: string, rel: string) {
+    const elem = this.dom.window.document.createElement('link');
+    elem.setAttribute('href', href);
+    elem.setAttribute('rel', rel);
+    this.dom.window.document.head.appendChild(elem);
+    return this;
+  }
+
   app(html: string) {
     const app = this.dom.window.document.getElementById('app');
     if (app) {

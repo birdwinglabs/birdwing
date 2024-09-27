@@ -5,7 +5,7 @@
     "types": ["reflect-metadata", "node"],
     "module": "esnext",
     "moduleResolution": "node",
-    "rootDirs": ["src", "test"],
+    "rootDirs": ["src", "commands"],
     "outDir": "dist",
     "declaration": true,
     "experimentalDecorators": true,
@@ -19,7 +19,8 @@
     "noUnusedLocals": false,
     "strictNullChecks": true,
     "esModuleInterop": true,
-    "downlevelIteration": true
+    "downlevelIteration": true,
+    "jsx": "react-jsx",
   },
   "compileOnSave": false,
   "exclude": [

@@ -1,167 +1,119 @@
-import http from 'http';
 import path from 'path';
 import fs from 'fs';
 
 import * as glob from 'glob';
 import * as esbuild from 'esbuild'
-import * as chokidar from 'chokidar';
-import { JSDOM } from 'jsdom';
 
 import { generateCss } from '../css.js';
 import { createDatabase, createStorageEngine } from '../database.js';
 
 import { Aetlan } from '@aetlan/aetlan';
 import { Store } from '@aetlan/store';
-import { StorageEngine } from '@tashmet/engine';
-import TashmetServer from '@tashmet/server';
-import { loadAppConfig } from '../config.js';
-import { configureSvelte } from '../builders/svelte.js';
 import { configureEditor } from '../builders/editor.js';
-import { AppConfig } from '@aetlan/core';
-import consola from 'consola';
+import { Route } from '@aetlan/core';
 import { Theme } from '../theme.js';
+import { Command } from '../command.js';
+import { HtmlBuilder } from '../html.js';
+import { DevServer } from './dev/server.js';
 
-export class EditorServer {
-  constructor(
-    private aetlan: Aetlan,
-    private theme: Theme,
-    private store: StorageEngine,
-    private root: string,
-    private appConfig: AppConfig,
-  ) {}
+export class EditCommand extends Command {
+  async execute() {
+    this.logger.info('Starting editor...\n');
 
-  static async configure(configFile: string) {
-    const root = path.dirname(configFile);
-    const config = loadAppConfig(configFile);
-    const theme = await Theme.load(path.join(root, config.theme || 'theme', 'theme.config.ts'));
+    const theme = await this.loadTheme();
 
     const store = await createStorageEngine();
-    const db = await createDatabase(store, root, true);
+    const db = await createDatabase(store, this.root, true);
 
     const aetlan = new Aetlan(Store.fromDatabase(db), {
       tags: theme.tags,
       nodes: theme.nodes,
       documents: theme.documents,
       plugins: theme.plugins,
-      content: config.content,
-      variables: config.variables || {},
+      content: this.config.content,
+      variables: this.config.variables || {},
     });
 
-    return new EditorServer(aetlan, theme, store, root, config);
-  }
+    let routes: Route[];
 
-  async run() {
-    consola.start('Starting editor...');
+    try {
+      this.logger.start('Compiling routes...');
+      routes = await aetlan.compile();
+      this.logger.success(`Compiled ${routes.length} routes`);
+    } catch (err) {
+      this.logger.error('Compiling routes failed');
+      throw err;
+    }
 
-    const tagsGlob = path.join(this.root, 'theme/tags/**/*.jsx');
-    const jsxGlob = path.join(this.root, 'theme/**/*.jsx');
-    const clientGlob = path.join(this.root, 'theme/client/**/*.svelte');
-    const contentGlob = path.join(this.root, '**/*.md');
-
-    const contentWatcher = chokidar.watch(contentGlob);
-    //const jsxWatcher = chokidar.watch(jsxGlob);
-    //const svelteWatcher = chokidar.watch(clientGlob);
-
-    const compileCtx = await this.aetlan.watch();
-
-    compileCtx.on('route-compiled', route => {
-      this.aetlan.store.updateRoute(route)
-    });
-    compileCtx.transform();
-
-    contentWatcher.on('change', async filePath => {
-      await this.aetlan.store.reloadContent(path.relative(this.root, filePath));
-    });
-
-    const devCtx = await esbuild.context(configureEditor(this.root, await glob.glob(tagsGlob)));
-    //const clientCtx = await esbuild.context(configureSvelte(this.root, await glob.glob(clientGlob), 'theme'));
-
-    await this.rebuildDev(devCtx);
-    //await this.rebuildClient(clientCtx);
+    try {
+      this.logger.start('Building server app...');
+      await this.buildApp(theme, aetlan.store);
+      this.logger.success('Built server app');
+    } catch(err) {
+      this.logger.error('Build server app failed');
+      throw err;
+    }
 
     const editorCss = fs.readFileSync(path.join(this.root, '../../node_modules/@aetlan/editor/dist/editor.css')).toString();
-    await this.aetlan.store.write('/editor.css', editorCss);
+    await aetlan.store.write('/editor.css', editorCss);
 
-    const html = this.createHtml();
-    await this.aetlan.store.write('/main.html', html);
+    try {
+      this.logger.start('Generating HTML...');
+      await this.generateHtml(theme, aetlan.store);
+      this.logger.success('Generated HTML');
+    } catch (err) {
+      this.logger.error('Generating HTML failed');
+      throw err;
+    }
 
-    await this.aetlan.store.write('/config.json', JSON.stringify(this.appConfig));
+    await aetlan.store.write('/config.json', JSON.stringify(this.config));
 
-    this.store.logger.inScope('server').info("Starting server...");
+    this.logger.start('Starting server...');
 
     const port = 3000;
-    const server = this.createServer();
+    new DevServer(aetlan.store, store)
+      .initialize()
+      .listen(port);
 
-    this.store.logger.inScope('server').info(`Website ready at 'http://localhost:${port}'`);
-    new TashmetServer(this.store, server).listen();
-
-    server.listen(port);
+    this.logger.success("Server started");
+    this.logger.box('Website ready at `%s`', `http://localhost:${port}`);
   }
 
-  private createHtml() {
-    const html = fs.readFileSync(path.join(this.root, 'theme/main.html')).toString();
-    const dom = new JSDOM(html);
-
-    //const clientScriptElem = dom.window.document.createElement('script');
-    //clientScriptElem.setAttribute('type', 'module');
-    //clientScriptElem.setAttribute('src', '/client.js');
-    //dom.window.document.body.appendChild(clientScriptElem);
-
-    const devScriptElem = dom.window.document.createElement('script');
-    devScriptElem.setAttribute('src', '/dev.js');
-    dom.window.document.body.appendChild(devScriptElem);
-
-    const editorCssElem = dom.window.document.createElement('link');
-    editorCssElem.setAttribute('href', '/editor.css');
-    editorCssElem.setAttribute('rel', 'stylesheet');
-    dom.window.document.head.appendChild(editorCssElem);
-
-    return dom.serialize();
+  private async generateHtml(theme: Theme, store: Store) {
+    const html = HtmlBuilder.fromFile(path.join(theme.path, 'main.html'))
+      .script('/dev.js')
+      .link('/editor.css', 'stylesheet')
+      .serialize();
+    await store.write('/main.html', html);
   }
 
-  private async rebuildDev(ctx: esbuild.BuildContext) {
+  private async buildApp(theme: Theme, store: Store) {
+    const buildRes = await esbuild.build(configureEditor(this.root, await glob.glob(theme.componentGlob)));
 
-    this.store.logger.inScope('server').info("Building React...");
-
-    const buildRes = await ctx.rebuild();
     if (buildRes.outputFiles) {
-      await this.aetlan.store.write('/dev.js', buildRes.outputFiles[0].text);
+      await store.write('/dev.js', buildRes.outputFiles[0].text);
     }
-    await this.aetlan.store.write('/main.css', await generateCss(path.join(this.root, 'theme'), path.join(this.root, 'out')));
-
-    this.store.logger.inScope('server').info("Done");
+    await store.write('/main.css', await generateCss(path.join(this.root, 'theme'), path.join(this.root, 'out')));
   }
 
-  //private async rebuildClient(ctx: esbuild.BuildContext) {
-    //this.store.logger.inScope('server').info("Building Svelte...");
+  //private createServer() {
+    //return http.createServer(async (req, res) => {
+      //const url = req.url || '';
+      //const route = await this.aetlan.store.getRoute(url);
 
-    //const buildRes = await ctx.rebuild();
-    //if (buildRes.outputFiles) {
-      //await this.aetlan.store.write('/client.js', buildRes.outputFiles[0].text);
-    //}
-    //await this.aetlan.store.write('/main.css', await generateCss(path.join(this.root, 'theme'), path.join(this.root, 'out')));
-
-    //this.store.logger.inScope('server').info("Done");
+      //if (route) {
+        //const content = await this.aetlan.store.getOutput('/main.html');
+        //res.setHeader('Content-Type', 'text/html');
+        //res.write(content || '');
+        //res.end();
+      //} else {
+        //const content = await this.aetlan.store.getOutput(req.url || '');
+        //if (req.url?.endsWith('.js')) {
+          //res.setHeader('Content-Type', 'text/javascript')
+        //}
+        //res.write(content || '');
+        //res.end();
+      //}
+    //});
   //}
-
-  private createServer() {
-    return http.createServer(async (req, res) => {
-      const url = req.url || '';
-      const route = await this.aetlan.store.getRoute(url);
-
-      if (route) {
-        const content = await this.aetlan.store.getOutput('/main.html');
-        res.setHeader('Content-Type', 'text/html');
-        res.write(content || '');
-        res.end();
-      } else {
-        const content = await this.aetlan.store.getOutput(req.url || '');
-        if (req.url?.endsWith('.js')) {
-          res.setHeader('Content-Type', 'text/javascript')
-        }
-        res.write(content || '');
-        res.end();
-      }
-    });
-  }
 }

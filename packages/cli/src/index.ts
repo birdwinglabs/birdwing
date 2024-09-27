@@ -1,37 +1,53 @@
 import { program } from 'commander';
-import { Build, DevCommand, EditorServer, Preview } from '@aetlan/server';
+import { BuildCommand, Command, DevCommand, EditCommand, loadAppConfig, Logger, PreviewCommand } from '@aetlan/server';
 import path from 'path';
+import { AppConfig } from '@aetlan/core';
+
+interface CommandConstructor {
+  new (root: string, logger: Logger, config: AppConfig): Command;
+}
+
+function executeCommand(Cmd: CommandConstructor, cfgPath: string) {
+  const root = path.dirname(cfgPath);
+  const logger = new Logger();
+  const config = loadAppConfig(cfgPath);
+
+  const command = new Cmd(root, logger, config);
+
+  try {
+    return command.execute();
+  } catch (err) {
+    logger.error(err.message);
+  }
+}
 
 export function cli() {
   program
     .command('build')
     .argument('<path>', 'path to config file')
     .action(async (cfgPath: string) => {
-      const build = await Build.configure(cfgPath);
-      await build.run();
+      await executeCommand(BuildCommand, cfgPath);
     });
 
   program
     .command('watch')
     .argument('<path>', 'path to config file')
     .action(async (cfgPath: string) => {
-      const devServer = await DevCommand.configure(cfgPath);
-      await devServer.run();
+      await executeCommand(DevCommand, cfgPath);
     });
 
   program
     .command('edit')
     .argument('<path>', 'path to config file')
     .action(async (cfgPath: string) => {
-      const editServer = await EditorServer.configure(cfgPath);
-      await editServer.run();
+      await executeCommand(EditCommand, cfgPath);
     });
 
   program
     .command('preview')
     .argument('<path>', 'path to config file')
     .action(async (cfgPath: string) => {
-      await new Preview(path.dirname(cfgPath)).run();
+      await executeCommand(PreviewCommand, cfgPath);
     });
 
   program.parse();
