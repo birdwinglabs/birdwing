@@ -13,7 +13,7 @@ import { configureEditor } from '../builders/editor.js';
 import { Theme } from '../theme.js';
 import { Command } from '../command.js';
 import { HtmlBuilder } from '../html.js';
-import { DevServer } from './dev/server.js';
+import { DevServer } from '../servers/dev-server.js';
 import { LoadThemeTask } from '../tasks/load-theme.js';
 import { CompileRoutesTask } from '../tasks/compile-routes.js';
 

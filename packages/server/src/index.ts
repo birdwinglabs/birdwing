@@ -1,4 +1,4 @@
-export { DevCommand } from './commands/dev/index.js';
+export { DevCommand } from './commands/dev.js';
 export { EditCommand } from './commands/edit.js';
 export { BuildCommand } from './commands/build.js';
 export { PreviewCommand } from './commands/preview.js';

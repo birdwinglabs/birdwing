@@ -4,18 +4,18 @@ import * as glob from 'glob';
 import * as esbuild from 'esbuild'
 import * as chokidar from 'chokidar';
 
-import { createDatabase, createStorageEngine } from '../../database.js';
+import { createDatabase, createStorageEngine } from '../database.js';
 
 import { Aetlan, CompileContext } from '@aetlan/aetlan';
 import { Store } from '@aetlan/store';
-import { configureDevClient } from '../../builders/devclient.js';
-import { HtmlBuilder } from '../../html.js';
-import { DevServer } from './server.js';
-import { Command, Task, TaskConfig } from '../../command.js';
-import { Theme } from '../../theme.js';
-import { LoadThemeTask } from '../../tasks/load-theme.js';
-import { Logger } from '../../logger.js';
-import { TailwindCssTask } from '../../tasks/tailwind.js';
+import { configureDevClient } from '../builders/devclient.js';
+import { HtmlBuilder } from '../html.js';
+import { DevServer } from '../servers/dev-server.js';
+import { Command, Task, TaskConfig } from '../command.js';
+import { Theme } from '../theme.js';
+import { LoadThemeTask } from '../tasks/load-theme.js';
+import { Logger } from '../logger.js';
+import { TailwindCssTask } from '../tasks/tailwind.js';
 
 export class BuildSpaClient extends Task<void> {
   constructor(
