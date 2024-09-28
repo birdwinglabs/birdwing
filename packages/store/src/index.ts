@@ -67,7 +67,7 @@ export class Store {
     }
   }
 
-  findContent(filter: Filter<SourceDocument>) {
+  findContent(filter: Filter<SourceDocument> = {}) {
     return this.source.find(filter);
   }
 
@@ -81,6 +81,10 @@ export class Store {
 
   getRoute(url: string) {
     return this.routes.findOne({ url: url !== '/' ? url.replace(/\/$/, "") : url });
+  }
+
+  findRoutes(filter: Filter<Route> = {}) {
+    return this.routes.find(filter);
   }
 
   async updateRoute(route: Route) {
@@ -103,5 +107,9 @@ export class Store {
       return f.content;
     }
     return null;
+  }
+
+  findOutput(filter: Filter<TargetFile> = {}) {
+    return this.target.find(filter);
   }
 }

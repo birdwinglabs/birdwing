@@ -6,12 +6,13 @@ import fs from 'fs';
 import { Theme } from '../theme.js';
 import { Task } from '../command.js';
 import { Store } from '@aetlan/store';
+import { Logger } from '../logger.js';
 
 export class TailwindCssTask extends Task<void> {
   constructor(private theme: Theme, private store: Store, private outPath: string) {
     super({
-      start: 'Processing CSS...',
-      success: 'Processed CSS'
+      start: Logger.color('gray', 'Processing CSS...'),
+      success: Logger.color('gray', 'Processed CSS')
     });
   }
 

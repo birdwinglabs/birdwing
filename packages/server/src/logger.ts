@@ -14,8 +14,12 @@ export class Logger {
     return colorize(color, text);
   }
 
+  log(message: string, ...args: any[]) {
+    consola.log(message, ...args);
+  }
+
   info(message: string, ...args: any[]) {
-    console.log(message, ...args);
+    consola.info(message, ...args);
   }
 
   start(message: string) {
