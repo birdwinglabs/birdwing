@@ -5,11 +5,11 @@ import path from 'path';
 import fs from 'fs';
 import { Theme } from '../theme.js';
 import { Task } from '../command.js';
-import { Store } from '@aetlan/store';
 import { Logger } from '../logger.js';
+import { TargetFile } from '@aetlan/core';
 
-export class TailwindCssTask extends Task<void> {
-  constructor(private theme: Theme, private store: Store, private outPath: string) {
+export class TailwindCssTask extends Task<TargetFile> {
+  constructor(private theme: Theme, private outPath: string) {
     super({
       start: Logger.color('gray', 'Processing CSS...'),
       success: Logger.color('gray', 'Processed CSS')
@@ -27,6 +27,6 @@ export class TailwindCssTask extends Task<void> {
     const to = path.join(this.outPath, 'main.css');
     const css = await cssProc.process(fs.readFileSync(cssPath), { from: cssPath, to });
 
-    await this.store.write(to, css.css);
+    return { _id: to, content: css.css };
   }
 }

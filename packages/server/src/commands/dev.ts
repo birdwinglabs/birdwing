@@ -11,34 +11,20 @@ import { Store } from '@aetlan/store';
 import { configureDevClient } from '../builders/devclient.js';
 import { HtmlBuilder } from '../html.js';
 import { DevServer } from '../servers/dev-server.js';
-import { Command, Task, TaskConfig } from '../command.js';
+import { Command, Task } from '../command.js';
 import { Theme } from '../theme.js';
 import { LoadThemeTask } from '../tasks/load-theme.js';
 import { Logger } from '../logger.js';
 import { TailwindCssTask } from '../tasks/tailwind.js';
+import { FileWriterTask } from '../tasks/file-writer.js';
+import { TargetFile } from '@aetlan/core';
+import { BuildTask } from '../tasks/build.js';
 
-export class BuildSpaClient extends Task<void> {
-  constructor(
-    private buildContext: esbuild.BuildContext,
-    private store: Store,
-    taskConfig: TaskConfig<void>
-  ) {
-    super(taskConfig);
-  }
-
-  async *execute() {
-    const buildRes = await this.buildContext.rebuild();
-    if (buildRes.outputFiles) {
-      await this.store.write('/dev.js', buildRes.outputFiles[0].text);
-    }
-  }
-}
-
-export class ProcessHtmlTask extends Task<void> {
-  constructor(private theme: Theme, private store: Store) {
+class ProcessHtmlTask extends Task<TargetFile> {
+  constructor(private theme: Theme) {
     super({
       start: 'Processing HTML...',
-      success: 'Processing HTML',
+      success: 'Processed HTML',
     })
   }
 
@@ -47,7 +33,7 @@ export class ProcessHtmlTask extends Task<void> {
       .script('/client.js', 'module')
       .script('/dev.js')
       .serialize();
-    await this.store.write('/main.html', html);
+    return { _id: '/main.html', content: html };
   }
 }
 
@@ -69,7 +55,12 @@ export class DevCommand extends Command {
     });
 
     const tagsGlob = path.join(this.root, 'theme/tags/**/*.jsx');
-    const devCtx = await esbuild.context(configureDevClient(this.root, await glob.glob(tagsGlob)))
+    const buildContext = await esbuild.context(configureDevClient(this.root, await glob.glob(tagsGlob)));
+    const buildTask = new BuildTask(buildContext, {
+      start: 'Building SPA client',
+      success: 'Built SPA client',
+      fail: 'Building SPA client failed'
+    });
     let compileCtx: CompileContext;
 
     try {
@@ -87,14 +78,12 @@ export class DevCommand extends Command {
       throw err;
     }
 
-    await this.executeTask(new BuildSpaClient(devCtx, aetlan.store, {
-      start: 'Building SPA client',
-      success: 'Built SPA client',
-      fail: 'Building SPA client failed'
-    }));
-
-    await this.executeTask(new TailwindCssTask(theme, aetlan.store, '/'));
-    await this.executeTask(new ProcessHtmlTask(theme, aetlan.store));
+    const output: TargetFile[] = [
+      ...await this.executeTask(buildTask),
+      await this.executeTask(new ProcessHtmlTask(theme)),
+      await this.executeTask(new TailwindCssTask(theme, '/'))
+    ]
+    await this.executeTask(new FileWriterTask(aetlan.store, output));
 
     this.logger.start('Starting server...');
 
@@ -133,13 +122,11 @@ export class DevCommand extends Command {
         this.logger.log('File changed: %s', Logger.color('blue', file));
 
         try {
-          await this.executeTask(new BuildSpaClient(devCtx, aetlan.store, {
-            start: Logger.color('gray', 'Rebuilding SPA client'),
-            success: Logger.color('gray', 'Rebuilt SPA client'),
-            fail: Logger.color('red', 'Rebuilding SPA client failed'),
-          }));
-
-          await this.executeTask(new TailwindCssTask(theme, aetlan.store, '/'));
+          const output: TargetFile[] = [
+            ...await this.executeTask(buildTask),
+            await this.executeTask(new TailwindCssTask(theme, '/'))
+          ];
+          await this.executeTask(new FileWriterTask(aetlan.store, output));
         } catch (err) {
           this.logger.error(err.message);
         }

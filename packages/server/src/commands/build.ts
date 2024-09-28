@@ -10,6 +10,7 @@ import { CompileRoutesTask } from '../tasks/compile-routes.js';
 import { BuildSsrAppTask } from '../tasks/ssr-build.js';
 import { RenderSSRTask } from '../tasks/ssr-render.js';
 import { TailwindCssTask } from '../tasks/tailwind.js';
+import { FileWriterTask } from '../tasks/file-writer.js';
 
 
 export class BuildCommand extends Command {
@@ -40,9 +41,10 @@ export class BuildCommand extends Command {
     await this.executeTask(
       new RenderSSRTask(application, routes, aetlan.store, this.root, warnings)
     );
-    await this.executeTask(
-      new TailwindCssTask(theme, aetlan.store, path.join(this.root, 'out'))
+    const output = await this.executeTask(
+      new TailwindCssTask(theme, path.join(this.root, 'out'))
     );
+    await this.executeTask(new FileWriterTask(aetlan.store, [output]));
 
     this.logger.box('Build finished\n\nTo preview the app run:\n`npm run preview`');
   }

@@ -38,7 +38,7 @@ export function configureDevClient(root: string, files: string[]): esbuild.Build
     logLevel: 'silent',
     minify: true,
     bundle: true,
-    outfile: 'dev.js',
+    outfile: '/dev.js',
     write: false,
   };
 }
