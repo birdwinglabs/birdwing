@@ -1,18 +1,16 @@
 import path from 'path';
 import fs from 'fs';
 
-import { Route } from '@aetlan/core';
-import { Store } from '@aetlan/store';
+import { Route, TargetFile } from '@aetlan/core';
 import { SsrApp } from '../builders/ssr.js';
 import { HtmlBuilder } from '../html.js';
 import { Task, TaskProgress, TaskWarning } from '../command.js';
 
 
-export class RenderSSRTask extends Task<void> {
+export class RenderSSRTask extends Task<TargetFile[]> {
   constructor(
     private application: SsrApp,
     private routes: Route[],
-    private store: Store,
     private root: string,
     private warnings: TaskWarning[]
   ) {
@@ -25,21 +23,31 @@ export class RenderSSRTask extends Task<void> {
 
   async *execute() {
     const html = fs.readFileSync(path.join(this.root, 'theme/main.html')).toString();
+    const output: TargetFile[] = [];
+
+    const render = (url: string) => {
+      return new Promise<string>((resolve) => {
+        setTimeout(() => resolve(this.application(this.routes, url)), 1);
+      });
+    }
 
     for (const route of this.routes) {
       const content = new HtmlBuilder(html)
         .title(route.title)
         .script('/client.js', 'module')
-        .app(this.application(this.routes, route.url))
+        .app(await render(route.url))
         .serialize()
 
-      const relPath = path.join(route.url, 'index.html');
-      await this.store.write(path.join(this.root, 'out', relPath), content);
-      yield new TaskProgress(`Write HTML: ${relPath}`);
+      const targetPath = path.join(this.root, 'out', route.url, 'index.html');
+      output.push({ _id: targetPath, content: content });
+
+      yield new TaskProgress(`Generated HTML: ${targetPath}`);
     }
 
     for (const warning of this.warnings) {
       yield warning;
     }
+
+    return output;
   }
 }
