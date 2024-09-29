@@ -37,7 +37,7 @@ export function configureEditor(root: string, files: string[]): esbuild.BuildOpt
       resolveDir: path.join(root, 'theme'),
     },
     bundle: true,
-    outfile: 'editor.js',
+    outfile: '/editor.js',
     write: false,
   };
 }
