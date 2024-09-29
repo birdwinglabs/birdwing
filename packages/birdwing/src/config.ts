@@ -1,6 +1,6 @@
 import yaml from 'js-yaml';
 import fs from 'fs';
-import { AppConfig } from '@aetlan/core';
+import { AppConfig } from '@birdwing/core';
 
 /** TODO: Validate input */
 export function loadAppConfig(file: string): AppConfig {

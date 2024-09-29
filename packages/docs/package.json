@@ -1,5 +1,5 @@
 {
-  "name": "@aetlan/docs",
+  "name": "@birdwing/docs",
   "version": "0.1.0",
   "private": true,
   "description": "",
@@ -17,7 +17,7 @@
     "access": "public"
   },
   "dependencies": {
-    "@aetlan/pages": "^0.1.0",
+    "@birdwing/pages": "^0.1.0",
     "@markdoc/markdoc": "0.4.0",
     "@tashmet/mingo": "^1.0.2",
     "@tashmet/nabu": "^1.0.2",

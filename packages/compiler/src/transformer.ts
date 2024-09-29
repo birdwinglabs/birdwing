@@ -1,5 +1,5 @@
 import Markdoc, { Node, Schema, Tag } from "@markdoc/markdoc";
-import { TransformConfig, Transformer } from '@aetlan/core';
+import { TransformConfig, Transformer } from '@birdwing/core';
 
 const { Tag: MarkdocTag } = Markdoc;
 

@@ -2,11 +2,11 @@ import pb from 'path-browserify';
 import ev from "eventemitter3";
 import { Schema } from '@markdoc/markdoc';
 
-import { FragmentDocument, PageDocument, Route, SourceDocument } from "@aetlan/core";
-import { ContentMountPoint, Transformer, Plugin, PluginConfig, RouteCallback } from "@aetlan/core";
-import { isSubPath } from "@aetlan/core";
+import { FragmentDocument, PageDocument, Route, SourceDocument } from "@birdwing/core";
+import { ContentMountPoint, Transformer, Plugin, PluginConfig, RouteCallback } from "@birdwing/core";
+import { isSubPath } from "@birdwing/core";
 import { ContentCache } from "./cache.js";
-import { Store } from '@aetlan/store';
+import { Store } from '@birdwing/store';
 import { MarkdocTransformer } from './transformer.js';
 
 const { EventEmitter } = ev;

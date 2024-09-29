@@ -1,9 +1,9 @@
 import React from 'react';
-import { Page, Renderer } from '@aetlan/renderer';
-import { Store } from '@aetlan/store';
+import { Page, Renderer } from '@birdwing/renderer';
+import { Store } from '@birdwing/store';
 import { useLocation } from "react-router-dom";
-import { AppConfig, Route } from '@aetlan/core';
-import { Compiler, CompileContext } from '../../compiler/dist';
+import { AppConfig, Route } from '@birdwing/core';
+import { Compiler, CompileContext } from '@birdwing/compiler';
 import Editor from './editor';
 
 

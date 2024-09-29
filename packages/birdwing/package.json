@@ -1,5 +1,5 @@
 {
-  "name": "@aetlan/server",
+  "name": "@birdwing/birdwing",
   "version": "0.1.0",
   "private": true,
   "description": "",
@@ -17,10 +17,10 @@
     "access": "public"
   },
   "dependencies": {
-    "@aetlan/aetlan": "^0.1.0",
-    "@aetlan/editor": "^0.1.0",
-    "@aetlan/renderer": "^0.1.0",
-    "@aetlan/schema": "^0.1.0",
+    "@birdwing/compiler": "^0.1.0",
+    "@birdwing/editor": "^0.1.0",
+    "@birdwing/renderer": "^0.1.0",
+    "@birdwing/schema": "^0.1.0",
     "@markdoc/markdoc": "0.4.0",
     "@tashmet/mingo": "^1.0.2",
     "@tashmet/nabu": "^1.0.2",

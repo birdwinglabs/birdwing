@@ -1,6 +1,6 @@
 import * as glob from 'glob';
 import path from 'path';
-import { ThemeConfig } from '@aetlan/core';
+import { ThemeConfig } from '@birdwing/core';
 
 
 export class Theme {

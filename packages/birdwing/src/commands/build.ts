@@ -1,9 +1,10 @@
 import path from 'path';
 
-import { createDatabase, createStorageEngine } from '../database.js';
-import { Compiler } from '../../../compiler/dist/index.js';
-import { Store } from '@aetlan/store';
+import { Compiler } from '@birdwing/compiler';
+import { Store } from '@birdwing/store';
+import { TargetFile } from '@birdwing/core';
 
+import { createDatabase, createStorageEngine } from '../database.js';
 import { Command, TaskWarning } from '../command.js';
 import { LoadThemeTask } from '../tasks/load-theme.js';
 import { CompileRoutesTask } from '../tasks/compile-routes.js';
@@ -11,7 +12,6 @@ import { BuildSsrAppTask } from '../tasks/ssr-build.js';
 import { RenderSSRTask } from '../tasks/ssr-render.js';
 import { TailwindCssTask } from '../tasks/tailwind.js';
 import { FileWriterTask } from '../tasks/file-writer.js';
-import { TargetFile } from '@aetlan/core';
 
 
 export class BuildCommand extends Command {

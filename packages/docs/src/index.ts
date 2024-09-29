@@ -1,5 +1,5 @@
 import pb from 'path-browserify';
-import { createPlugin, extractHeadings, Heading } from '@aetlan/core';
+import { createPlugin, extractHeadings, Heading } from '@birdwing/core';
 import { makeSummary, SummaryPageData } from './summary.js';
 import { Tag } from '@markdoc/markdoc';
 

@@ -1,5 +1,5 @@
 {
-  "name": "@aetlan/pages",
+  "name": "@birdwing/pages",
   "version": "0.1.0",
   "private": true,
   "description": "",
@@ -18,7 +18,7 @@
   },
   "dependencies": {
     "@markdoc/markdoc": "0.4.0",
-    "@aetlan/core": "0.1.0"
+    "@birdwing/core": "0.1.0"
   },
   "devDependencies": {
     "@types/node": "20.12.12"

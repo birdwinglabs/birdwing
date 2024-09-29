@@ -1,4 +1,4 @@
-import { AppConfig } from "@aetlan/core";
+import { AppConfig } from "@birdwing/core";
 import { Logger } from "./logger.js";
 
 

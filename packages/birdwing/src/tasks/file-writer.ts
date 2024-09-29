@@ -1,6 +1,6 @@
-import { Store } from '@aetlan/store';
+import { Store } from '@birdwing/store';
 import { Task, TaskProgress } from '../command.js';
-import { TargetFile } from '@aetlan/core';
+import { TargetFile } from '@birdwing/core';
 
 export class FileWriterTask extends Task<void> {
   constructor(

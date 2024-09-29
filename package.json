@@ -1,9 +1,10 @@
 {
-  "name": "aetlan",
+  "name": "birdwing",
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "lerna run build"
+    "build": "lerna run build",
+    "clean": "rimraf packages/**/dist packages/**/*/dist dist"
   },
   "workspaces": [
     "packages/*"

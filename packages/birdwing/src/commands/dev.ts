@@ -4,10 +4,12 @@ import * as glob from 'glob';
 import * as esbuild from 'esbuild'
 import * as chokidar from 'chokidar';
 
+import { TargetFile } from '@birdwing/core';
+import { Compiler } from '@birdwing/compiler';
+import { Store } from '@birdwing/store';
+
 import { createDatabase, createStorageEngine } from '../database.js';
 
-import { Compiler } from '../../../compiler/dist/index.js';
-import { Store } from '@aetlan/store';
 import { configureDevClient } from '../builders/devclient.js';
 import { HtmlBuilder } from '../html.js';
 import { DevServer } from '../servers/dev-server.js';
@@ -17,7 +19,6 @@ import { LoadThemeTask } from '../tasks/load-theme.js';
 import { Logger } from '../logger.js';
 import { TailwindCssTask } from '../tasks/tailwind.js';
 import { FileWriterTask } from '../tasks/file-writer.js';
-import { TargetFile } from '@aetlan/core';
 import { BuildTask } from '../tasks/build.js';
 import { CompileRoutesTask } from '../tasks/compile-routes.js';
 

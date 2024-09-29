@@ -1,4 +1,5 @@
 import markdoc, { Config, Node, Schema } from '@markdoc/markdoc';
+import { NodeList } from '../util';
 
 const { Tag } = markdoc;
 
@@ -34,19 +35,25 @@ function transformChild(node: Node, config: Config) {
 
 export const feature: Schema = {
   transform(node, config) {
-    const splitIndex = node.children.findIndex(child => child.type === 'hr');
+    const children = new NodeList(node.children);
 
-    if (splitIndex >= 0) {
-      const body = node.children
-        .slice(0, splitIndex)
-        .map(node => transformChild(node, config));
+    const body = children.beforeLastOfType('hr').transformFlat(config);
+    const side = children.afterLastOfType('hr').transformFlat(config);
 
-      const side = node.children
-        .slice(splitIndex + 1)
-        .map(node => transformChild(node, config));
 
-      return new Tag('Feature', { side }, body);
-    }
-    return new Tag('Feature', {}, node.transformChildren(config));
+    //const splitIndex = node.children.findIndex(child => child.type === 'hr');
+
+    //if (splitIndex >= 0) {
+      //const body = node.children
+        //.slice(0, splitIndex)
+        //.map(node => transformChild(node, config));
+
+      //const side = node.children
+        //.slice(splitIndex + 1)
+        //.map(node => transformChild(node, config));
+
+    return new Tag('Feature', { side }, body);
+    //}
+    //return new Tag('Feature', {}, node.transformChildren(config));
   }
 }

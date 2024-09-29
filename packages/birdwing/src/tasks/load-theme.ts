@@ -1,11 +1,11 @@
 import path from 'path';
 import vm from 'vm';
-import { AppConfig } from "@aetlan/core";
+import { AppConfig } from "@birdwing/core";
 import * as esbuild from 'esbuild';
 import { createRequire } from 'module';
 import { fileURLToPath } from 'url';
 import { Schema } from '@markdoc/markdoc';
-import { ThemeConfig } from '@aetlan/core';
+import { ThemeConfig } from '@birdwing/core';
 import { Theme } from "../theme.js";
 import { Task } from '../command.js';
 

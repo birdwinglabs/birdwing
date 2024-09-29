@@ -4,7 +4,7 @@ import vm from 'vm';
 import { createRequire } from 'module';
 import { fileURLToPath } from 'url';
 import React from 'react';
-import { Route } from '@aetlan/core';
+import { Route } from '@birdwing/core';
 import { BundleBuilder } from './bundle.js';
 import { Theme } from '../theme.js';
 
@@ -16,7 +16,7 @@ export class SsrBuilder extends BundleBuilder {
       import { Routes, Route } from 'react-router-dom';
       import { StaticRouter } from "react-router-dom/server";
       import ReactDOMServer from "react-dom/server";
-      import { Renderer, Page as PageWrapper  } from '@aetlan/renderer';
+      import { Renderer, Page as PageWrapper  } from '@birdwing/renderer';
       ${this.theme.componentNames.map(c => `import ${c} from './tags/${c}.jsx';`).join('\n')}
 
       const components = { ${this.theme.componentNames.map(c => `${c}: new ${c}()`).join(', ')} };

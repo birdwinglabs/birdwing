@@ -1,5 +1,5 @@
 {
-  "name": "@aetlan/dev",
+  "name": "@birdwing/dev",
   "version": "0.1.0",
   "private": true,
   "description": "",
@@ -17,8 +17,8 @@
     "access": "public"
   },
   "dependencies": {
-    "@aetlan/renderer": "0.1.0",
-    "@aetlan/store": "0.1.0",
+    "@birdwing/renderer": "0.1.0",
+    "@birdwing/store": "0.1.0",
     "@markdoc/markdoc": "0.4.0",
     "@tashmet/tashmet": "^1.0.2",
     "@tashmet/proxy": "^1.0.2",

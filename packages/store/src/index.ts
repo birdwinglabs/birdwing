@@ -1,6 +1,6 @@
 import Tashmet, { Database, Filter, Collection, Document } from '@tashmet/tashmet';
 import ServerProxy from '@tashmet/proxy';
-import { Route, SourceDocument, TargetFile } from "@aetlan/core";
+import { Route, SourceDocument, TargetFile } from "@birdwing/core";
 
 import ev from "eventemitter3";
 
@@ -39,7 +39,7 @@ export class Store {
     const tashmet = new Tashmet(new ServerProxy(addr));
 
     await tashmet.connect();
-    const db = tashmet.db('aetlan');
+    const db = tashmet.db('birdwing');
     const source = db.collection<SourceDocument>('source');
     const routes = db.collection<Route>('routes');
     const target = db.collection<TargetFile>('target');

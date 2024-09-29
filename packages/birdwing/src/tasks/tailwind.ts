@@ -6,7 +6,7 @@ import fs from 'fs';
 import { Theme } from '../theme.js';
 import { Task } from '../command.js';
 import { Logger } from '../logger.js';
-import { TargetFile } from '@aetlan/core';
+import { TargetFile } from '@birdwing/core';
 
 export class TailwindCssTask extends Task<TargetFile> {
   constructor(private theme: Theme, private outPath: string) {

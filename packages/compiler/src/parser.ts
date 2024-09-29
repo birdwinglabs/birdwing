@@ -4,7 +4,7 @@ import {
   PageDocument,
   PartialDocument,
   SourceDocument
-} from "@aetlan/core";
+} from "@birdwing/core";
 
 import Markdoc from '@markdoc/markdoc';
 

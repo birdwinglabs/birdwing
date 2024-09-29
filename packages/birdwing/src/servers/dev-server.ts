@@ -1,5 +1,5 @@
 import http from 'http';
-import { Store } from '@aetlan/store';
+import { Store } from '@birdwing/store';
 import { StorageEngine } from '@tashmet/engine';
 import TashmetServer from '@tashmet/server';
 

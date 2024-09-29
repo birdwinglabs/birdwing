@@ -4,10 +4,11 @@ import fs from 'fs';
 import * as glob from 'glob';
 import * as esbuild from 'esbuild'
 
-import { createDatabase, createStorageEngine } from '../database.js';
+import { TargetFile } from '@birdwing/core';
+import { Compiler } from '@birdwing/compiler';
+import { Store } from '@birdwing/store';
 
-import { Compiler } from '../../../compiler/dist/index.js';
-import { Store } from '@aetlan/store';
+import { createDatabase, createStorageEngine } from '../database.js';
 import { configureEditor } from '../builders/editor.js';
 import { Theme } from '../theme.js';
 import { Command, Task } from '../command.js';
@@ -16,7 +17,6 @@ import { DevServer } from '../servers/dev-server.js';
 import { LoadThemeTask } from '../tasks/load-theme.js';
 import { CompileRoutesTask } from '../tasks/compile-routes.js';
 import { BuildTask } from '../tasks/build.js';
-import { TargetFile } from '@aetlan/core';
 import { FileWriterTask } from '../tasks/file-writer.js';
 import { TailwindCssTask } from '../tasks/tailwind.js';
 
@@ -69,7 +69,7 @@ export class EditCommand extends Command {
       success: 'Built SPA client',
       fail: 'Building SPA client failed'
     });
-    const editorCss = fs.readFileSync(path.join(this.root, '../../node_modules/@aetlan/editor/dist/editor.css')).toString();
+    const editorCss = fs.readFileSync(path.join(this.root, '../../node_modules/@birdwing/editor/dist/editor.css')).toString();
 
     const output: TargetFile[] = [
       await this.executeTask(buildTask),

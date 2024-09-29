@@ -16,7 +16,7 @@ export default function ContentEditor({ value, onChange }: ContentEditorProps) {
   }
 
   MonacoEditor.loader.init().then(monaco => {
-    monaco.editor.defineTheme('aetlan', {
+    monaco.editor.defineTheme('birdwing', {
       base: 'vs', 
       inherit: true,
       rules: [
@@ -66,7 +66,7 @@ export default function ContentEditor({ value, onChange }: ContentEditorProps) {
 
   return (
     <MonacoEditor.Editor
-      theme="aetlan"
+      theme="birdwing"
       height="100%"
       defaultLanguage="markdown"
       value={value}

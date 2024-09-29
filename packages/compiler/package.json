@@ -1,5 +1,5 @@
 {
-  "name": "@aetlan/compiler",
+  "name": "@birdwing/compiler",
   "version": "0.1.0",
   "private": true,
   "description": "",
@@ -17,7 +17,7 @@
     "access": "public"
   },
   "dependencies": {
-    "@aetlan/store": "0.1.0",
+    "@birdwing/store": "0.1.0",
     "@markdoc/markdoc": "0.4.0",
     "@types/react": "18.2.73",
     "path-browserify": "1.0.1",

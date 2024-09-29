@@ -1,7 +1,7 @@
 import { program } from 'commander';
-import { BuildCommand, Command, DevCommand, EditCommand, loadAppConfig, Logger, PreviewCommand } from '@aetlan/server';
+import { BuildCommand, Command, DevCommand, EditCommand, loadAppConfig, Logger, PreviewCommand } from '@birdwing/birdwing';
 import path from 'path';
-import { AppConfig } from '@aetlan/core';
+import { AppConfig } from '@birdwing/core';
 
 interface CommandConstructor {
   new (root: string, logger: Logger, config: AppConfig): Command;

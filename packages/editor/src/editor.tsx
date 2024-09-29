@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
-import { AbstractDocument, SourceDocument } from '@aetlan/core';
+import { AbstractDocument, SourceDocument } from '@birdwing/core';
+import { Store } from '@birdwing/store';
+import { CompileContext } from '@birdwing/compiler';
 
 import ContentEditor from './content';
 import PagePreviewBar from './components/PagePreviewBar';
 import SelectButton from './components/SelectButton';
 import MetaPanel from './meta';
-import { Store } from '@aetlan/store';
-import { CompileContext } from '../../compiler/dist';
 import MenuLink from './components/MenuLink';
 
 export interface EditorProps {

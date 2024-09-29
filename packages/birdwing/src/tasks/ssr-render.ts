@@ -1,7 +1,7 @@
 import path from 'path';
 import fs from 'fs';
 
-import { Route, TargetFile } from '@aetlan/core';
+import { Route, TargetFile } from '@birdwing/core';
 import { SsrApp } from '../builders/ssr.js';
 import { HtmlBuilder } from '../html.js';
 import { Task, TaskProgress, TaskWarning } from '../command.js';

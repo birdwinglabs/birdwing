@@ -1,9 +1,9 @@
 import React from 'react';
 import { Tag } from '@markdoc/markdoc';
-import { Renderer, Page as PageContainer } from '@aetlan/renderer';
-import { Store } from '@aetlan/store';
+import { Renderer, Page as PageContainer } from '@birdwing/renderer';
+import { Store } from '@birdwing/store';
 import { useLocation } from "react-router-dom";
-import { Route } from '@aetlan/core';
+import { Route } from '@birdwing/core';
 
 
 export default function App({ components }: any): JSX.Element {

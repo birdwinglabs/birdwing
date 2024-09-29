@@ -1,8 +1,8 @@
 import pb from 'path-browserify';
-import { AbstractDocument, FragmentDocument, PageDocument, PartialDocument, SourceDocument, isSubPath } from "@aetlan/core";
+import { AbstractDocument, FragmentDocument, PageDocument, PartialDocument, SourceDocument, isSubPath } from "@birdwing/core";
 
 import ev from "eventemitter3";
-import { Store } from '@aetlan/store';
+import { Store } from '@birdwing/store';
 import { ContentParser } from './parser.js';
 
 const { EventEmitter } = ev;

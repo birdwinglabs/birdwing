@@ -1,5 +1,5 @@
-import { Compiler } from '../../../compiler/dist/index.js';
-import { Route } from '@aetlan/core';
+import { Compiler } from '@birdwing/compiler';
+import { Route } from '@birdwing/core';
 import { Task } from '../command.js';
 
 

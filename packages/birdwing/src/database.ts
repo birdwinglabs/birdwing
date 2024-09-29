@@ -19,7 +19,7 @@ export async function createStorageEngine(): Promise<StorageEngine> {
 
 export async function createDatabase(store: StorageEngine, root: string, dev: boolean): Promise<Database> {
   const tashmet = await Tashmet.connect(store.proxy());
-  const db = tashmet.db('aetlan');
+  const db = tashmet.db('birdwing');
 
   await db.createCollection('source', {
     storageEngine: {

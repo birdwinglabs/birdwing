@@ -1,4 +1,4 @@
-import { createPlugin } from '@aetlan/core';
+import { createPlugin } from '@birdwing/core';
 import { Tag } from '@markdoc/markdoc';
 
 export interface PageAttributes {
