@@ -79,10 +79,11 @@ export class DevCommand extends Command {
     }
 
     const output: TargetFile[] = [
-      ...await this.executeTask(buildTask),
+      await this.executeTask(buildTask),
       await this.executeTask(new ProcessHtmlTask(theme)),
       await this.executeTask(new TailwindCssTask(theme, '/'))
-    ]
+    ].flat();
+
     await this.executeTask(new FileWriterTask(aetlan.store, output));
 
     this.logger.start('Starting server...');
@@ -123,9 +124,10 @@ export class DevCommand extends Command {
 
         try {
           const output: TargetFile[] = [
-            ...await this.executeTask(buildTask),
+            await this.executeTask(buildTask),
             await this.executeTask(new TailwindCssTask(theme, '/'))
-          ];
+          ].flat();
+
           await this.executeTask(new FileWriterTask(aetlan.store, output));
         } catch (err) {
           this.logger.error(err.message);

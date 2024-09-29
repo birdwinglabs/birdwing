@@ -40,9 +40,10 @@ export class BuildCommand extends Command {
       new BuildSsrAppTask(theme, warnings)
     );
     const output: TargetFile[] = [
-      ...await this.executeTask(new RenderSSRTask(application, routes, this.root, warnings)),
+      await this.executeTask(new RenderSSRTask(application, routes, this.root, warnings)),
       await this.executeTask(new TailwindCssTask(theme, path.join(this.root, 'out')))
-    ];
+    ].flat()
+
     await this.executeTask(new FileWriterTask(aetlan.store, output));
 
     this.logger.box('Build finished\n\nTo preview the app run:\n`npm run preview`');
