@@ -3,7 +3,7 @@ import { Page, Renderer } from '@aetlan/renderer';
 import { Store } from '@aetlan/store';
 import { useLocation } from "react-router-dom";
 import { AppConfig, Route } from '@aetlan/core';
-import { Aetlan, CompileContext } from '@aetlan/aetlan';
+import { Compiler, CompileContext } from '../../compiler/dist';
 import Editor from './editor';
 
 
@@ -44,9 +44,9 @@ export default function App({ components, themeConfig }: any): JSX.Element {
       const appConfigData = await s.getOutput('/config.json');
       if (appConfigData) {
         const appConfig = JSON.parse(appConfigData) as AppConfig;
-        const aetlan = new Aetlan(s, { ...appConfig, ...themeConfig});
+        const compiler = await Compiler.configure(s, { ...appConfig, ...themeConfig});
 
-        const ctx = await aetlan.watch();
+        const ctx = compiler.watch();
 
         ctx.on('route-compiled', route => {
           if (route.url === currentUrl()) {

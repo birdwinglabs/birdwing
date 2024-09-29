@@ -59,7 +59,10 @@ export class MarkdocTransformer implements Transformer {
   }
 
   transform(ast: Node, config: TransformConfig): Tag {
-    Object.assign(config.variables || {}, this.variables, { urls: this.urlMap });
+    Object.assign(config.variables || {}, this.variables, {
+      urls: this.urlMap,
+      ast: ast,
+    });
 
     const tag = Markdoc.transform(ast, {
       tags: this.tags,

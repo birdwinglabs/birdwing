@@ -1,10 +1,10 @@
-import { Aetlan } from '@aetlan/aetlan';
+import { Compiler } from '../../../compiler/dist/index.js';
 import { Route } from '@aetlan/core';
 import { Task } from '../command.js';
 
 
 export class CompileRoutesTask extends Task<Route[]> {
-  constructor(private aetlan: Aetlan) { 
+  constructor(private compiler: Compiler) { 
     super({
       start: 'Compiling routes...',
       success: routes => `Compiled ${routes.length} routes`
@@ -13,7 +13,7 @@ export class CompileRoutesTask extends Task<Route[]> {
 
   async *execute() {
     try {
-      return await this.aetlan.compile();
+      return await this.compiler.transform();
     } catch (err) {
       throw new Error('Compiling routes failed');
     }

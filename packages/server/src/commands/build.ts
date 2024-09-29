@@ -1,7 +1,7 @@
 import path from 'path';
 
 import { createDatabase, createStorageEngine } from '../database.js';
-import { Aetlan } from '@aetlan/aetlan';
+import { Compiler } from '../../../compiler/dist/index.js';
 import { Store } from '@aetlan/store';
 
 import { Command, TaskWarning } from '../command.js';
@@ -19,10 +19,10 @@ export class BuildCommand extends Command {
     console.log("Production build:\n");
 
     const theme = await this.executeTask(new LoadThemeTask(this.config, this.root));
-    const store = await createStorageEngine();
-    const db = await createDatabase(store, this.root, false);
+    const db = await createDatabase(await createStorageEngine(), this.root, false);
+    const store = Store.fromDatabase(db);
 
-    const aetlan = new Aetlan(Store.fromDatabase(db), {
+    const compiler = await Compiler.configure(Store.fromDatabase(db), {
       tags: theme.tags,
       nodes: theme.nodes,
       documents: theme.documents,
@@ -34,7 +34,7 @@ export class BuildCommand extends Command {
     const warnings: TaskWarning[] = [];
 
     const routes = await this.executeTask(
-      new CompileRoutesTask(aetlan)
+      new CompileRoutesTask(compiler)
     );
     const application = await this.executeTask(
       new BuildSsrAppTask(theme, warnings)
@@ -44,7 +44,7 @@ export class BuildCommand extends Command {
       await this.executeTask(new TailwindCssTask(theme, path.join(this.root, 'out')))
     ].flat()
 
-    await this.executeTask(new FileWriterTask(aetlan.store, output));
+    await this.executeTask(new FileWriterTask(store, output));
 
     this.logger.box('Build finished\n\nTo preview the app run:\n`npm run preview`');
   }

@@ -1,13 +1,31 @@
 import pb from 'path-browserify';
 import ev from "eventemitter3";
+import { Schema } from '@markdoc/markdoc';
 
 import { FragmentDocument, PageDocument, Route, SourceDocument } from "@aetlan/core";
-import { Transformer, PluginConfig, RouteCallback } from "@aetlan/core";
+import { ContentMountPoint, Transformer, Plugin, PluginConfig, RouteCallback } from "@aetlan/core";
 import { isSubPath } from "@aetlan/core";
 import { ContentCache } from "./cache.js";
+import { Store } from '@aetlan/store';
+import { MarkdocTransformer } from './transformer.js';
 
 const { EventEmitter } = ev;
 const { dirname } = pb;
+
+
+export interface CompilerConfig {
+  tags: Record<string, Schema>;
+
+  nodes: Record<string, Schema>;
+
+  documents: Record<string, Schema>;
+
+  content: ContentMountPoint[];
+
+  plugins: Plugin[];
+
+  variables: Record<string, any>;
+}
 
 
 export class CompileContext {
@@ -50,6 +68,25 @@ export class Compiler {
         this.transformer.linkPath(doc.path, doc.url);
       }
     }
+  }
+
+  static async configure(store: Store, config: CompilerConfig) {
+    const { tags, nodes, documents, variables } = config;
+    const cache = await ContentCache.load(store);
+    const transformer = new MarkdocTransformer(tags, nodes, documents, {}, variables);
+    for (const {path, ast} of cache.partials) {
+      transformer.setPartial(path, ast);
+    }
+    const plugins = config.content.reduce((pluginMap, content) => {
+      const plugin = config.plugins.find(p => p.name === content.plugin);
+
+      if (plugin) {
+        pluginMap[content.path] = plugin.mount(content.path, transformer);
+      }
+      return pluginMap;
+    }, {} as Record<string, PluginConfig<Route>>)
+
+    return new Compiler(plugins, transformer, cache);
   }
 
   watch(): CompileContext {

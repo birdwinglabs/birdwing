@@ -6,7 +6,7 @@ import PagePreviewBar from './components/PagePreviewBar';
 import SelectButton from './components/SelectButton';
 import MetaPanel from './meta';
 import { Store } from '@aetlan/store';
-import { CompileContext } from '@aetlan/aetlan';
+import { CompileContext } from '../../compiler/dist';
 import MenuLink from './components/MenuLink';
 
 export interface EditorProps {

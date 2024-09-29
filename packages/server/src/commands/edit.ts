@@ -6,7 +6,7 @@ import * as esbuild from 'esbuild'
 
 import { createDatabase, createStorageEngine } from '../database.js';
 
-import { Aetlan } from '@aetlan/aetlan';
+import { Compiler } from '../../../compiler/dist/index.js';
 import { Store } from '@aetlan/store';
 import { configureEditor } from '../builders/editor.js';
 import { Theme } from '../theme.js';
@@ -45,10 +45,11 @@ export class EditCommand extends Command {
 
     const theme = await this.executeTask(new LoadThemeTask(this.config, this.root));
 
-    const store = await createStorageEngine();
-    const db = await createDatabase(store, this.root, true);
+    const storageEngine = await createStorageEngine();
+    const db = await createDatabase(storageEngine, this.root, true);
+    const store = Store.fromDatabase(db);
 
-    const aetlan = new Aetlan(Store.fromDatabase(db), {
+    const compiler = await Compiler.configure(store, {
       tags: theme.tags,
       nodes: theme.nodes,
       documents: theme.documents,
@@ -57,9 +58,9 @@ export class EditCommand extends Command {
       variables: this.config.variables || {},
     });
 
-    const routes = await this.executeTask(new CompileRoutesTask(aetlan));
+    const routes = await this.executeTask(new CompileRoutesTask(compiler));
     for (const route of routes) {
-      aetlan.store.updateRoute(route);
+      store.updateRoute(route);
     }
 
     const buildContext = await esbuild.context(configureEditor(this.root, await glob.glob(theme.componentGlob)));
@@ -78,12 +79,12 @@ export class EditCommand extends Command {
       { _id: '/editor.css', content: editorCss },
     ].flat()
 
-    await this.executeTask(new FileWriterTask(aetlan.store, output));
+    await this.executeTask(new FileWriterTask(store, output));
 
     this.logger.start('Starting server...');
 
     const port = 3000;
-    new DevServer(aetlan.store, store)
+    new DevServer(store, storageEngine)
       .initialize()
       .listen(port);
 

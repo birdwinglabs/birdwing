@@ -6,7 +6,7 @@ import * as chokidar from 'chokidar';
 
 import { createDatabase, createStorageEngine } from '../database.js';
 
-import { Aetlan, CompileContext } from '@aetlan/aetlan';
+import { Compiler } from '../../../compiler/dist/index.js';
 import { Store } from '@aetlan/store';
 import { configureDevClient } from '../builders/devclient.js';
 import { HtmlBuilder } from '../html.js';
@@ -19,6 +19,7 @@ import { TailwindCssTask } from '../tasks/tailwind.js';
 import { FileWriterTask } from '../tasks/file-writer.js';
 import { TargetFile } from '@aetlan/core';
 import { BuildTask } from '../tasks/build.js';
+import { CompileRoutesTask } from '../tasks/compile-routes.js';
 
 class ProcessHtmlTask extends Task<TargetFile> {
   constructor(private theme: Theme) {
@@ -42,10 +43,11 @@ export class DevCommand extends Command {
     this.logger.info("Development server:\n");
 
     const theme = await this.executeTask(new LoadThemeTask(this.config, this.root));
-    const store = await createStorageEngine();
-    const db = await createDatabase(store, this.root, true);
+    const storageEngine = await createStorageEngine();
+    const db = await createDatabase(storageEngine, this.root, true);
+    const store = Store.fromDatabase(db);
 
-    const aetlan = new Aetlan(Store.fromDatabase(db), {
+    const compiler = await Compiler.configure(store, {
       tags: theme.tags,
       nodes: theme.nodes,
       documents: theme.documents,
@@ -61,21 +63,10 @@ export class DevCommand extends Command {
       success: 'Built SPA client',
       fail: 'Building SPA client failed'
     });
-    let compileCtx: CompileContext;
 
-    try {
-      this.logger.start("Compiling routes...");
-      compileCtx = await aetlan.watch();
-
-      compileCtx.on('route-compiled', route => {
-        aetlan.store.updateRoute(route)
-      });
-      compileCtx.transform();
-
-      this.logger.success("Compiled routes");
-    } catch(err) {
-      this.logger.error("Compiling routes failed");
-      throw err;
+    const routes = await this.executeTask(new CompileRoutesTask(compiler));
+    for (const route of routes) {
+      await store.updateRoute(route);
     }
 
     const output: TargetFile[] = [
@@ -84,18 +75,17 @@ export class DevCommand extends Command {
       await this.executeTask(new TailwindCssTask(theme, '/'))
     ].flat();
 
-    await this.executeTask(new FileWriterTask(aetlan.store, output));
+    await this.executeTask(new FileWriterTask(store, output));
 
     this.logger.start('Starting server...');
 
     const port = 3000;
-    new DevServer(aetlan.store, store)
+    new DevServer(store, storageEngine)
       .initialize()
       .listen(port);
 
     this.logger.success("Server started");
-    const files = await aetlan.store.findOutput({}).toArray();
-    const routes = await aetlan.store.findRoutes({}).toArray();
+    const files = await store.findOutput({}).toArray();
 
     this.logger.box('Output (cached):\n  %s\n\nRoutes:\n  %s\n\nWebsite ready at `%s`',
       files.map(f => `${Logger.color('gray', f._id)} (${Math.round(Buffer.from(f.content).byteLength / 1000)} KB)`).join('\n  '),
@@ -105,6 +95,11 @@ export class DevCommand extends Command {
 
     this.logger.info(Logger.color('gray', 'Watching for file changes...'));
 
+    const compileCtx = compiler.watch();
+
+    compileCtx.on('route-compiled', async route => {
+      await store.updateRoute(route);
+    });
     compileCtx.on('done', routes => {
       this.logger.success(`${Logger.color('blue', routes.length)} ${Logger.color('gray', 'Routes updated')}`);
     });
@@ -114,7 +109,7 @@ export class DevCommand extends Command {
       .on('change', async file => {
         this.logger.log('File changed: %s', Logger.color('blue', file));
         this.logger.start('Compiling routes...');
-        await aetlan.store.reloadContent(file);
+        await store.reloadContent(file);
       });
 
     chokidar
@@ -128,7 +123,7 @@ export class DevCommand extends Command {
             await this.executeTask(new TailwindCssTask(theme, '/'))
           ].flat();
 
-          await this.executeTask(new FileWriterTask(aetlan.store, output));
+          await this.executeTask(new FileWriterTask(store, output));
         } catch (err) {
           this.logger.error(err.message);
         }
