@@ -49,7 +49,7 @@ export class DevCommand extends Command {
     const store = Store.fromDatabase(db);
     const compiler = await Compiler.configure(store, theme, this.config);
 
-    const buildContext = await esbuild.context(configureDevClient(this.root, await glob.glob(theme.componentGlob)));
+    const buildContext = await esbuild.context(configureDevClient(this.root, theme));
     const buildTask = new RebuildTask(buildContext, {
       start: 'Building SPA client',
       success: 'Built SPA client',

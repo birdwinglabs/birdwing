@@ -1,5 +1,4 @@
 import path from 'path';
-import * as glob from 'glob';
 
 import { Compiler } from '@birdwing/compiler';
 import { Store } from '@birdwing/store';
@@ -84,7 +83,7 @@ export class BuildCommand extends Command {
 
     const output: TargetFile[] = [
       await this.executeTask(
-        new BuildTask(configureProducationClient(this.root, await glob.glob(theme.componentGlob), routes, languages), {
+        new BuildTask(configureProducationClient(this.root, theme, routes, languages), {
           start: 'Building SPA client...',
           success: 'Built SPA client',
         })

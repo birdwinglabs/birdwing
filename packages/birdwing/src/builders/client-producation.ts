@@ -2,36 +2,31 @@ import path from 'path';
 
 import * as esbuild from 'esbuild'
 import { Route } from '@birdwing/core';
+import { Theme } from '../theme.js';
+import { CodeSnippet } from '../interfaces.js';
+import { ThemeSnippet } from '../snippets/theme.js';
+import { HighlightJsSnippet } from '../snippets/highlightjs.js';
 
 export function configureProducationClient(
-  root: string, files: string[], routes: Route[], languages: string[]
-): esbuild.BuildOptions {
-  const imports = files.map(f => {
-    const name = path.basename(f, path.extname(f));
-    const file = path.relative(path.join(root, 'theme'), f)
-
-    return { name, file };
-  });
+  root: string, theme: Theme, routes: Route[], languages: string[]
+): esbuild.BuildOptions
+{
+  const snippets: CodeSnippet[] = [
+    new ThemeSnippet(theme),
+    new HighlightJsSnippet(languages),
+  ];
 
   const code = `
     import { Renderer, Page as PageWrapper } from '@birdwing/renderer';
     import React from 'react';
     import ReactDOM from 'react-dom/client';
     import { createBrowserRouter, RouterProvider, useLoaderData } from "react-router-dom";
-    ${imports.map(({ name, file}) => `import ${name} from './${file}';`).join('\n')}
 
-    import hljs from 'highlight.js/lib/core';
-    ${languages.map(lang => `import ${lang} from 'highlight.js/lib/languages/${lang}';`).join('\n')}
+    ${snippets.map(s => s.head).join('\n')}
+    ${snippets.map(s => s.body).join('\n')}
 
-    ${languages.map(lang => `hljs.registerLanguage('${lang}', ${lang})`).join('\n')}
-
-    const components = { ${imports.map(({ name }) => `${name}: new ${name}()`).join(', ')} };
     const renderer = new Renderer(components);
     const container = document.getElementById('app');
-
-    function highlight(content, language) {
-      return hljs.highlight(content.trim(), { language }).value ;
-    }
 
     function ClientRoute() {
       const content = useLoaderData();
@@ -52,8 +47,6 @@ export function configureProducationClient(
 
     ReactDOM.createRoot(container).render(<RouterProvider router={router} />);
   `;
-
-  console.log(code);
 
   return {
     stdin: {

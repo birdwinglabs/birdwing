@@ -54,7 +54,7 @@ export class EditCommand extends Command {
       store.updateRoute(route);
     }
 
-    const buildContext = await esbuild.context(configureEditor(this.root, await glob.glob(theme.componentGlob)));
+    const buildContext = await esbuild.context(configureEditor(this.root, theme));
     const buildTask = new RebuildTask(buildContext, {
       start: 'Building SPA client',
       success: 'Built SPA client',

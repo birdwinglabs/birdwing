@@ -1,30 +1,27 @@
 import path from 'path';
 
 import * as esbuild from 'esbuild'
+import { CodeSnippet } from '../interfaces.js';
+import { ThemeSnippet } from '../snippets/theme.js';
+import { HighlightJsSnippet } from '../snippets/highlightjs.js';
+import { Theme } from '../theme.js';
 
-export function configureEditor(root: string, files: string[]): esbuild.BuildOptions {
-  const imports = files.map(f => {
-    const name = path.basename(f, path.extname(f));
-    const file = path.relative(path.join(root, 'theme'), f)
-
-    return { name, file };
-  });
+export function configureEditor(root: string, theme: Theme): esbuild.BuildOptions {
+  const snippets: CodeSnippet[] = [
+    new ThemeSnippet(theme),
+    new HighlightJsSnippet(),
+  ];
 
   const code = `
     import App from '@birdwing/editor';
     import React from 'react';
     import ReactDOM from 'react-dom/client';
     import { createBrowserRouter, RouterProvider } from "react-router-dom";
-    import hljs from 'highlight.js';
     import theme from './theme.config.ts';
     import '@birdwing/editor/dist/editor.css';
-    ${imports.map(({ name, file}) => `import ${name} from './${file}';`).join('\n')}
 
-    const components = { ${imports.map(({ name }) => `${name}: new ${name}()`).join(', ')} };
-
-    function highlight(content, language) {
-      return hljs.highlight(content.trim(), { language }).value ;
-    }
+    ${snippets.map(s => s.head).join('\n')}
+    ${snippets.map(s => s.body).join('\n')}
 
     const container = document.getElementById('app');
 

@@ -7,25 +7,29 @@ import React from 'react';
 import { Route } from '@birdwing/core';
 import { BundleBuilder } from './bundle.js';
 import { Theme } from '../theme.js';
+import { CodeSnippet } from '../interfaces.js';
+import { ThemeSnippet } from '../snippets/theme.js';
+import { HighlightJsSnippet } from '../snippets/highlightjs.js';
 
 export class SsrBuilder extends BundleBuilder {
   constructor(private theme: Theme) { super(); }
 
   get code() {
+    const snippets: CodeSnippet[] = [
+      new ThemeSnippet(this.theme),
+      new HighlightJsSnippet(),
+    ];
+
     return `
       import { Routes, Route } from 'react-router-dom';
       import { StaticRouter } from "react-router-dom/server";
       import ReactDOMServer from "react-dom/server";
       import { Renderer, Page as PageWrapper  } from '@birdwing/renderer';
-      ${this.theme.componentNames.map(c => `import ${c} from './tags/${c}.jsx';`).join('\n')}
-      import hljs from 'highlight.js';
+      
+      ${snippets.map(s => s.head).join('\n')}
+      ${snippets.map(s => s.body).join('\n')}
 
-      const components = { ${this.theme.componentNames.map(c => `${c}: new ${c}()`).join(', ')} };
       const renderer = new Renderer(components);
-
-      function highlight(content, language) {
-        return hljs.highlight(content.trim(), { language }).value ;
-      }
 
       app = (routes, path) => {
         return ReactDOMServer.renderToString(
