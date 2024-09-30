@@ -21,15 +21,7 @@ export class BuildCommand extends Command {
     const theme = await this.executeTask(new LoadThemeTask(this.config, this.root));
     const db = await createDatabase(await createStorageEngine(), this.root, false);
     const store = Store.fromDatabase(db);
-
-    const compiler = await Compiler.configure(Store.fromDatabase(db), {
-      tags: theme.tags,
-      nodes: theme.nodes,
-      documents: theme.documents,
-      plugins: theme.plugins,
-      content: this.config.content,
-      variables: this.config.variables || {},
-    });
+    const compiler = await Compiler.configure(Store.fromDatabase(db), theme, this.config);
 
     const warnings: TaskWarning[] = [];
 

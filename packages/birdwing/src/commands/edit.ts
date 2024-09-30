@@ -47,15 +47,7 @@ export class EditCommand extends Command {
     const storageEngine = await createStorageEngine();
     const db = await createDatabase(storageEngine, this.root, true);
     const store = Store.fromDatabase(db);
-
-    const compiler = await Compiler.configure(store, {
-      tags: theme.tags,
-      nodes: theme.nodes,
-      documents: theme.documents,
-      plugins: theme.plugins,
-      content: this.config.content,
-      variables: this.config.variables || {},
-    });
+    const compiler = await Compiler.configure(store, theme, this.config);
 
     const routes = await this.executeTask(new CompileRoutesTask(compiler));
     for (const route of routes) {

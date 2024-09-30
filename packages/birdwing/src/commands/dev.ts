@@ -47,18 +47,9 @@ export class DevCommand extends Command {
     const storageEngine = await createStorageEngine();
     const db = await createDatabase(storageEngine, this.root, true);
     const store = Store.fromDatabase(db);
+    const compiler = await Compiler.configure(store, theme, this.config);
 
-    const compiler = await Compiler.configure(store, {
-      tags: theme.tags,
-      nodes: theme.nodes,
-      documents: theme.documents,
-      plugins: theme.plugins,
-      content: this.config.content,
-      variables: this.config.variables || {},
-    });
-
-    const tagsGlob = path.join(this.root, 'theme/tags/**/*.jsx');
-    const buildContext = await esbuild.context(configureDevClient(this.root, await glob.glob(tagsGlob)));
+    const buildContext = await esbuild.context(configureDevClient(this.root, await glob.glob(theme.componentGlob)));
     const buildTask = new BuildTask(buildContext, {
       start: 'Building SPA client',
       success: 'Built SPA client',

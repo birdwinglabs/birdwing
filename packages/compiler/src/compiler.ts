@@ -1,9 +1,8 @@
 import pb from 'path-browserify';
 import ev from "eventemitter3";
-import { Schema } from '@markdoc/markdoc';
 
-import { FragmentDocument, PageDocument, Route, SourceDocument } from "@birdwing/core";
-import { ContentMountPoint, Transformer, Plugin, PluginConfig, RouteCallback } from "@birdwing/core";
+import { AppConfig, FragmentDocument, PageDocument, Route, SourceDocument, ThemeConfig } from "@birdwing/core";
+import { Transformer, PluginConfig, RouteCallback } from "@birdwing/core";
 import { isSubPath } from "@birdwing/core";
 import { ContentCache } from "./cache.js";
 import { Store } from '@birdwing/store';
@@ -11,21 +10,6 @@ import { MarkdocTransformer } from './transformer.js';
 
 const { EventEmitter } = ev;
 const { dirname } = pb;
-
-
-export interface CompilerConfig {
-  tags: Record<string, Schema>;
-
-  nodes: Record<string, Schema>;
-
-  documents: Record<string, Schema>;
-
-  content: ContentMountPoint[];
-
-  plugins: Plugin[];
-
-  variables: Record<string, any>;
-}
 
 
 export class CompileContext {
@@ -70,15 +54,15 @@ export class Compiler {
     }
   }
 
-  static async configure(store: Store, config: CompilerConfig) {
-    const { tags, nodes, documents, variables } = config;
+  static async configure(store: Store, themeConfig: ThemeConfig, appConfig: AppConfig) {
+    const { tags, nodes, documents } = themeConfig;
     const cache = await ContentCache.load(store);
-    const transformer = new MarkdocTransformer(tags, nodes, documents, {}, variables);
+    const transformer = new MarkdocTransformer(tags, nodes, documents, {}, appConfig.variables);
     for (const {path, ast} of cache.partials) {
       transformer.setPartial(path, ast);
     }
-    const plugins = config.content.reduce((pluginMap, content) => {
-      const plugin = config.plugins.find(p => p.name === content.plugin);
+    const plugins = appConfig.content.reduce((pluginMap, content) => {
+      const plugin = themeConfig.plugins.find(p => p.name === content.plugin);
 
       if (plugin) {
         pluginMap[content.path] = plugin.mount(content.path, transformer);

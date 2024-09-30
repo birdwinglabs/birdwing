@@ -1,1 +1,1 @@
-export { Compiler, CompilerConfig, CompileContext } from './compiler.js';
+export { Compiler, CompileContext } from './compiler.js';
