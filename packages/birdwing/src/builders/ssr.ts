@@ -3,7 +3,6 @@ import path from 'path';
 import vm from 'vm';
 import { createRequire } from 'module';
 import { fileURLToPath } from 'url';
-import React from 'react';
 import { Route } from '@birdwing/core';
 import { BundleBuilder } from './bundle.js';
 import { Theme } from '../theme.js';
@@ -21,11 +20,12 @@ export class SsrBuilder extends BundleBuilder {
     ];
 
     return `
+      import React from 'react';
       import { Routes, Route } from 'react-router-dom';
       import { StaticRouter } from "react-router-dom/server";
       import ReactDOMServer from "react-dom/server";
       import { Renderer, Page as PageWrapper  } from '@birdwing/renderer';
-      
+
       ${snippets.map(s => s.head).join('\n')}
       ${snippets.map(s => s.body).join('\n')}
 
@@ -68,7 +68,6 @@ export class SsrRunner implements CodeRunner<SsrApp> {
       console: this.console,
       TextEncoder,
       URL,
-      React,
       app,
     }
 
