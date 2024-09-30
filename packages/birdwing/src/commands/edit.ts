@@ -15,7 +15,7 @@ import { HtmlBuilder } from '../html.js';
 import { DevServer } from '../servers/dev-server.js';
 import { LoadThemeTask } from '../tasks/load-theme.js';
 import { CompileRoutesTask } from '../tasks/compile-routes.js';
-import { BuildTask } from '../tasks/build.js';
+import { RebuildTask } from '../tasks/build.js';
 import { FileWriterTask } from '../tasks/file-writer.js';
 import { TailwindCssTask } from '../tasks/tailwind.js';
 
@@ -55,7 +55,7 @@ export class EditCommand extends Command {
     }
 
     const buildContext = await esbuild.context(configureEditor(this.root, await glob.glob(theme.componentGlob)));
-    const buildTask = new BuildTask(buildContext, {
+    const buildTask = new RebuildTask(buildContext, {
       start: 'Building SPA client',
       success: 'Built SPA client',
       fail: 'Building SPA client failed'

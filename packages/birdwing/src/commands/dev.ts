@@ -19,7 +19,7 @@ import { LoadThemeTask } from '../tasks/load-theme.js';
 import { Logger } from '../logger.js';
 import { TailwindCssTask } from '../tasks/tailwind.js';
 import { FileWriterTask } from '../tasks/file-writer.js';
-import { BuildTask } from '../tasks/build.js';
+import { RebuildTask } from '../tasks/build.js';
 import { CompileRoutesTask } from '../tasks/compile-routes.js';
 
 class ProcessHtmlTask extends Task<TargetFile> {
@@ -50,7 +50,7 @@ export class DevCommand extends Command {
     const compiler = await Compiler.configure(store, theme, this.config);
 
     const buildContext = await esbuild.context(configureDevClient(this.root, await glob.glob(theme.componentGlob)));
-    const buildTask = new BuildTask(buildContext, {
+    const buildTask = new RebuildTask(buildContext, {
       start: 'Building SPA client',
       success: 'Built SPA client',
       fail: 'Building SPA client failed'

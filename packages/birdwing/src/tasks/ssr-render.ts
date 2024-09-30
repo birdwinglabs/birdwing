@@ -34,7 +34,7 @@ export class RenderSSRTask extends Task<TargetFile[]> {
     for (const route of this.routes) {
       const content = new HtmlBuilder(html)
         .title(route.title)
-        .script('/client.js', 'module')
+        .script('/client.js')
         .app(await render(route.url))
         .serialize()
 
