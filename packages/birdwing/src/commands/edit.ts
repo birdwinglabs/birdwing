@@ -1,5 +1,4 @@
 import path from 'path';
-import fs from 'fs';
 
 import * as glob from 'glob';
 import * as esbuild from 'esbuild'
@@ -69,14 +68,12 @@ export class EditCommand extends Command {
       success: 'Built SPA client',
       fail: 'Building SPA client failed'
     });
-    const editorCss = fs.readFileSync(path.join(this.root, '../../node_modules/@birdwing/editor/dist/editor.css')).toString();
 
     const output: TargetFile[] = [
       await this.executeTask(buildTask),
       await this.executeTask(new ProcessHtmlTask(theme)),
       await this.executeTask(new TailwindCssTask(theme, '/')),
       { _id: '/config.json', content: JSON.stringify(this.config) },
-      { _id: '/editor.css', content: editorCss },
     ].flat()
 
     await this.executeTask(new FileWriterTask(store, output));

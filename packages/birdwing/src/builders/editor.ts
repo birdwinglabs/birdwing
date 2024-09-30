@@ -16,6 +16,7 @@ export function configureEditor(root: string, files: string[]): esbuild.BuildOpt
     import ReactDOM from 'react-dom/client';
     import { createBrowserRouter, RouterProvider } from "react-router-dom";
     import theme from './theme.config.ts';
+    import '@birdwing/editor/dist/editor.css';
     ${imports.map(({ name, file}) => `import ${name} from './${file}';`).join('\n')}
 
     const components = { ${imports.map(({ name }) => `${name}: new ${name}()`).join(', ')} };
