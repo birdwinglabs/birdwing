@@ -18,16 +18,21 @@ export class SsrBuilder extends BundleBuilder {
       import ReactDOMServer from "react-dom/server";
       import { Renderer, Page as PageWrapper  } from '@birdwing/renderer';
       ${this.theme.componentNames.map(c => `import ${c} from './tags/${c}.jsx';`).join('\n')}
+      import hljs from 'highlight.js';
 
       const components = { ${this.theme.componentNames.map(c => `${c}: new ${c}()`).join(', ')} };
       const renderer = new Renderer(components);
+
+      function highlight(content, language) {
+        return hljs.highlight(content.trim(), { language }).value ;
+      }
 
       app = (routes, path) => {
         return ReactDOMServer.renderToString(
           <StaticRouter location={path}>
             <Routes>
               { routes.map(r =>
-                <Route key={r.url} path={r.url} element={<PageWrapper renderer={renderer} content={r.tag}/>} />
+                <Route key={r.url} path={r.url} element={<PageWrapper renderer={renderer} content={r.tag} highlight={highlight}/>} />
               )}
             </Routes>
           </StaticRouter>

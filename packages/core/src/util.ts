@@ -1,7 +1,7 @@
 import pb from 'path-browserify';
 import { Node } from '@markdoc/markdoc';
 
-const { basename, dirname, extname, join, relative, isAbsolute } = pb;
+const { basename, dirname, extname, join } = pb;
 
 export function resolvePageUrl(path: string, slug?: string, root: string = '/') {
   const dirName = join('/', dirname(path));
@@ -42,7 +42,4 @@ export function isSubPath(dir: string, root: string) {
     return true;
   }
   return false;
-  //console.log(`${dir}, ${root}`);
-  //const rel = relative(root, dir);
-  //return dir === root || (rel && !rel.startsWith('..') && !isAbsolute(rel));
 }

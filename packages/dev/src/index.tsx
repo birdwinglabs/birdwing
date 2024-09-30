@@ -6,7 +6,7 @@ import { useLocation } from "react-router-dom";
 import { Route } from '@birdwing/core';
 
 
-export default function App({ components }: any): JSX.Element {
+export default function App({ components, highlight }: any): JSX.Element {
   const [content, setContent] = React.useState<Tag | null>(null);
   const [store, setStore] = React.useState<Store | null>(null);
   const location = useLocation();
@@ -70,7 +70,7 @@ export default function App({ components }: any): JSX.Element {
   }, []);
 
   if (content) {
-    return <PageContainer renderer={renderer} content={content}/>;
+    return <PageContainer renderer={renderer} content={content} highlight={highlight}/>;
   }
 
   return <h1>Loading...</h1>;

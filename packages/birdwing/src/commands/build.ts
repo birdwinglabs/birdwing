@@ -3,7 +3,7 @@ import * as glob from 'glob';
 
 import { Compiler } from '@birdwing/compiler';
 import { Store } from '@birdwing/store';
-import { Route, TargetFile } from '@birdwing/core';
+import { AbstractDocument, Route, TargetFile } from '@birdwing/core';
 
 import { createDatabase, createStorageEngine } from '../database.js';
 import { Command, Task, TaskWarning } from '../command.js';
@@ -15,6 +15,7 @@ import { TailwindCssTask } from '../tasks/tailwind.js';
 import { FileWriterTask } from '../tasks/file-writer.js';
 import { BuildTask } from '../tasks/build.js';
 import { configureProducationClient } from '../builders/client-producation.js';
+import { allAncestorsOfType } from '../util.js';
 
 export class SerializeRoutesTask extends Task<TargetFile[]> {
   constructor(private routes: Route[], private outDir: string) {
@@ -36,6 +37,29 @@ export class SerializeRoutesTask extends Task<TargetFile[]> {
   }
 }
 
+export class ExtractFenceLanguages extends Task<string[]> {
+  constructor(private documents: AbstractDocument[]) {
+    super({
+      start: 'Extracting fence node languages...',
+      success: langs => `Extracted ${langs.length} languages for highlighting`,
+    })
+  }
+
+  async *execute() {
+    const languages = new Set<string>();
+    for (const doc of this.documents) {
+      const fences = allAncestorsOfType(doc.ast, 'fence');
+      for (const fence of fences) {
+        const lang = fence.attributes.language;
+        if (lang && lang !== '') {
+          languages.add(lang);
+        }
+      }
+    }
+    return Array.from(languages);
+  }
+}
+
 export class BuildCommand extends Command {
   async execute() {
     console.log("Production build:\n");
@@ -54,10 +78,13 @@ export class BuildCommand extends Command {
     const application = await this.executeTask(
       new BuildSsrAppTask(theme, warnings)
     );
+    const languages = await this.executeTask(
+      new ExtractFenceLanguages(compiler.cache.documents)
+    );
 
     const output: TargetFile[] = [
       await this.executeTask(
-        new BuildTask(configureProducationClient(this.root, await glob.glob(theme.componentGlob), routes), {
+        new BuildTask(configureProducationClient(this.root, await glob.glob(theme.componentGlob), routes, languages), {
           start: 'Building SPA client...',
           success: 'Built SPA client',
         })

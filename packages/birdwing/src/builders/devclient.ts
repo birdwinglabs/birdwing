@@ -15,15 +15,20 @@ export function configureDevClient(root: string, files: string[]): esbuild.Build
     import React from 'react';
     import ReactDOM from 'react-dom/client';
     import { createBrowserRouter, RouterProvider } from "react-router-dom";
+    import hljs from 'highlight.js';
     ${imports.map(({ name, file}) => `import ${name} from './${file}';`).join('\n')}
 
     const components = { ${imports.map(({ name }) => `${name}: new ${name}()`).join(', ')} };
+
+    function highlight(content, language) {
+      return hljs.highlight(content.trim(), { language }).value ;
+    }
 
     const container = document.getElementById('app');
 
     const router = createBrowserRouter([{
       path: '*',
-      element: <App components={components}/>
+      element: <App components={components} highlight={highlight}/>
     }]);
 
     ReactDOM.createRoot(container).render(<RouterProvider router={router} />);

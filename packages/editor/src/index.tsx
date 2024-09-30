@@ -1,5 +1,5 @@
 import React from 'react';
-import { Page, Renderer } from '@birdwing/renderer';
+import { Page as PageContainer, Renderer } from '@birdwing/renderer';
 import { Store } from '@birdwing/store';
 import { useLocation } from "react-router-dom";
 import { AppConfig, Route } from '@birdwing/core';
@@ -7,7 +7,7 @@ import { Compiler, CompileContext } from '@birdwing/compiler';
 import Editor from './editor';
 
 
-export default function App({ components, themeConfig }: any): JSX.Element {
+export default function App({ components, themeConfig, highlight }: any): JSX.Element {
   const [store, setStore] = React.useState<Store | null>(null);
   const [route, setRoute] = React.useState<Route | null>(null);
   const [context, setContext] = React.useState<CompileContext | null>(null);
@@ -44,7 +44,7 @@ export default function App({ components, themeConfig }: any): JSX.Element {
       const appConfigData = await s.getOutput('/config.json');
       if (appConfigData) {
         const appConfig = JSON.parse(appConfigData) as AppConfig;
-        const compiler = await Compiler.configure(s, { ...appConfig, ...themeConfig});
+        const compiler = await Compiler.configure(s, themeConfig, appConfig);
 
         const ctx = compiler.watch();
 
@@ -74,7 +74,7 @@ export default function App({ components, themeConfig }: any): JSX.Element {
   if (route && store && context) {
     return (
       <Editor pageId={route.source} store={store} compileContext={context}>
-        <Page renderer={renderer} content={route.tag} />
+        <PageContainer renderer={renderer} content={route.tag} highlight={highlight} />
       </Editor>
     )
   }

@@ -1,6 +1,7 @@
 import { Tag } from '@markdoc/markdoc';
 import { createContext, useState } from 'react';
 import { Renderer } from './renderer';
+import { HighlightContext } from './CodeBlock';
 
 export interface PageContextValue {
   setState(id: string, value: any): void;
@@ -12,11 +13,13 @@ export interface PageProps {
   renderer: Renderer;
 
   content: Tag;
+
+  highlight?: (content: string, language: string) => string;
 }
 
 export const PageContext = createContext<PageContextValue>({ setState: () => {}, state<T = any>(id: string, defaultValue: T) { return defaultValue; } });
 
-export function Page({ renderer, content }: PageProps) {
+export function Page({ renderer, content, highlight }: PageProps) {
   const [pageState, setPageState] = useState<Record<string, any>>({});
 
   function setState(id: string, state: any) {
@@ -29,7 +32,9 @@ export function Page({ renderer, content }: PageProps) {
 
   return (
     <PageContext.Provider value={{ state, setState }}>
-      { renderer.render(content) }
+      <HighlightContext.Provider value={highlight}>
+        { renderer.render(content) }
+      </HighlightContext.Provider>
     </PageContext.Provider>
   );
 }

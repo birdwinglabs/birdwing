@@ -15,17 +15,22 @@ export function configureEditor(root: string, files: string[]): esbuild.BuildOpt
     import React from 'react';
     import ReactDOM from 'react-dom/client';
     import { createBrowserRouter, RouterProvider } from "react-router-dom";
+    import hljs from 'highlight.js';
     import theme from './theme.config.ts';
     import '@birdwing/editor/dist/editor.css';
     ${imports.map(({ name, file}) => `import ${name} from './${file}';`).join('\n')}
 
     const components = { ${imports.map(({ name }) => `${name}: new ${name}()`).join(', ')} };
 
+    function highlight(content, language) {
+      return hljs.highlight(content.trim(), { language }).value ;
+    }
+
     const container = document.getElementById('app');
 
     const router = createBrowserRouter([{
       path: '*',
-      element: <App components={components} themeConfig={theme}/>
+      element: <App components={components} themeConfig={theme} highlight={highlight}/>
     }]);
 
     ReactDOM.createRoot(container).render(<RouterProvider router={router} />);

@@ -93,7 +93,7 @@ export class ContentCache {
     return cache;
   }
 
-  constructor(documents: AbstractDocument[], private parser: ContentParser) {
+  constructor(public readonly documents: AbstractDocument[], private parser: ContentParser) {
     for (const doc of documents) {
       this.contentMap[doc.id] = doc;
     }

@@ -45,7 +45,7 @@ export class Compiler {
   constructor(
     private pluginMap: Record<string, PluginConfig<Route<any>>>,
     private transformer: Transformer,
-    private cache: ContentCache,
+    public readonly cache: ContentCache,
   ) {
     for (const doc of cache.content) {
       if (doc instanceof PageDocument) {
