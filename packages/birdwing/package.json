@@ -19,7 +19,7 @@
   "dependencies": {
     "@birdwing/compiler": "^0.1.0",
     "@birdwing/editor": "^0.1.0",
-    "@birdwing/renderer": "^0.1.0",
+    "@birdwing/react": "^0.1.0",
     "@birdwing/schema": "^0.1.0",
     "@markdoc/markdoc": "0.4.0",
     "@tashmet/mingo": "^1.0.2",

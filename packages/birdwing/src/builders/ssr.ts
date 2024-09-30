@@ -24,7 +24,7 @@ export class SsrBuilder extends BundleBuilder {
       import { Routes, Route } from 'react-router-dom';
       import { StaticRouter } from "react-router-dom/server";
       import ReactDOMServer from "react-dom/server";
-      import { Renderer, Page as PageWrapper  } from '@birdwing/renderer';
+      import { Renderer, Page as PageWrapper  } from '@birdwing/react';
 
       ${snippets.map(s => s.head).join('\n')}
       ${snippets.map(s => s.body).join('\n')}

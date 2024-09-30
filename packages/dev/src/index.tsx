@@ -1,8 +1,8 @@
 import React from 'react';
-import { Tag } from '@markdoc/markdoc';
-import { Renderer, Page as PageContainer } from '@birdwing/renderer';
-import { Store } from '@birdwing/store';
 import { useLocation } from "react-router-dom";
+import { Tag } from '@markdoc/markdoc';
+import { Renderer, Page as PageContainer } from '@birdwing/react';
+import { Store } from '@birdwing/store';
 import { Route } from '@birdwing/core';
 
 

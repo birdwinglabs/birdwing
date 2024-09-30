@@ -1,5 +1,5 @@
 import React from 'react';
-import { Page as PageContainer, Renderer } from '@birdwing/renderer';
+import { Page as PageContainer, Renderer } from '@birdwing/react';
 import { Store } from '@birdwing/store';
 import { useLocation } from "react-router-dom";
 import { AppConfig, Route } from '@birdwing/core';

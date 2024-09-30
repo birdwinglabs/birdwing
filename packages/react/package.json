@@ -1,5 +1,5 @@
 {
-  "name": "@birdwing/renderer",
+  "name": "@birdwing/react",
   "version": "0.1.0",
   "private": true,
   "description": "",
@@ -19,7 +19,6 @@
   "dependencies": {
     "@birdwing/core": "0.1.0",
     "@markdoc/markdoc": "0.4.0",
-    "@tashmet/tashmet": "^1.0.2",
     "@types/react": "18.2.73",
     "react": "18.3.1",
     "react-dom": "18.3.1",
