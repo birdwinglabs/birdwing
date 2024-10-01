@@ -1,18 +1,15 @@
-import { Tag } from '@markdoc/markdoc';
 import { useState } from 'react';
-import { Renderer } from './renderer';
 import { HighlightContext } from './CodeBlock';
 import { PageContext } from './PageContext';
 
-export interface PageProps {
-  renderer: Renderer | undefined;
 
-  content: Tag | any;
+export interface ProductionPageProps {
+  children: any;
 
   highlight?: (content: string, language: string) => string;
 }
 
-export function Page({ renderer, content, highlight }: PageProps) {
+export function ProductionPage({ children, highlight }: ProductionPageProps) {
   const [pageState, setPageState] = useState<Record<string, any>>({});
 
   function setState(id: string, state: any) {
@@ -26,7 +23,7 @@ export function Page({ renderer, content, highlight }: PageProps) {
   return (
     <PageContext.Provider value={{ state, setState }}>
       <HighlightContext.Provider value={highlight}>
-        { renderer instanceof Renderer ? renderer.render(content) : content }
+        { children }
       </HighlightContext.Provider>
     </PageContext.Provider>
   );

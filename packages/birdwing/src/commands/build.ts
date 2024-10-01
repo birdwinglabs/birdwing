@@ -16,6 +16,7 @@ import { BuildTask } from '../tasks/build.js';
 import { configureProducationClient } from '../builders/client-producation.js';
 import { ExtractFenceLanguagesTask } from '../tasks/extract-fence-languages.js';
 import { SerializeRoutesTask } from '../tasks/serialize-routes.js';
+import { StaticRenderer } from '../react/static.js';
 
 
 export class BuildCommand extends Command {
@@ -40,9 +41,12 @@ export class BuildCommand extends Command {
       new ExtractFenceLanguagesTask(compiler.cache.documents)
     );
 
+    const renderer = new StaticRenderer();
+    const js = routes.map(route => ({ url: route.url, code: renderer.render(route.tag) }));
+
     const output: TargetFile[] = [
       await this.executeTask(
-        new BuildTask(configureProducationClient(this.root, theme, routes, languages), {
+        new BuildTask(configureProducationClient(this.root, theme, routes, languages, js), {
           start: 'Building SPA client...',
           success: 'Built SPA client',
         })
@@ -51,6 +55,7 @@ export class BuildCommand extends Command {
       await this.executeTask(new SerializeRoutesTask(routes, outDir)),
       await this.executeTask(new TailwindCssTask(theme, outDir))
     ].flat()
+
 
     await this.executeTask(new FileWriterTask(store, output));
 
