@@ -1,6 +1,8 @@
 import Markdoc, { RenderableTreeNode, RenderableTreeNodes } from '@markdoc/markdoc';
 
 import type { ComponentType } from 'react';
+import React from 'react';
+import ReactDOMServer from "react-dom/server";
 
 const { Tag } = Markdoc;
 
@@ -19,11 +21,11 @@ function tagName(
     : components[name];
 }
 
-function renderArray(children: RenderableTreeNode[]): string {
-  return children.map(render).join(', ');
+function renderArray(children: RenderableTreeNode[], component: (name: string) => any): string {
+  return children.map(c => render(c, component)).join(', ');
 }
 
-function deepRender(value: any): any {
+function deepRender(value: any, component: (name: string) => any): any {
   if (value === undefined) {
     return 'undefined';
   }
@@ -31,22 +33,22 @@ function deepRender(value: any): any {
   if (value == null || typeof value !== 'object') return JSON.stringify(value);
 
   if (Array.isArray(value))
-    return `[${value.map((item) => deepRender(item)).join(', ')}]`;
+    return `[${value.map((item) => deepRender(item, component)).join(', ')}]`;
 
-  if (value.$$mdtype === 'Tag') return render(value);
+  if (value.$$mdtype === 'Tag') return render(value, component);
 
   if (typeof value !== 'object') return JSON.stringify(value);
 
   const object = Object.entries(value)
-    .map(([k, v]) => [JSON.stringify(k), deepRender(v)].join(': '))
+    .map(([k, v]) => [JSON.stringify(k), deepRender(v, component)].join(': '))
     .join(', ');
 
   return `{${object}}`;
 }
 
-function render(node: RenderableTreeNodes): string {
+function render(node: RenderableTreeNodes, component: (name: string) => any): string {
   if (Array.isArray(node))
-    return `React.createElement(React.Fragment, null, ${renderArray(node)})`;
+    return `React.createElement(React.Fragment, null, ${renderArray(node, component)})`;
 
   if (node === null || typeof node !== 'object' || !Tag.isTag(node))
     return JSON.stringify(node);
@@ -59,14 +61,27 @@ function render(node: RenderableTreeNodes): string {
 
   if (className) attrs.className = className;
 
+  const staticNodes: string[] = [
+    //'Hint',
+    //'Documentation.fence',
+    //'Documentation.list',
+    //'Documentation.item',
+  ]
+
+  if (staticNodes.indexOf(node.name) !== -1) {
+    const cmp = Markdoc.renderers.react(node, React, { components: component })
+    return ReactDOMServer.renderToString(cmp).replace(/<!--/g, '').replace(/-->/g, '');
+  }
+
   return `React.createElement(
     tagName(${JSON.stringify(name)}, components),
-    ${Object.keys(attrs).length == 0 ? 'null' : deepRender(attrs)},
-    ${renderArray(children)})`;
+    ${Object.keys(attrs).length == 0 ? 'null' : deepRender(attrs, component)},
+    ${renderArray(children, component)})`;
 }
 
 export default function reactStatic(
   node: RenderableTreeNodes,
+  component: (name: string) => any,
   { resolveTagName = tagName }: { resolveTagName?: typeof tagName } = {}
 ): string {
   // the resolveTagName function *must* be called tagName
@@ -75,14 +90,24 @@ export default function reactStatic(
     throw new Error('resolveTagName must be named tagName');
   }
   return `
-  (({components = {}} = {}) => {
+  (({ React, components = {}} = {}) => {
     ${resolveTagName}
-    return ${render(node)};
+    return ${render(node, component)};
   })
 `;
 }
 
 export class StaticRenderer {
+  constructor(private components: any) {}
+
+  isComponent(name: string) {
+    return name in this.components;
+  }
+
+  isNode(component: string, name: string) {
+    return this.isComponent(component) && name in this.components[component];
+  }
+
   render(renderable: any) {
     const namespace = (name: string) => {
       if (name.includes('.')) {
@@ -93,17 +118,20 @@ export class StaticRenderer {
       }
     }
 
-    return reactStatic(renderable)
-    
-    //, { components: (name: string) => { const ns = namespace(name);
+    const components = (name: string) => {
+      const ns = namespace(name);
 
-      //if (!this.isComponent(ns.component)) {
-        //throw Error(`Missing component '${ns.component}'`);
-      //}
-      //if (!this.isNode(ns.component, ns.node)) {
-        //throw Error(`Missing node '${ns.node}' in component '${ns.component}'`);
-      //}
-      //return (props: any) => this.components[ns.component][ns.node](props);
-    //}});
+      //console.log(this.components);
+
+      if (!this.isComponent(ns.component)) {
+        throw Error(`Missing component '${ns.component}'`);
+      }
+      if (!this.isNode(ns.component, ns.node)) {
+        throw Error(`Missing node '${ns.node}' in component '${ns.component}'`);
+      }
+      return (props: any) => this.components[ns.component][ns.node](props);
+    }
+
+    return reactStatic(renderable, components);
   }
 }

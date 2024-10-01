@@ -22,10 +22,6 @@ export function configureProducationClient(
     import ReactDOM from 'react-dom/client';
     import { createBrowserRouter, RouterProvider, useLoaderData } from "react-router-dom";
 
-    const routes = {
-      ${js.map(({ url, code }) => `'${url}': ${code}` ).join(',\n')}
-    };
-
     ${snippets.map(s => s.head).join('\n')}
     ${snippets.map(s => s.body).join('\n')}
 
@@ -48,23 +44,50 @@ export function configureProducationClient(
     const router = createBrowserRouter([\n${routes.map(r => {
       return `{
         path: '${r.url}',
-        element: <PageWrapper highlight={highlight}>{routes['${r.url}']({ components: component })}</PageWrapper>
+        lazy: async () => {
+          const mod = await import('${r.url + '/route.js'}');
+          return {
+            Component: () => {
+              return <PageWrapper highlight={highlight}>{mod.default({ React, components: component })}</PageWrapper>
+            }
+          }
+        }
       }`;
     }).join(',\n')}]);
 
     ReactDOM.createRoot(container).render(<RouterProvider router={router} />);
   `;
 
+  const files: Record<string, string> = {
+    '/client.js': code,
+  }
+
+  for (const route of js) {
+    files[route.url + '/route.js'] = `export default ${route.code}`;
+  }
+
   return {
-    stdin: {
-      contents: code,
-      loader: 'jsx',
-      resolveDir: path.join(root, 'theme'),
-    },
-    //logLevel: 'silent',
-    minify: false,
+    entryPoints: Object.keys(files),
+    define: { 'process.env.NODE_ENV': '"production"' },
+    minify: true,
+    treeShaking: true,
+    metafile: true,
     bundle: true,
-    outfile: path.join(root, 'out/client.js'),
+    splitting: true,
+    format: 'esm',
+    outdir: path.join(root, 'out'),
     write: false,
+    plugins: [{
+      name: 'entry-points',
+      setup(build) {
+        let filter = new RegExp('^(' + Object.keys(files).join('|') + ')$')
+        build.onResolve({ filter }, args => {
+          return { path: args.path, namespace: 'entry' }
+        })
+        build.onLoad({ filter: /.*/, namespace: 'entry' }, args => {
+          return { contents: files[args.path], resolveDir: theme.path, loader: 'jsx' }
+        })
+      },
+    }],
   };
 }
