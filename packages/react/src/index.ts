@@ -1,5 +1,4 @@
-export { Page } from './Page.js';
-export { ProductionPage } from './ProductionPage.js';
+export { Page, PageContext } from './Page.js';
 export { CodeBlock } from './CodeBlock.js';
+export { Content } from './Content.js';
 export { Renderer } from './renderer.js';
-export { PageContext } from './PageContext.js';

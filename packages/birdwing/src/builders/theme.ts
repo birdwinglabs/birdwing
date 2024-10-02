@@ -1,20 +1,28 @@
 import path from 'path';
 
 import * as esbuild from 'esbuild'
-import { Route } from '@birdwing/core';
 import { Theme } from '../theme.js';
-import { CodeSnippet } from '../interfaces.js';
-import { ThemeSnippet } from '../snippets/theme.js';
-import { HighlightJsSnippet } from '../snippets/highlightjs.js';
+
+export interface ThemeBuildOptions {
+  minify?: boolean;
+
+  export?: boolean;
+
+  outfile?: string;
+}
 
 export function configureTheme(
-  root: string, theme: Theme
+  root: string, theme: Theme, options: ThemeBuildOptions = {}
 ): esbuild.BuildOptions
 {
-  const code = `
+  let code = `
     ${theme.componentNames.map(c => `import ${c} from './tags/${c}.jsx';`).join('\n')}
     components = { ${theme.componentNames.map(c => `${c}: new ${c}()`).join(', ')} };
   `;
+
+  if (options.export) {
+    code += 'export default components;'
+  }
 
   return {
     stdin: {
@@ -22,9 +30,9 @@ export function configureTheme(
       loader: 'jsx',
       resolveDir: path.join(root, 'theme'),
     },
-    minify: false,
+    minify: options.minify === true,
     bundle: true,
-    outfile: path.join(root, 'out/theme.js'),
+    outfile: options.outfile || path.join(root, 'out/theme.js'),
     write: false,
   };
 }

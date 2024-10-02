@@ -1,5 +1,5 @@
 import React from 'react';
-import { Page as PageContainer, Renderer } from '@birdwing/react';
+import { Content, Page as PageContainer } from '@birdwing/react';
 import { Store } from '@birdwing/store';
 import { useLocation } from "react-router-dom";
 import { AppConfig, Route } from '@birdwing/core';
@@ -12,8 +12,6 @@ export default function App({ components, themeConfig, highlight }: any): JSX.El
   const [route, setRoute] = React.useState<Route | null>(null);
   const [context, setContext] = React.useState<CompileContext | null>(null);
   const location = useLocation();
-
-  const renderer = new Renderer(components);
 
   async function initEditor(route: Route) {
     setRoute(route);
@@ -74,7 +72,9 @@ export default function App({ components, themeConfig, highlight }: any): JSX.El
   if (route && store && context) {
     return (
       <Editor pageId={route.source} store={store} compileContext={context}>
-        <PageContainer renderer={renderer} content={route.tag} highlight={highlight} />
+        <PageContainer highlight={highlight}>
+          <Content components={components} tag={route.tag} />
+        </PageContainer>
       </Editor>
     )
   }

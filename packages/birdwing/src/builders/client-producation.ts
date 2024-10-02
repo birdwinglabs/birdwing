@@ -17,7 +17,7 @@ export function configureProducationClient(
   ];
 
   const code = `
-    import { ProductionPage as PageWrapper } from '@birdwing/react';
+    import { Page as PageWrapper } from '@birdwing/react';
     import React from 'react';
     import ReactDOM from 'react-dom/client';
     import { createBrowserRouter, RouterProvider, useLoaderData } from "react-router-dom";

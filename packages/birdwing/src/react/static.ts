@@ -61,12 +61,8 @@ function render(node: RenderableTreeNodes, component: (name: string) => any): st
 
   if (className) attrs.className = className;
 
-  const staticNodes: string[] = [
-    //'Hint',
-    //'Documentation.fence',
-    //'Documentation.list',
-    //'Documentation.item',
-  ]
+  // Experimental idea of prerendering certain components
+  const staticNodes: string[] = []
 
   if (staticNodes.indexOf(node.name) !== -1) {
     const cmp = Markdoc.renderers.react(node, React, { components: component })
@@ -120,8 +116,6 @@ export class StaticRenderer {
 
     const components = (name: string) => {
       const ns = namespace(name);
-
-      //console.log(this.components);
 
       if (!this.isComponent(ns.component)) {
         throw Error(`Missing component '${ns.component}'`);

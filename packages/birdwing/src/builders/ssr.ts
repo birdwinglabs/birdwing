@@ -24,19 +24,21 @@ export class SsrBuilder extends BundleBuilder {
       import { Routes, Route } from 'react-router-dom';
       import { StaticRouter } from "react-router-dom/server";
       import ReactDOMServer from "react-dom/server";
-      import { Renderer, Page as PageWrapper  } from '@birdwing/react';
+      import { Content, Page as PageWrapper  } from '@birdwing/react';
 
       ${snippets.map(s => s.head).join('\n')}
       ${snippets.map(s => s.body).join('\n')}
-
-      const renderer = new Renderer(components);
 
       app = (routes, path) => {
         return ReactDOMServer.renderToString(
           <StaticRouter location={path}>
             <Routes>
               { routes.map(r =>
-                <Route key={r.url} path={r.url} element={<PageWrapper renderer={renderer} content={r.tag} highlight={highlight}/>} />
+                <Route
+                  key={ r.url }
+                  path={ r.url }
+                  element={ <PageWrapper highlight={highlight}><Content components={components} tag={r.tag} /></PageWrapper> }
+                />
               )}
             </Routes>
           </StaticRouter>
