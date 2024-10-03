@@ -1,14 +1,14 @@
 import path from 'path';
 
 import * as esbuild from 'esbuild'
-import { Route } from '@birdwing/core';
+import { TargetFile } from '@birdwing/core';
 import { Theme } from '../theme.js';
 import { CodeSnippet } from '../interfaces.js';
 import { ThemeSnippet } from '../snippets/theme.js';
 import { HighlightJsSnippet } from '../snippets/highlightjs.js';
 
 export function configureProducationClient(
-  root: string, theme: Theme, routes: Route[], languages: string[], js: {url: string, code: string}[]
+  root: string, theme: Theme, staticRoutes: TargetFile[], languages: string[]
 ): esbuild.BuildOptions
 {
   const snippets: CodeSnippet[] = [
@@ -41,11 +41,11 @@ export function configureProducationClient(
       return (props) => components[ns.component][ns.node](props);
     };
 
-    const router = createBrowserRouter([\n${routes.map(r => {
+    const router = createBrowserRouter([\n${staticRoutes.map(r => {
       return `{
-        path: '${r.url}',
+        path: '${r._id}',
         lazy: async () => {
-          const mod = await import('${r.url + '/route.js'}');
+          const mod = await import('${r._id + '/route.js'}');
           return {
             Component: () => {
               return <PageWrapper highlight={highlight}>{mod.default({ React, components: component })}</PageWrapper>
@@ -62,8 +62,8 @@ export function configureProducationClient(
     '/client.js': code,
   }
 
-  for (const route of js) {
-    files[route.url + '/route.js'] = `export default ${route.code}`;
+  for (const route of staticRoutes) {
+    files[route._id + '/route.js'] = `export default ${route.content}`;
   }
 
   return {

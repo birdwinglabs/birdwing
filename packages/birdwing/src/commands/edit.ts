@@ -1,6 +1,4 @@
 import path from 'path';
-
-import * as glob from 'glob';
 import * as esbuild from 'esbuild'
 
 import { TargetFile } from '@birdwing/core';
@@ -8,7 +6,7 @@ import { Compiler } from '@birdwing/compiler';
 import { Store } from '@birdwing/store';
 
 import { createDatabase, createStorageEngine } from '../database.js';
-import { configureEditor } from '../builders/editor.js';
+import { configureEditor } from '../buildconfigs/editor.js';
 import { Theme } from '../theme.js';
 import { Command, Task } from '../command.js';
 import { HtmlBuilder } from '../html.js';

@@ -1,15 +1,19 @@
 import path from 'path';
 import fs from 'fs';
+import vm from 'vm';
+import { createRequire } from 'module';
+import { fileURLToPath } from 'url';
 
 import { Route, TargetFile } from '@birdwing/core';
-import { SsrApp } from '../builders/ssr.js';
 import { HtmlBuilder } from '../html.js';
 import { Task, TaskProgress, TaskWarning } from '../command.js';
 
 
+type SsrApp = (routes: Route[], path: string) => string
+
 export class RenderSSRTask extends Task<TargetFile[]> {
   constructor(
-    private application: SsrApp,
+    private code: string,
     private routes: Route[],
     private root: string,
     private warnings: TaskWarning[]
@@ -22,12 +26,30 @@ export class RenderSSRTask extends Task<TargetFile[]> {
   }
 
   async *execute() {
+    const app: SsrApp = () => '';
+
+    const sandbox = {
+      require: createRequire(import.meta.url),
+      __dirname: path.dirname(fileURLToPath(import.meta.url)),
+      console: {
+        error: (message: string, ...args: any[]) => {
+          this.warnings.push(new TaskWarning(message, ...args));
+        },
+        log: () => {}
+      },
+      TextEncoder,
+      URL,
+      app,
+    }
+
+    vm.runInNewContext(this.code, sandbox);
+
     const html = fs.readFileSync(path.join(this.root, 'theme/main.html')).toString();
     const output: TargetFile[] = [];
 
     const render = (url: string) => {
       return new Promise<string>((resolve) => {
-        setTimeout(() => resolve(this.application(this.routes, url)), 1);
+        setTimeout(() => resolve(app(this.routes, url)), 1);
       });
     }
 

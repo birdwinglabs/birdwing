@@ -8,15 +8,15 @@ import { createDatabase, createStorageEngine } from '../database.js';
 import { Command, TaskWarning } from '../command.js';
 import { LoadThemeTask } from '../tasks/load-theme.js';
 import { CompileRoutesTask } from '../tasks/compile-routes.js';
-import { BuildSsrAppTask } from '../tasks/ssr-build.js';
 import { RenderSSRTask } from '../tasks/ssr-render.js';
 import { TailwindCssTask } from '../tasks/tailwind.js';
 import { FileWriterTask } from '../tasks/file-writer.js';
 import { BuildTask } from '../tasks/build.js';
-import { configureProducationClient } from '../builders/client-producation.js';
+import { configureProducationClient } from '../buildconfigs/client-producation.js';
 import { ExtractFenceLanguagesTask } from '../tasks/extract-fence-languages.js';
-import { StaticRenderer } from '../react/static.js';
 import { Logger } from '../logger.js';
+import { configureSsr } from '../buildconfigs/ssr.js';
+import { RenderStaticRoutesTask } from '../tasks/render-static-routes.js';
 
 export class BuildCommand extends Command {
   async execute() {
@@ -33,41 +33,28 @@ export class BuildCommand extends Command {
     const routes = await this.executeTask(
       new CompileRoutesTask(compiler)
     );
-    const application = await this.executeTask(
-      new BuildSsrAppTask(theme, warnings)
-    );
+    const ssrOutput = await this.executeTask(new BuildTask(configureSsr(theme), {
+      start: 'Building SSR application',
+      success: 'Built SSR application'
+    }));
+
     const languages = await this.executeTask(
       new ExtractFenceLanguagesTask(compiler.cache.documents)
     );
 
-    //const themeCode = await this.executeTask(new BuildTask(configureTheme(this.root, theme, { export: true }), {
-      //start: 'Building theme...',
-      //success: 'Built theme',
-    //}));
-
-    //const components: any = {};
-    //const sandbox = {
-      //require: createRequire(import.meta.url),
-      //__dirname: path.dirname(fileURLToPath(import.meta.url)),
-      //console: console,
-      //TextEncoder,
-      //URL,
-      //components,
-    //}
-
-    //vm.runInNewContext(themeCode[0].content, sandbox);
-
-    const renderer = new StaticRenderer({});
-    const js = routes.map(route => ({ url: route.url, code: renderer.render(route.tag) }));
+    const staticRoutes = await this.executeTask(new RenderStaticRoutesTask(routes, {
+      start: 'Rendering static routes...',
+      success: 'Rendered static routes',
+    }));
 
     const output: TargetFile[] = [
       await this.executeTask(
-        new BuildTask(configureProducationClient(this.root, theme, routes, languages, js), {
+        new BuildTask(configureProducationClient(this.root, theme, staticRoutes, languages), {
           start: 'Building SPA client...',
           success: 'Built SPA client',
         })
       ),
-      await this.executeTask(new RenderSSRTask(application, routes, this.root, warnings)),
+      await this.executeTask(new RenderSSRTask(ssrOutput[0].content, routes, this.root, warnings)),
       await this.executeTask(new TailwindCssTask(theme, outDir))
     ].flat()
 

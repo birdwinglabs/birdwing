@@ -1,6 +1,4 @@
 import path from 'path';
-
-import * as glob from 'glob';
 import * as esbuild from 'esbuild'
 import * as chokidar from 'chokidar';
 
@@ -9,8 +7,7 @@ import { Compiler } from '@birdwing/compiler';
 import { Store } from '@birdwing/store';
 
 import { createDatabase, createStorageEngine } from '../database.js';
-
-import { configureDevClient } from '../builders/devclient.js';
+import { configureDevClient } from '../buildconfigs/devclient.js';
 import { HtmlBuilder } from '../html.js';
 import { DevServer } from '../servers/dev-server.js';
 import { Command, Task } from '../command.js';
