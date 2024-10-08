@@ -1,5 +1,6 @@
 import markdoc, { Config, Node, Schema } from '@markdoc/markdoc';
 import { NodeList } from '../util';
+import { Template } from '@birdwing/react';
 
 const { Tag } = markdoc;
 
@@ -37,8 +38,10 @@ export const feature: Schema = {
   transform(node, config) {
     const children = new NodeList(node.children);
 
-    const body = children.beforeLastOfType('hr').transformFlat(config);
-    const side = children.afterLastOfType('hr').transformFlat(config);
+    const { body, side } = children.commentSections(['body', 'side'], 'body');
+
+    //const body = children.beforeLastOfType('hr').transformFlat(config);
+    //const side = children.afterLastOfType('hr').transformFlat(config);
 
 
     //const splitIndex = node.children.findIndex(child => child.type === 'hr');
@@ -52,8 +55,10 @@ export const feature: Schema = {
         //.slice(splitIndex + 1)
         //.map(node => transformChild(node, config));
 
-    return new Tag('Feature', { side }, body);
+    return new Tag('Feature', { side: side.transformFlat(config) }, body.transformFlat(config));
     //}
     //return new Tag('Feature', {}, node.transformChildren(config));
   }
 }
+
+export class Feature extends Template<any> {};

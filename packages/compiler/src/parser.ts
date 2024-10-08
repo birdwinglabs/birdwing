@@ -8,9 +8,14 @@ import {
 
 import Markdoc from '@markdoc/markdoc';
 
+const { Tokenizer } = Markdoc;
+
 export class ContentParser {
+  private tokenizer = new Tokenizer({ allowComments: true });
+
   parse({ _id, path, body, frontmatter }: SourceDocument): AbstractDocument | null {
-    const ast = Markdoc.parse(body);
+    const tokens = this.tokenizer.tokenize(body);
+    const ast = Markdoc.parse(tokens);
 
     const match = /^(.+?)\/(((.+?)\/)?(([^\/]+).md$))/.exec(path);
     if (match) {

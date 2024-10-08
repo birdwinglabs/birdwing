@@ -1,5 +1,6 @@
 import Markdoc, { Schema } from '@markdoc/markdoc';
 import { generateIdIfMissing, NodeList } from '../util';
+import { RenderFunction, Template, TemplateNodeConfig } from '@birdwing/react';
 
 const { Tag } = Markdoc;
 
@@ -30,10 +31,28 @@ export const tabs: Schema = {
       return new Tag('tab', {}, heading.transformChildren(config));
     });
     const panels = sections.map(({ body }) => {
-      return new Tag('tabpanel', {}, body.transformFlat(config));
+      return new Tag('panel', {}, body.transformFlat(config));
     });
-    const attributes = { ...node.transformAttributes(config), tabs };
+    const attributes = { ...node.transformAttributes(config), tabs, panels };
 
-    return new Tag(this.render, attributes, panels);
+    return new Tag(this.render, attributes);
+  }
+}
+
+export interface TabsConfig {
+  layout: RenderFunction<any>;
+  slots: {
+    tabs: TemplateNodeConfig;
+    panels: TemplateNodeConfig;
+  },
+  nodes: {
+    tab: RenderFunction<any>,
+    panel: RenderFunction<any>,
+  }
+}
+
+export class Tabs extends Template<any> {
+  constructor({ layout, slots, nodes }: TabsConfig) {
+    super({ name: 'Tabs', layout, nodes, slots })
   }
 }

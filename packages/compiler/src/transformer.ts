@@ -13,14 +13,14 @@ function applyNamespace(tag: any, component?: string) {
   } else {
     component = tag.name;
   }
-  for (const attr of Object.values(tag.attributes || {})) {
+  for (const [slot, attr] of Object.entries(tag.attributes || {})) {
     if (MarkdocTag.isTag(attr)) {
-      applyNamespace(attr, component);
+      applyNamespace(attr, `${component}.${slot}`);
     }
     if (Array.isArray(attr)) {
       for (const child of attr) {
         if (MarkdocTag.isTag(child)) {
-          applyNamespace(child, component);
+          applyNamespace(child, `${component}.${slot}`);
         }
       }
     }

@@ -76,6 +76,10 @@ export interface HeadingSection {
 export class NodeList {
   constructor (private nodes: Node[]) {}
 
+  all() {
+    return this.nodes;
+  }
+
   headingSections(level: number = 1): HeadingSection[] {
     const indicies: number[] = [];
 
@@ -109,7 +113,53 @@ export class NodeList {
     return new NodeList([]);
   }
 
+  indexOfComment(comment: string) {
+    return this.nodes.findIndex(node => node.type === 'comment' && node.attributes.content === comment)
+  }
+
+  commentSections(comments: string[], unmatched: string) {
+    const indicies = comments.reduce((res, comment) => {
+      res[comment] = this.indexOfComment(comment);
+      return res;
+    }, {} as Record<string, number>);
+
+    const firstIndex = Math.min(...Object.values(indicies).filter(v => v >= 0));
+
+    return Object.entries(indicies).reduce((res, [comment, index]) => {
+      if (index < 0) {
+        res[comment] = comment === unmatched
+          ? new NodeList(this.nodes.slice(0, firstIndex))
+          : new NodeList([]);
+      } else {
+        res[comment] = new NodeList(this.nodes.slice(index, Object.values(indicies).find(v => v > index)));
+      }
+      return res;
+    }, {} as Record<string, NodeList>);
+  }
+
+  beforeComment(comment: string) {
+    return this.sliceBefore(this.indexOfComment(comment));
+  }
+
+  afterComment(comment: string) {
+    return this.sliceAfter(this.indexOfComment(comment));
+  }
+
   transformFlat(config: any) {
     return this.nodes.map(n => Markdoc.transform(n, config)).flat();
+  }
+
+  private sliceBefore(index: number) {
+    if (index > 0) {
+      return new NodeList(this.nodes.slice(0, index));
+    }
+    return new NodeList(this.nodes);
+  }
+
+  private sliceAfter(index: number) {
+    if (index > 0) {
+      return new NodeList(this.nodes.slice(index + 1));
+    }
+    return new NodeList([]);
   }
 }

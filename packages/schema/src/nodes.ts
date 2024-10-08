@@ -56,6 +56,11 @@ export const list: Schema = {
     start: { type: Number },
     marker: { type: String },
   },
+  transform(node, config) {
+    return new Tag(this.render, node.transformAttributes(config), node.children.map((item, index) =>
+      new Tag('item', { index }, item.transformChildren(config))
+    ));
+  },
 }
 
 export const item: Schema = {

@@ -30,7 +30,11 @@ export function configureProducationClient(
     const namespace = (name) => {
       if (name.includes('.')) {
         const ns = name.split('.');
-        return { component: ns[0], node: ns[1] };
+        if (ns.length === 2) {
+          return { component: ns[0], node: ns[1] };
+        } else {
+          return { component: ns[0], section: ns[1], node: ns[2] };
+        }
       } else {
         return { component: name, node: 'layout' };
       }
@@ -38,7 +42,7 @@ export function configureProducationClient(
 
     const component = (name) => {
       const ns = namespace(name);
-      return (props) => components[ns.component][ns.node](props);
+      return (props) => components[ns.component].resolve(ns.node, ns.section)(props);
     };
 
     const router = createBrowserRouter([\n${staticRoutes.map(r => {

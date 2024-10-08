@@ -21,6 +21,7 @@ export function configureSsr(theme: Theme): esbuild.BuildOptions {
     ${snippets.map(s => s.body).join('\n')}
 
     app = (routes, path) => {
+      return 'Hello';
       return ReactDOMServer.renderToString(
         <StaticRouter location={path}>
           <Routes>
@@ -44,7 +45,7 @@ export function configureSsr(theme: Theme): esbuild.BuildOptions {
       resolveDir: theme.path
     },
     bundle: true,
-    logLevel: 'silent',
+    //logLevel: 'silent',
     format: 'cjs',
     outfile: 'ssr.js',
     write: false,

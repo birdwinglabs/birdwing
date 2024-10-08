@@ -35,7 +35,8 @@ export class RenderSSRTask extends Task<TargetFile[]> {
         error: (message: string, ...args: any[]) => {
           this.warnings.push(new TaskWarning(message, ...args));
         },
-        log: () => {}
+        warn: (message: string, ...args: any[]) => { console.log(message, ...args); },
+        log: (message: string, ...args: any[]) => { console.log(message, ...args); }
       },
       TextEncoder,
       URL,

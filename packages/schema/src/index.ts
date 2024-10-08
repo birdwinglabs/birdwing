@@ -21,6 +21,7 @@ export const documents = {
 
 export const tags = {
   cta,
+  'call-to-action': cta,
   feature,
   hint,
   tabs,
@@ -37,3 +38,6 @@ export const nodes = {
   link,
 }
 
+export { Page } from './documents/page.js';
+export { Feature } from './tags/feature.js';
+export { Tabs } from './tags/tabs.js';

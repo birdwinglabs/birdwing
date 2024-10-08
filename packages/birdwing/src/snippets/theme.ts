@@ -9,6 +9,6 @@ export class ThemeSnippet implements CodeSnippet {
   }
 
   get body() {
-    return `const components = { ${this.theme.componentNames.map(c => `${c}: new ${c}()`).join(', ')} };`
+    return `const components = { ${this.theme.componentNames.map(c => `'${c}': ${c}`).join(', ')} };`
   }
 }
