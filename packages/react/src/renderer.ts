@@ -3,7 +3,7 @@ import React from 'react';
 import { Template } from './Template.js';
 
 export class Renderer {
-  constructor(private components: Record<string, Template<any>>) {}
+  constructor(private components: Record<string, Template>) {}
 
   isComponent(name: string) {
     return name in this.components;
@@ -31,7 +31,7 @@ export class Renderer {
       if (!template || !(template instanceof Template)) {
         throw Error(`Missing component '${ns.component}'`);
       }
-      return (props: any) => template.resolve(ns.node, ns.slot)(props)
+      return template.resolve(ns.node, ns.slot);
     }});
   }
 }

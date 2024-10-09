@@ -1,14 +1,179 @@
 import React, { createContext, useContext } from "react";
 import { Link, NavLink } from 'react-router-dom';
-import { FenceProps, HeadingConfig, HeadingProps, ItemProps, LinkProps, ListProps, ParagraphProps, RenderFunction, TemplateConfig } from "./interfaces.js";
+import { HeadingProps, NodeConfig, RenderFunction, TemplateConfig } from "./interfaces.js";
 
 const TemplateContext = createContext<string | undefined>(undefined);
 
-export class Template<T extends { children?: React.ReactNode[] }> {
-  constructor(private config: TemplateConfig<T>) {}
+export abstract class Middleware<T = any> {
+  abstract apply(props: T, next: RenderFunction<any>): React.ReactNode;
+}
 
-  get name() {
-    return this.config.name;
+export type MatchCase<T> = [any, NodeConfig<T>]
+export type MatchPropCase<T> = [any, NodeConfig<T>]
+
+export class MatchMiddleware<T> extends Middleware<T> {
+  constructor(private cases: MatchCase<T>[]) { super(); }
+
+  apply(props: any, next: RenderFunction<any>): React.ReactNode {
+    for (const c of this.cases) {
+      const match = c[0];
+      const config = c[1];
+
+      if (Object.entries(match).every(([key, value]) => props[key] === value)) {
+        switch (typeof config) {
+          case 'string':
+            return next({...props, className: config});
+          case 'function':
+            return config(props);
+          case 'boolean':
+            if (config === false) {
+              return '';
+            }
+          case 'object':
+            if (config instanceof Middleware)  {
+              console.log(props);
+              return config.apply(props, next);
+            }
+          default:
+            return next(props);
+        }
+      }
+    }
+    return '';
+  }
+}
+
+export class ReplaceTagMiddleware extends Middleware {
+  constructor(private type: any, private props: any = {}) {
+    super();
+  }
+
+  apply(props: any, next: RenderFunction<any>): React.ReactNode {
+    return React.createElement(this.type, this.props, props.children);
+  }
+}
+
+export class ReplaceProps extends Middleware {
+  constructor(private replace: (props: any) => any) {
+    super();
+  }
+
+  apply(props: any, next: RenderFunction<any>): React.ReactNode {
+    return next(this.replace(props));
+  }
+}
+
+export class AssignProps<T> extends Middleware<T> {
+  constructor(private assign: (props: T) => any) {
+    super();
+  }
+
+  apply(props: T, next: RenderFunction<any>): React.ReactNode {
+    return next({ ...props, ...this.assign(props) });
+  }
+}
+
+export function match<T = any>(cases: MatchCase<T>[]) {
+  return new MatchMiddleware(cases);
+}
+
+export function matchProp<T = any>(prop: keyof T, cases: MatchPropCase<T>[]) {
+  return new MatchMiddleware<T>(cases.map(c => [{ [prop]: c[0] }, c[1]]));
+}
+
+export function replaceWith(type: any, props?: any) {
+  return new ReplaceTagMiddleware(type, props);
+}
+
+export function replaceProps(props: Record<string, any> | ((props: any) => any)) {
+  return new ReplaceProps(typeof props === 'object' ? () => props : props);
+}
+
+export function assignProps<T>(props: Record<string, any> | ((props: T) => any)) {
+  return new AssignProps<T>(typeof props === 'object' ? () => props : props);
+}
+
+
+type Nodes = Record<string, RenderFunction<any>>;
+type Slots = Record<string, Nodes>;
+
+const defaultElements: Record<string, string | RenderFunction<any>> = {
+  layout: 'div',
+  paragraph: 'p',
+  item: 'li',
+  list({ children, ordered, ...props }) {
+    return ordered
+      ? <ol {...props}>{ children }</ol>
+      : <ul {...props}>{ children }</ul>;
+  },
+  heading({ children, level, ...props }: HeadingProps) {
+    return React.createElement(`h${level}`, props, children);
+  },
+  link({ href, children, nav, ...props }) {
+    return nav === true
+      ? <NavLink to={href} {...props}>{ children }</NavLink>
+      : <Link to={href} {...props}>{ children }</Link>;
+  }
+}
+
+function nodeFactory(elements: Record<string, string | RenderFunction<any> | any>, name: string): RenderFunction<any> {
+  const fact = elements[name];
+
+  switch (typeof fact) {
+    case 'string':
+      return ({ children, ...props }: any) => React.createElement(fact, props, children);
+    case 'object':
+      return (props) => fact.render(props);
+    case 'function':
+      return fact;
+    default:
+      return ({ children, ...props }: any) => React.createElement(name, props, children);
+  }
+}
+
+
+export class Template {
+  constructor(
+    public readonly name: string,
+    private layout: RenderFunction<any>,
+    private children: Nodes,
+    private slots: Slots,
+    private fallback: (node: string) => RenderFunction<any>,
+  ) {}
+
+  static configure(config: TemplateConfig<any>) {
+    const elementsConfig = { ...defaultElements, ...config.elements };
+
+    const makeNode = (name: string, config: any) => {
+      switch (typeof config) {
+        case 'string':
+          return (props: any) => nodeFactory(elementsConfig, name)({ ...props, className: config });
+        case 'function':
+          return config;
+        case 'object':
+          if (config instanceof Middleware)  {
+            return (props: any) => config.apply(props, nodeFactory(elementsConfig, name));
+          }
+        case 'undefined':
+          return nodeFactory(elementsConfig, name);
+      }
+    }
+
+    const layout: RenderFunction<any> = makeNode('layout', config.layout);
+    const children: Record<string, RenderFunction<any>> = {};
+    const slots: Record<string, Record<string, RenderFunction<any>>> = {};
+
+    for (const [name, nodeConfig] of Object.entries(config.children || {})) {
+      children[name] = makeNode(name, nodeConfig);
+    }
+    for (const [slotName, slotConfig] of Object.entries(config.slots || {})) {
+      slots[slotName] = {};
+      for (const [name, nodeConfig] of Object.entries(slotConfig || {})) {
+        slots[slotName][name] = makeNode(name, nodeConfig);
+      }
+    }
+
+    return new Template(config.name, layout, children, slots, node => nodeFactory(elementsConfig, node));
   }
 
   static slot(name: string, children: React.ReactNode[]) {
@@ -17,174 +182,26 @@ export class Template<T extends { children?: React.ReactNode[] }> {
 
   resolve(node: string, slot?: string) {
     if (node === 'layout') {
-      return ({ children, ...props}: T) => {
-        const renderLayout = (layout: any) => {
-          switch (typeof layout) {
-            case 'function':
-              return layout({ ...props, children });
-            case 'object':
-              const { as, ...newProps } = layout;
-              return React.createElement(as, newProps, children);
-            case 'string':
-              return React.createElement('div', { ...props, className: layout }, children);
-            default:
-              return React.createElement('div', props, children);
-          }
-        }
-        return (
-          <TemplateContext.Provider value={undefined}>
-            { renderLayout(this.config.layout) }
-          </TemplateContext.Provider>
-        );
-      }
+      return (props: any) => (
+        <TemplateContext.Provider value={undefined}>
+          { this.layout(props) }
+        </TemplateContext.Provider>
+      );
     }
 
-    switch (node) {
-      case 'heading':
-        return this.heading(slot);
-      case 'paragraph':
-        return this.paragraph(slot);
-      case 'link':
-        return this.link(slot);
-      case 'list':
-        return this.list(slot);
-      case 'item':
-        return this.item(slot);
-      case 'fence':
-        return this.fence(slot);
-      default:
-        return this.anyNode(node, slot)
-    }
-  }
-
-  private node(name: string, context?: string) {
-    try {
-      if (this.config.slots && context !== undefined && this.config.slots[context]) {
-        return this.config.slots[context][name];
-      } else {
-        return this.config.nodes !== undefined ? this.config.nodes[name] : undefined;
-      }
-    } catch (err) {
-      console.log(name + ', ' + context);
-      console.log(this.config)
-      throw new Error('missing config');
-    }
-  }
-
-  private anyNode(name: string, slot?: string) {
     return (props: any) => {
       const context = useContext(TemplateContext) || slot;
-      const node = this.node(name, context);
-      switch (typeof node) {
-        case 'function':
-          return node(props);
-        case 'object':
-          const { as, ...newProps } = node;
-          return React.createElement(as, newProps, props.children);
-        case 'boolean':
-          if (node === false) {
-            return '';
-          }
-        default:
-          return '';
+
+      if (context) {
+        if (this.slots[context] && this.slots[context][node]) {
+          return this.slots[context][node](props);
+        }
+      } else {
+        if (this.children[node]) {
+          return this.children[node](props);
+        }
       }
-    }
-  }
-
-  private heading(slot?: string) {
-    return ({className, level, children}: HeadingProps) => {
-      const context = useContext(TemplateContext) || slot;
-      const node = this.node('heading', context);
-      switch (typeof node) {
-        case 'function': return node({ className, level, children });
-        case 'object':
-          const type: 'h1' | 'h2' | 'h3' | 'h4' | 'h5' | 'h6' = `h${level}`;
-          const h = node[type];
-          switch (typeof h) {
-            case 'string':
-              return React.createElement(type, { className: h }, children);
-            case 'function':
-              return h({ className, level, children });
-            case 'boolean':
-              if (h === false) {
-                return '';
-              }
-            default:
-              return React.createElement(type, { className }, children);
-
-          }
-        case 'boolean':
-          if (node === false) {
-            return '';
-          }
-        case 'undefined':
-          return React.createElement(`h${level}`, { className }, children);
-      }
-    }
-  }
-
-  private paragraph(slot?: string) {
-    return ({ children, className }: ParagraphProps) => {
-      const context = useContext(TemplateContext) || slot;
-      const node = this.node('paragraph', context);
-      return typeof node === 'function' ? node({ className, children }) : <p className={node || className}>{ children }</p>;
-    }
-  }
-
-  private list(slot?: string) {
-    return (props: ListProps) => {
-      const context = useContext(TemplateContext) || slot;
-      const node = this.node('list', context);
-      switch (typeof node) {
-        case 'function':
-          return node(props);
-        case 'object':
-          const { as, ...restProps } = node;
-          return React.createElement(as, restProps, props.children);
-        default:
-          return props.ordered
-            ? <ol className={node || props.className}>{ props.children }</ol>
-            : <ul className={node || props.className}>{ props.children }</ul>;
-      }
-    }
-  }
-
-  private item(slot?: string) {
-    return (props: ItemProps) => {
-      const context = useContext(TemplateContext) || slot;
-      const node = this.node('item', context);
-      switch (typeof node) {
-        case 'function':
-          return node(props);
-        case 'object':
-          const { as, ...newProps } = node;
-          return React.createElement(as, newProps, props.children);
-        default:
-          return <li className={node}>{ props.children }</li>
-      }
-    }
-  }
-
-  private link(slot?: string) {
-    return ({ children, href, className }: LinkProps) => {
-      const context = useContext(TemplateContext) || slot;
-      const node = this.node('link', context);
-      switch (typeof node) {
-        case 'function':
-          return node({ children, href, className });
-        case 'object':
-          return <NavLink to={href} end className={({isActive}) => isActive ? node.active : node.inactive }>{ children }</NavLink>
-        default:
-          return <Link to={href} className={node || className}>{ children }</Link>;
-      }
-    }
-  }
-
-  private fence(slot?: string) {
-    return ({...props}: FenceProps) => {
-      const context = useContext(TemplateContext) || slot;
-      const node = context ? this.config.slots[context].fence : this.config.nodes.fence;
-      return typeof node === 'function' ? node(props) : <code className={node} {...props}></code>;
+      return this.fallback(node)(props);
     }
   }
 }
