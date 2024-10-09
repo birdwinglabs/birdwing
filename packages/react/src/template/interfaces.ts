@@ -1,4 +1,4 @@
-import { Middleware } from "./Template";
+import { Middleware } from "./middleware";
 
 export interface NodeProps {
   id?: string;
@@ -28,8 +28,6 @@ export interface HeadingProps extends NodeProps {
 export interface ParagraphProps extends NodeProps {}
 
 export type RenderFunction<T> = (props: T) => React.ReactNode;
-
-//export type HeadingLevelConfig = RenderFunction<Omit<HeadingProps, 'level'>> | string | false;
 
 export interface HeadingConfig {
   h1?: NodeConfig<HeadingProps>;
