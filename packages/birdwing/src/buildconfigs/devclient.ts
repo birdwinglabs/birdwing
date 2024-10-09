@@ -38,7 +38,7 @@ export function configureDevClient(root: string, theme: Theme): esbuild.BuildOpt
       resolveDir: path.join(root, 'theme'),
     },
     logLevel: 'silent',
-    minify: true,
+    minify: false,
     bundle: true,
     outfile: '/dev.js',
     write: false,
