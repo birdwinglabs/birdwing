@@ -1,6 +1,6 @@
 import Markdoc, { Tag } from '@markdoc/markdoc';
 import React from 'react';
-import { Template } from './template/Template.js';
+import { Template } from './interfaces.js';
 
 export class Renderer {
   constructor(private components: Record<string, Template>) {}

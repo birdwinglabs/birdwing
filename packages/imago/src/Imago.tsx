@@ -1,5 +1,6 @@
 import React, { createContext, useContext } from "react";
-import { NodeConfig, RenderFunction, TemplateConfig } from "./interfaces.js";
+import { RenderFunction, Template } from '@birdwing/react';
+import { NodeConfig, TemplateConfig } from "./interfaces.js";
 import { defaultElements } from "./Elements.js";
 import { configureNode, makeElementFactory } from "./factory.js";
 
@@ -8,14 +9,14 @@ const TemplateContext = createContext<string | undefined>(undefined);
 type Nodes = Record<string, RenderFunction<any>>;
 type Slots = Record<string, Nodes>;
 
-export class Template {
+export class Imago extends Template {
   constructor(
     public readonly name: string,
     private layout: RenderFunction<any>,
     private children: Nodes,
     private slots: Slots,
     private fallback: (node: string) => RenderFunction<any>,
-  ) {}
+  ) { super(); }
 
   static configure(config: TemplateConfig<any>) {
     const elementsConfig = { ...defaultElements, ...config.elements };
@@ -39,7 +40,7 @@ export class Template {
       }
     }
 
-    return new Template(config.name, layout, children, slots, node => makeElementFactory(elementsConfig, node));
+    return new Imago(config.name, layout, children, slots, node => makeElementFactory(elementsConfig, node));
   }
 
   static slot(name: string, children: React.ReactNode[]) {

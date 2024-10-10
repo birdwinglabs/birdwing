@@ -1,6 +1,7 @@
 import React from "react";
 import { Link, NavLink } from 'react-router-dom';
-import { HeadingProps, RenderFunction } from "./interfaces.js";
+import { RenderFunction } from '@birdwing/react';
+import { HeadingProps } from "./interfaces.js";
 
 export const defaultElements: Record<string, string | RenderFunction<any>> = {
   layout: 'div',

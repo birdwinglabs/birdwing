@@ -1,5 +1,6 @@
 import React from "react";
-import { NodeConfig, RenderFunction } from "./interfaces.js";
+import { RenderFunction } from '@birdwing/react';
+import { NodeConfig } from "./interfaces.js";
 import { Middleware } from "./middleware.js";
 
 export function makeElementFactory(elements: Record<string, string | RenderFunction<any> | any>, name: string): RenderFunction<any> {

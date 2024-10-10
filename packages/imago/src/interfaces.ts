@@ -1,3 +1,4 @@
+import { RenderFunction } from '@birdwing/react';
 import { Middleware } from "./middleware";
 
 export interface NodeProps {
@@ -27,7 +28,6 @@ export interface HeadingProps extends NodeProps {
 
 export interface ParagraphProps extends NodeProps {}
 
-export type RenderFunction<T> = (props: T) => React.ReactNode;
 
 export interface HeadingConfig {
   h1?: NodeConfig<HeadingProps>;

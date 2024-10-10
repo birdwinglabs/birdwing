@@ -1,5 +1,6 @@
 import React from "react";
-import { NodeConfig, RenderFunction } from "./interfaces.js";
+import { RenderFunction } from '@birdwing/react';
+import { NodeConfig } from "./interfaces.js";
 import { configureNode } from "./factory.js";
 
 export abstract class Middleware<T = any> {
