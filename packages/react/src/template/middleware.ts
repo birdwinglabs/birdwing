@@ -36,23 +36,13 @@ export class ReplaceTag extends Middleware {
   }
 }
 
-export class ReplaceProps<T> extends Middleware<T> {
-  constructor(private replace: (props: T) => any) {
-    super();
-  }
-
-  apply(props: any, next: RenderFunction<any>): React.ReactNode {
-    return next(this.replace(props));
-  }
-}
-
 export class AssignProps<T> extends Middleware<T> {
-  constructor(private assign: (props: T) => any) {
+  constructor(private assign: (props: T) => any, private replace: boolean) {
     super();
   }
 
   apply(props: T, next: RenderFunction<any>): React.ReactNode {
-    return next({ ...props, ...this.assign(props) });
+    return next(this.replace ? this.assign(props) : { ...props, ...this.assign(props) });
   }
 }
 
@@ -69,9 +59,9 @@ export function replaceWith(type: any, props?: any) {
 }
 
 export function replaceProps<T>(props: Record<string, any> | ((props: any) => any)) {
-  return new ReplaceProps<T>(typeof props === 'object' ? () => props : props);
+  return new AssignProps<T>(typeof props === 'object' ? () => props : props, true);
 }
 
 export function assignProps<T>(props: Record<string, any> | ((props: T) => any)) {
-  return new AssignProps<T>(typeof props === 'object' ? () => props : props);
+  return new AssignProps<T>(typeof props === 'object' ? () => props : props, false);
 }

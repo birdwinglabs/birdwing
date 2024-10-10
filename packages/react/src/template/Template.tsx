@@ -62,10 +62,8 @@ export class Template {
         if (this.slots[context] && this.slots[context][node]) {
           return this.slots[context][node](props);
         }
-      } else {
-        if (this.children[node]) {
-          return this.children[node](props);
-        }
+      } else if (this.children[node]) {
+        return this.children[node](props);
       }
       return this.fallback(node)(props);
     }
