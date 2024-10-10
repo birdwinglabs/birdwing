@@ -37,7 +37,3 @@ export const nodes = {
   strong,
   link,
 }
-
-export { Page } from './documents/page.js';
-export { Feature } from './tags/feature.js';
-export { Tabs } from './tags/tabs.js';

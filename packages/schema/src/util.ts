@@ -80,6 +80,14 @@ export class NodeList {
     return this.nodes;
   }
 
+  *walk() {
+    for (const node of this.nodes) {
+      for (const child of node.walk()) {
+        yield child;
+      }
+    }
+  }
+
   headingSections(level: number = 1): HeadingSection[] {
     const indicies: number[] = [];
 
