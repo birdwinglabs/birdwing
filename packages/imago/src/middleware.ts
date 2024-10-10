@@ -27,13 +27,13 @@ export class MatchMiddleware<T> extends Middleware<T> {
   }
 }
 
-export class ReplaceTag extends Middleware {
-  constructor(private type: any, private props: any = {}) {
+export class Assign extends Middleware {
+  constructor(private type: any, private props: any = {}, private replace: boolean) {
     super();
   }
 
   apply(props: any, next: RenderFunction<any>): React.ReactNode {
-    return React.createElement(this.type, this.props, props.children);
+    return React.createElement(this.type, this.replace ? this.props : { ...props, ...this.props }, props.children);
   }
 }
 
@@ -55,8 +55,12 @@ export function matchProp<T = any>(prop: keyof T, cases: MatchPropCase<T>[]) {
   return match<T>(cases.map(c => [{ [prop]: c[0] }, c[1]]));
 }
 
-export function replaceWith(type: any, props?: any) {
-  return new ReplaceTag(type, props);
+export function replace(type: any, props?: any) {
+  return new Assign(type, props, true);
+}
+
+export function assign(type: any, props?: any) {
+  return new Assign(type, props, false);
 }
 
 export function replaceProps<T>(props: Record<string, any> | ((props: any) => any)) {

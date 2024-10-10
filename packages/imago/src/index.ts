@@ -3,7 +3,7 @@ export * from './interfaces.js';
 export { Imago } from './Imago.js';
 
 import { HeadingConfig, HeadingProps, LinkProps } from './interfaces.js';
-import { assignProps, match, matchProp, replaceWith, replaceProps } from './middleware.js';
+import { assignProps, match, matchProp, assign, replace, replaceProps } from './middleware.js';
 
 export interface NavLinkConfig {
   end: boolean;
@@ -14,8 +14,9 @@ export interface NavLinkConfig {
 class TagUtil<T> {
   match = match<T>;
   matchProp = matchProp<T>;
+  assign = assign;
   assignProps = assignProps<T>;
-  as = replaceWith;
+  replace = replace;
   replaceProps = replaceProps<T>;
 }
 
