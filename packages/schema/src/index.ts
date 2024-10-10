@@ -10,6 +10,7 @@ import { docpage } from './documents/docpage.js';
 import { summary } from './documents/summary.js';
 import { hint } from './tags/hint.js';
 import { footer } from './documents/footer.js';
+import { pricing, tier } from './tags/pricing.js';
 
 export const documents = {
   page,
@@ -24,6 +25,8 @@ export const tags = {
   'call-to-action': cta,
   feature,
   hint,
+  pricing,
+  tier,
   tabs,
 }
 
