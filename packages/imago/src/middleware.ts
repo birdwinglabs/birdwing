@@ -1,10 +1,9 @@
 import React from "react";
-import { RenderFunction } from '@birdwing/react';
 import { NodeConfig } from "./interfaces.js";
 import { configureNode } from "./factory.js";
 
 export abstract class Middleware<T = any> {
-  abstract apply(props: T, next: RenderFunction<any>): React.ReactNode;
+  abstract apply(props: T, next: React.FunctionComponent<any>): any;
 }
 
 export type MatchCase<T> = [any, NodeConfig<T>]
@@ -13,7 +12,7 @@ export type MatchPropCase<T> = [any, NodeConfig<T>]
 export class MatchMiddleware<T> extends Middleware<T> {
   constructor(private cases: MatchCase<T>[]) { super(); }
 
-  apply(props: any, next: RenderFunction<any>): React.ReactNode {
+  apply(props: any, next: React.FunctionComponent<any>) {
     for (const c of this.cases) {
       const match = c[0];
       const config = c[1];
@@ -23,7 +22,7 @@ export class MatchMiddleware<T> extends Middleware<T> {
         return fact(props);
       }
     }
-    return '';
+    return null;
   }
 }
 
@@ -32,7 +31,7 @@ export class Assign extends Middleware {
     super();
   }
 
-  apply(props: any, next: RenderFunction<any>): React.ReactNode {
+  apply(props: any, next: React.FunctionComponent<any>) {
     return React.createElement(this.type, this.replace ? this.props : { ...props, ...this.props }, props.children);
   }
 }
@@ -42,7 +41,7 @@ export class AssignProps<T> extends Middleware<T> {
     super();
   }
 
-  apply(props: T, next: RenderFunction<any>): React.ReactNode {
+  apply(props: T, next: React.FunctionComponent<any>) {
     return next(this.replace ? this.assign(props) : { ...props, ...this.assign(props) });
   }
 }

@@ -1,4 +1,3 @@
-import { RenderFunction } from '@birdwing/react';
 import { Middleware } from "./middleware";
 
 export interface NodeProps {
@@ -38,7 +37,7 @@ export interface HeadingConfig {
   h6?: NodeConfig<HeadingProps>;
 }
 
-export type NodeConfig<T> = RenderFunction<T> | Middleware<T> | string | false | undefined;
+export type NodeConfig<T> = React.FunctionComponent<T> | Middleware<T> | string | false | undefined;
 
 export interface TemplateNodeConfig extends Record<string, any> {
   link?: NodeConfig<LinkProps>,
@@ -54,5 +53,5 @@ export interface TemplateConfig<T> {
   layout: NodeConfig<T>,
   slots?: Record<string, TemplateNodeConfig>,
   children?: TemplateNodeConfig,
-  elements?: Record<string, string | RenderFunction<any>>;
+  elements?: Record<string, string | React.FunctionComponent<any>>;
 }

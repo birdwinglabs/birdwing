@@ -1,21 +1,21 @@
 import React, { createContext, useContext } from "react";
-import { RenderFunction, Template } from '@birdwing/react';
+import { Template } from '@birdwing/react';
 import { NodeConfig, TemplateConfig } from "./interfaces.js";
 import { defaultElements } from "./Elements.js";
 import { configureNode, makeElementFactory } from "./factory.js";
 
 const TemplateContext = createContext<string | undefined>(undefined);
 
-type Nodes = Record<string, RenderFunction<any>>;
+type Nodes = Record<string, React.FunctionComponent<any>>;
 type Slots = Record<string, Nodes>;
 
 export class Imago extends Template {
   constructor(
     public readonly name: string,
-    private layout: RenderFunction<any>,
+    private layout: React.FunctionComponent<any>,
     private children: Nodes,
     private slots: Slots,
-    private fallback: (node: string) => RenderFunction<any>,
+    private fallback: (node: string) => React.FunctionComponent<any>,
   ) { super(); }
 
   static configure(config: TemplateConfig<any>) {
@@ -26,9 +26,9 @@ export class Imago extends Template {
       return configureNode(fact, config);
     }
 
-    const layout: RenderFunction<any> = makeNode('layout', config.layout);
-    const children: Record<string, RenderFunction<any>> = {};
-    const slots: Record<string, Record<string, RenderFunction<any>>> = {};
+    const layout: React.FunctionComponent<any> = makeNode('layout', config.layout);
+    const children: Record<string, React.FunctionComponent<any>> = {};
+    const slots: Record<string, Record<string, React.FunctionComponent<any>>> = {};
 
     for (const [name, nodeConfig] of Object.entries(config.children || {})) {
       children[name] = makeNode(name, nodeConfig);
@@ -56,7 +56,7 @@ export class Imago extends Template {
       );
     }
 
-    return (props: any) => {
+    const Component: React.FunctionComponent = (props: any) => {
       const context = useContext(TemplateContext) || slot;
 
       if (context) {
@@ -68,5 +68,8 @@ export class Imago extends Template {
       }
       return this.fallback(node)(props);
     }
+
+    Component.displayName = node;
+    return Component;
   }
 }
