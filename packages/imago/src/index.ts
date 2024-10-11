@@ -1,6 +1,6 @@
 export * from './interfaces.js';
 
-export { Imago } from './Imago.js';
+export { Imago, Ordering, OrderingContext } from './Imago.js';
 
 import { HeadingConfig, HeadingProps, LinkProps } from './interfaces.js';
 import { assignProps, match, matchProp, assign, replace, replaceProps } from './middleware.js';

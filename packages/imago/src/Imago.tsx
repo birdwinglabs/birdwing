@@ -9,6 +9,15 @@ const TemplateContext = createContext<string | undefined>(undefined);
 type Nodes = Record<string, React.FunctionComponent<any>>;
 type Slots = Record<string, Nodes>;
 
+export class Ordering {
+  constructor(public readonly index: number, public readonly total: number) {}
+
+  get isFirst() { return this.index === 0; }
+  get isLast() { return this.index === this.total - 1; }
+}
+
+export const OrderingContext = createContext(new Ordering(0, 0));
+
 export class Imago extends Template {
   constructor(
     public readonly name: string,
@@ -45,6 +54,17 @@ export class Imago extends Template {
 
   static slot(name: string, children: React.ReactNode[]) {
     return <TemplateContext.Provider value={name}>{ children }</TemplateContext.Provider>;
+  }
+
+  static ordered = (children: React.ReactElement[]) => {
+    const total = React.Children.count(children);
+
+    const ordered = React.Children.map(children, (c, i) =>
+      <OrderingContext.Provider value={new Ordering(i, total)}>
+        { c }
+      </OrderingContext.Provider> 
+    )
+    return ordered;
   }
 
   resolve(node: string, slot?: string) {
