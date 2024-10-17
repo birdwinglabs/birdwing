@@ -1,3 +1,4 @@
+import { Template } from "@birdwing/react";
 import { Middleware } from "./middleware";
 
 export interface NodeProps {
@@ -48,10 +49,14 @@ export interface TemplateNodeConfig extends Record<string, any> {
   paragraph?: NodeConfig<ParagraphProps>,
 }
 
+export type ImagoHandler<T = any> = React.FunctionComponent<T>;
+export type ImagoMiddleware<T = any> = (next: ImagoHandler<T> | (() => React.ReactElement | null), final: ImagoHandler<T>) => ImagoHandler<T>;
+
 export interface TemplateConfig<T> {
   name: string,
   layout: NodeConfig<T>,
-  slots?: Record<string, TemplateNodeConfig>,
+  //slots?: Record<string, TemplateNodeConfig>,
+  slots?: Template[],
   children?: TemplateNodeConfig,
-  elements?: Record<string, string | React.FunctionComponent<any>>;
+  elements?: Record<string, ImagoHandler>;
 }

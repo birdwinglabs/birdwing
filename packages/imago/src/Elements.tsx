@@ -1,12 +1,18 @@
 import React from "react";
 import { Link, NavLink } from 'react-router-dom';
-import { RenderFunction } from '@birdwing/react';
-import { HeadingProps } from "./interfaces.js";
+import { HeadingProps, ItemProps, ParagraphProps } from "./interfaces.js";
+import { ImagoHandler } from "./interfaces.js";
 
-export const defaultElements: Record<string, string | RenderFunction<any>> = {
-  layout: 'div',
-  paragraph: 'p',
-  item: 'li',
+export const defaultElements: Record<string, ImagoHandler> = {
+  layout: ({ children, className }: any) => {
+    return <div className={className}>{ children }</div>;
+  },
+  paragraph: ({ children, ...props }: ParagraphProps) => {
+    return React.createElement('p', props, children)
+  },
+  item: ({ children, ...props }: ItemProps) => {
+    return React.createElement('li', props, children)
+  },
   list({ children, ordered, ...props }) {
     return ordered
       ? <ol {...props}>{ children }</ol>

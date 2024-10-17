@@ -1,8 +1,9 @@
 import React, { createContext, useContext } from "react";
 import { Template } from '@birdwing/react';
-import { HeadingProps, NodeConfig, ParagraphProps, TemplateConfig } from "./interfaces.js";
+import { HeadingProps, ImagoHandler, ImagoMiddleware, ItemProps, ListProps, NodeConfig, NodeProps, ParagraphProps, TemplateConfig, TemplateNodeConfig } from "./interfaces.js";
 import { defaultElements } from "./Elements.js";
 import { configureNode, makeElementFactory } from "./factory.js";
+import { LinkProps } from "react-router-dom";
 
 const TemplateContext = createContext<string | undefined>(undefined);
 
@@ -23,25 +24,42 @@ export interface SlotOptions {
   filter?: Record<string, any>;
 }
 
-//export interface ImagoContext<T> {
-  //props: T,
-  //children: any;
-//}
+export interface NodeFilter {
+  className?: string;
+}
 
-export type ImagoHandler<T = any> = React.FunctionComponent<T>;
-//export type ImagoHandler<T = any> = (context: ImagoContext<T>) => React.ReactElement | null;
-export type ImagoMiddleware<T = any> = (next: ImagoHandler<T> | (() => React.ReactElement | null), final: ImagoHandler<T>) => ImagoHandler<T>;
+export interface HeadingFilter extends NodeFilter {
+  level?: number;
+}
 
 export interface Imago {
-  heading(middleware: ImagoMiddleware): Imago;
+  heading(middleware: ImagoMiddleware<HeadingProps>): Imago;
   heading(newClass: string): Imago;
-  heading(match: string, render: ImagoHandler<HeadingProps>): Imago;
-  heading(match: string, newClass: string): Imago;
+  heading(match: HeadingFilter, render: ImagoHandler<HeadingProps> | string | false): Imago;
 
-  paragraph(middleware: ImagoMiddleware): Imago;
+  h1(newClass: string): Imago;
+  h1(render: ImagoHandler<HeadingProps> | false): Imago;
+  h1(match: HeadingFilter, render: ImagoHandler<HeadingProps> | string | false): Imago;
+
+  h2(newClass: string): Imago;
+  h2(render: ImagoHandler<HeadingProps> | false): Imago;
+  h2(match: HeadingFilter, render: ImagoHandler<HeadingProps> | string | false): Imago;
+
+  paragraph(middleware: ImagoMiddleware<ParagraphProps>): Imago;
   paragraph(newClass: string): Imago;
-  paragraph(match: string, render: ImagoHandler<HeadingProps>): Imago;
-  paragraph(match: string, newClass: string): Imago;
+  paragraph(match: NodeFilter, render: ImagoHandler<ParagraphProps> | string | false): Imago;
+
+  list(middleware: ImagoMiddleware<ListProps>): Imago;
+  list(newClass: string): Imago;
+  list(match: NodeFilter, render: ImagoHandler<ListProps> | string | false): Imago;
+
+  item(middleware: ImagoMiddleware<ItemProps>): Imago;
+  item(newClass: string): Imago;
+  item(match: NodeFilter, render: ImagoHandler<ItemProps> | string | false): Imago;
+
+  link(middleware: ImagoMiddleware<LinkProps>): Imago;
+  link(newClass: string): Imago;
+  link(match: NodeFilter, render: ImagoHandler<LinkProps> | string | false): Imago;
 }
 
 export interface ProjectProps {
@@ -54,20 +72,42 @@ export interface ProjectProps {
   enumerate?: boolean;
 }
 
-export class Imago extends Template {
-  private final: Record<string, ImagoHandler> = {
-    'heading': ({ level, children, ...props }: HeadingProps) => React.createElement(`h${level}`, props, children),
-    'paragraph': ({ children, ...props }: ParagraphProps) => React.createElement('p', props, children),
+abstract class Matcher<T = any> {
+  abstract test(props: T): boolean;
+}
+
+class NodeMatcher<TProps extends { className?: string } = any> extends Matcher<TProps> {
+  constructor(protected tests: ((props: TProps) => boolean)[]) { super(); }
+
+  test(props: TProps): boolean {
+    return this.tests.every(t => t(props));
   }
-  private handlers: Record<string, ImagoHandler> = { ...this.final };
+
+  static fromNodeFilter(f: NodeFilter) {
+    return new NodeMatcher([
+      props => f.className ? f.className === props.className : true,
+    ])
+  }
+
+  static fromHeadingFilter(f: HeadingFilter) {
+    return new NodeMatcher([
+      props => f.level ? f.level === props.level : true,
+      props => f.className ? f.className === props.className : true,
+    ])
+  }
+}
+
+export class Imago extends Template {
+  private final: Record<string, ImagoHandler>;
 
   constructor(
     public readonly name: string,
-    private layout: React.FunctionComponent<any>,
-    private children: Nodes,
-    private slots: Slots,
-    private fallback: (node: string) => React.FunctionComponent<any>,
-  ) { super(); }
+    private handlers: Record<string, ImagoHandler>,
+    private slots: Record<string, Template> = {}
+  ) {
+    super();
+    this.final = { ...handlers };
+  }
 
   static configure(config: TemplateConfig<any>) {
     const elementsConfig = { ...defaultElements, ...config.elements };
@@ -77,21 +117,21 @@ export class Imago extends Template {
       return configureNode(fact, config);
     }
 
-    const layout: React.FunctionComponent<any> = makeNode('layout', config.layout);
-    const children: Record<string, React.FunctionComponent<any>> = {};
-    const slots: Record<string, Record<string, React.FunctionComponent<any>>> = {};
+    const handlers: Record<string, ImagoHandler> = {
+      ...elementsConfig,
+      layout: makeNode('layout', config.layout),
+    }
 
     for (const [name, nodeConfig] of Object.entries(config.children || {})) {
-      children[name] = makeNode(name, nodeConfig);
-    }
-    for (const [slotName, slotConfig] of Object.entries(config.slots || {})) {
-      slots[slotName] = {};
-      for (const [name, nodeConfig] of Object.entries(slotConfig || {})) {
-        slots[slotName][name] = makeNode(name, nodeConfig);
-      }
+      handlers[name] = makeNode(name, nodeConfig);
     }
 
-    return new Imago(config.name, layout, children, slots, node => makeElementFactory(elementsConfig, node));
+    const slots = (config.slots || []).reduce((slots, slot) => {
+      slots[(slot as any).name] = slot;
+      return slots;
+    }, {} as Record<string, Template>);
+
+    return new Imago(config.name, handlers, slots);
   }
 
   static Project({ slot, nodes, type, enumerate }: ProjectProps) {
@@ -124,8 +164,23 @@ export class Imago extends Template {
     return <TemplateContext.Provider value={name}>{ nodes }</TemplateContext.Provider>;
   }
 
-  static createSlot(name: string) {
-    return new Imago(name, () => null, {}, {}, () => () => null);
+  static createSlot(name: string, children: TemplateNodeConfig) {
+    const elementsConfig = { ...defaultElements };
+
+    const makeNode = (name: string, config: NodeConfig<any>) => {
+      const fact = makeElementFactory(elementsConfig, name);
+      return configureNode(fact, config);
+    }
+
+    const handlers: Record<string, ImagoHandler> = {
+      ...elementsConfig,
+    }
+
+    for (const [name, nodeConfig] of Object.entries(children || {})) {
+      handlers[name] = makeNode(name, nodeConfig);
+    }
+
+    return new Imago(name, handlers, {});
   }
 
   static ordered = (children: React.ReactElement[]) => {
@@ -139,21 +194,21 @@ export class Imago extends Template {
     return ordered;
   }
 
-  resolve(node: string, slot?: string) {
+  resolve(node: string) {
     if (node === 'layout') {
       return (props: any) => (
         <TemplateContext.Provider value={undefined}>
-          { this.layout(props) }
+          { this.handlers['layout'](props) }
         </TemplateContext.Provider>
       );
     }
 
     const Component: React.FunctionComponent = (p: any) => {
-      const context = useContext(TemplateContext) || slot;
+      const context = useContext(TemplateContext)
 
-      if (context) {
-        if (this.slots[context] && this.slots[context][node]) {
-          return this.slots[context][node](p);
+      if (context && context !== this.name) {
+        if (this.slots[context] && this.slots[context] instanceof Imago) {
+          return this.slots[context].resolve(node)(p);
         }
       } else {
         const handler = this.handlers[node];
@@ -161,55 +216,83 @@ export class Imago extends Template {
         if (handler) {
           return handler(p)
         }
-        if (this.children[node]) {
-          return this.children[node](p);
-        }
-
       }
-      return this.fallback(node)(p);
+      return null;
     }
 
     Component.displayName = node;
     return Component;
   }
 
-  heading(arg1: ImagoMiddleware<HeadingProps> | string, arg2?: ImagoHandler<HeadingProps> | string) {
-    return this.define('heading', arg1, arg2);
+  h1(arg1: NodeFilter | ImagoHandler<HeadingProps> | string | false, arg2?: ImagoHandler<HeadingProps> | string | false) {
+    return this.h(1, arg1, arg2);
+  }
+  h2(arg1: NodeFilter | ImagoHandler<HeadingProps> | string | false, arg2?: ImagoHandler<HeadingProps> | string | false) {
+    return this.h(2, arg1, arg2);
+  }
+  h3(arg1: NodeFilter | ImagoHandler<HeadingProps> | string | false, arg2?: ImagoHandler<HeadingProps> | string | false) {
+    return this.h(3, arg1, arg2);
+  }
+  h4(arg1: NodeFilter | ImagoHandler<HeadingProps> | string | false, arg2?: ImagoHandler<HeadingProps> | string | false) {
+    return this.h(4, arg1, arg2);
+  }
+  h5(arg1: NodeFilter | ImagoHandler<HeadingProps> | string | false, arg2?: ImagoHandler<HeadingProps> | string | false) {
+    return this.h(5, arg1, arg2);
+  }
+  h6(arg1: NodeFilter | ImagoHandler<HeadingProps> | string | false, arg2?: ImagoHandler<HeadingProps> | string | false) {
+    return this.h(6, arg1, arg2);
   }
 
-  paragraph(arg1: ImagoMiddleware<HeadingProps> | string, arg2?: ImagoHandler<HeadingProps> | string) {
-    return this.define('paragraph', arg1, arg2);
+  private h(level: number, arg1: NodeFilter | ImagoHandler<HeadingProps> | string | false, arg2?: ImagoHandler<HeadingProps> | string | false) {
+    const matcher = NodeMatcher.fromHeadingFilter(typeof arg1 === 'object' ? { ...arg1, level } : { level });
+
+    return this.match('heading', matcher, typeof arg1 === 'object' ? arg2 || false : arg1);
   }
 
-  private define(type: string, arg1: ImagoMiddleware<any> | string, arg2?: ImagoHandler<any> | string): this {
-    const matcher = (pattern: string) => {
-      switch (pattern) {
-        case 'h1': return (props: any) => props.level === 1;
-        case 'h2': return (props: any) => props.level === 2;
-        case 'h3': return (props: any) => props.level === 3;
-        case 'h4': return (props: any) => props.level === 4;
-        case 'h5': return (props: any) => props.level === 5;
-        case 'h6': return (props: any) => props.level === 6;
-      }
-      return (props: any) => false;
+  heading(arg1: ImagoMiddleware<HeadingProps> | HeadingFilter | string, arg2?: ImagoHandler<HeadingProps> | string | false) {
+    return this.define('heading', typeof arg1 === 'object' ? NodeMatcher.fromHeadingFilter(arg1) : arg1, arg2);
+  }
+
+  paragraph(arg1: ImagoMiddleware<ParagraphProps> | NodeFilter | string, arg2?: ImagoHandler<ParagraphProps> | string | false) {
+    return this.define('paragraph', typeof arg1 === 'object' ? NodeMatcher.fromNodeFilter(arg1) : arg1, arg2);
+  }
+
+  list(arg1: ImagoMiddleware<ListProps> | NodeFilter | string, arg2?: ImagoHandler<ListProps> | string | false) {
+    return this.define('list', typeof arg1 === 'object' ? NodeMatcher.fromNodeFilter(arg1) : arg1, arg2);
+  }
+
+  item(arg1: ImagoMiddleware<ItemProps> | NodeFilter | string, arg2?: ImagoHandler<ItemProps> | string | false) {
+    return this.define('item', typeof arg1 === 'object' ? NodeMatcher.fromNodeFilter(arg1) : arg1, arg2);
+  }
+
+  link(arg1: ImagoMiddleware<LinkProps> | NodeFilter | string, arg2?: ImagoHandler<LinkProps> | string | false) {
+    return this.define('link', typeof arg1 === 'object' ? NodeMatcher.fromNodeFilter(arg1) : arg1, arg2);
+  }
+
+  private match(type: string, matcher: Matcher, render: ImagoHandler | string | boolean): this {
+    switch (typeof render) {
+      case 'boolean':
+        return this.use(type, next => props => matcher.test(props) ? null : next(props));
+      case 'string':
+        return this.use(type, (next, final) => props => matcher.test(props) ? final({ ...props, className: render }) : next(props))
+      case 'function':
+        return this.use(type, next => props => matcher.test(props) ? render(props) : next(props))
+    }
+  }
+
+  private define(type: string, arg1: ImagoMiddleware<any> | Matcher | string, arg2?: ImagoHandler<any> | string | boolean): this {
+    if (typeof arg1 === 'object') {
+      return this.match(type, arg1, arg2 || false);
     }
 
-    // Set class
     if (typeof arg1 === 'string') {
-      switch (typeof arg2) {
-        case 'string':
-          return this.use(type, (next, final) => props => matcher(arg1)(props) ? final({ ...props, className: arg2 }) : next(props))
-        case 'function':
-          return this.use(type, next => props => matcher(arg1)(props) ? arg2(props) : next(props))
-        case 'undefined':
-          return this.use(type, next => props => next({ ...props, className: arg1}));
-      }
+      return this.use(type, (next, final) => props => final({ ...props, className: arg1 }));
     }
 
     return this.use(type, arg1);
   }
 
-  private use(type: string, middleware: ImagoMiddleware<any>): this {
+  private use<T = any>(type: string, middleware: ImagoMiddleware<T>): this {
     const next = this.handlers[type];
     const final = this.final[type];
 
