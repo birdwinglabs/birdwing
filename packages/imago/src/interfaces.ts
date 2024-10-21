@@ -30,9 +30,7 @@ export interface ParagraphProps extends NodeProps {}
 export type ImagoHandler<T = any> = React.FunctionComponent<T>;
 export type ImagoMiddleware<T = any> = (next: ImagoHandler<T> | (() => React.ReactElement | null), final: ImagoHandler<T>) => ImagoHandler<T>;
 
-export interface TemplateConfig<T> {
-  name: string,
-  layout: ImagoHandler<T>,
+export interface TemplateOptions {
   slots?: Template[],
   elements?: Record<string, ImagoHandler>;
 }

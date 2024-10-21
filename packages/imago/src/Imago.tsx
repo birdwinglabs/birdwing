@@ -10,7 +10,7 @@ import {
   NodeProps,
   ParagraphProps,
   ProjectProps,
-  TemplateConfig
+  TemplateOptions
 } from "./interfaces.js";
 import { defaultElements } from "./Elements.js";
 import { LinkProps } from "react-router-dom";
@@ -41,145 +41,86 @@ export interface HeadingFilter extends NodeFilter {
 
 export type ImagoRender<T> = ImagoHandler<T> | string | string[] | false;
 
-export interface Imago {
-  heading(render: ImagoHandler<HeadingProps> | false): Imago;
-  heading(newClass: string | string[]): Imago;
-  heading(match: HeadingFilter, render: ImagoRender<HeadingProps>): Imago;
+export interface ImagoBuilder {
+  slot(): Imago;
+  layout<T = any>(render: ImagoHandler<T>): Imago;
 
-  h1(newClass: string): Imago;
-  h1(render: ImagoHandler<HeadingProps> | false): Imago;
-  h1(match: HeadingFilter, render: ImagoRender<HeadingProps>): Imago;
+  heading(render: ImagoHandler<HeadingProps> | false): ImagoBuilder;
+  heading(newClass: string | string[]): ImagoBuilder;
+  heading(match: HeadingFilter, render: ImagoRender<HeadingProps>): ImagoBuilder;
 
-  h2(newClass: string): Imago;
-  h2(render: ImagoHandler<HeadingProps> | false): Imago;
-  h2(match: HeadingFilter, render: ImagoRender<HeadingProps>): Imago;
+  h1(newClass: string): ImagoBuilder;
+  h1(render: ImagoHandler<HeadingProps> | false): ImagoBuilder;
+  h1(match: HeadingFilter, render: ImagoRender<HeadingProps>): ImagoBuilder;
 
-  paragraph(render: ImagoHandler<ParagraphProps> | false): Imago;
-  paragraph(newClass: string | string[]): Imago;
-  paragraph(match: NodeFilter, render: ImagoRender<ParagraphProps>): Imago;
+  h2(newClass: string): ImagoBuilder;
+  h2(render: ImagoHandler<HeadingProps> | false): ImagoBuilder;
+  h2(match: HeadingFilter, render: ImagoRender<HeadingProps>): ImagoBuilder;
 
-  list(render: ImagoHandler<ListProps> | false): Imago;
-  list(newClass: string | string[]): Imago;
-  list(match: NodeFilter, render: ImagoRender<ListProps>): Imago;
+  paragraph(render: ImagoHandler<ParagraphProps> | false): ImagoBuilder;
+  paragraph(newClass: string | string[]): ImagoBuilder;
+  paragraph(match: NodeFilter, render: ImagoRender<ParagraphProps>): ImagoBuilder;
 
-  item(render: ImagoHandler<ItemProps> | false): Imago;
-  item(newClass: string | string[]): Imago;
-  item(match: NodeFilter, render: ImagoRender<ItemProps>): Imago;
+  list(render: ImagoHandler<ListProps> | false): ImagoBuilder;
+  list(newClass: string | string[]): ImagoBuilder;
+  list(match: NodeFilter, render: ImagoRender<ListProps>): ImagoBuilder;
 
-  fence(render: ImagoHandler<FenceProps> | false): Imago;
-  fence(newClass: string | string[]): Imago;
-  fence(match: NodeFilter, render: ImagoRender<FenceProps>): Imago;
+  item(render: ImagoHandler<ItemProps> | false): ImagoBuilder;
+  item(newClass: string | string[]): ImagoBuilder;
+  item(match: NodeFilter, render: ImagoRender<ItemProps>): ImagoBuilder;
 
-  link(handler: ImagoHandler<LinkProps> | false): Imago;
-  link(newClass: string | string[]): Imago;
-  link(match: NodeFilter, render: ImagoRender<LinkProps>): Imago;
+  fence(render: ImagoHandler<FenceProps> | false): ImagoBuilder;
+  fence(newClass: string | string[]): ImagoBuilder;
+  fence(match: NodeFilter, render: ImagoRender<FenceProps>): ImagoBuilder;
 
-  use(type: 'heading', middleware: ImagoMiddleware<HeadingProps>): Imago;
-  use(type: 'paragraph', middleware: ImagoMiddleware<ParagraphProps>): Imago;
-  use(type: 'hr', middleware: ImagoMiddleware<NodeProps>): Imago;
-  use(type: 'image', middleware: ImagoMiddleware<NodeProps>): Imago;
-  use(type: 'fence', middleware: ImagoMiddleware<NodeProps>): Imago;
-  use(type: 'blockquote', middleware: ImagoMiddleware<NodeProps>): Imago;
-  use(type: 'list', middleware: ImagoMiddleware<ListProps>): Imago;
-  use(type: 'item', middleware: ImagoMiddleware<ItemProps>): Imago;
-  use(type: 'strong', middleware: ImagoMiddleware<NodeProps>): Imago;
-  use(type: 'link', middleware: ImagoMiddleware<NodeProps>): Imago;
-  use(type: 'code', middleware: ImagoMiddleware<NodeProps>): Imago;
+  link(handler: ImagoHandler<LinkProps> | false): ImagoBuilder;
+  link(newClass: string | string[]): ImagoBuilder;
+  link(match: NodeFilter, render: ImagoRender<LinkProps>): ImagoBuilder;
+
+  use(type: 'heading', middleware: ImagoMiddleware<HeadingProps>): ImagoBuilder;
+  use(type: 'paragraph', middleware: ImagoMiddleware<ParagraphProps>): ImagoBuilder;
+  use(type: 'hr', middleware: ImagoMiddleware<NodeProps>): ImagoBuilder;
+  use(type: 'image', middleware: ImagoMiddleware<NodeProps>): ImagoBuilder;
+  use(type: 'fence', middleware: ImagoMiddleware<NodeProps>): ImagoBuilder;
+  use(type: 'blockquote', middleware: ImagoMiddleware<NodeProps>): ImagoBuilder;
+  use(type: 'list', middleware: ImagoMiddleware<ListProps>): ImagoBuilder;
+  use(type: 'item', middleware: ImagoMiddleware<ItemProps>): ImagoBuilder;
+  use(type: 'strong', middleware: ImagoMiddleware<NodeProps>): ImagoBuilder;
+  use(type: 'link', middleware: ImagoMiddleware<NodeProps>): ImagoBuilder;
+  use(type: 'code', middleware: ImagoMiddleware<NodeProps>): ImagoBuilder;
 }
 
-
-export class Imago extends Template {
-  private final: Record<string, ImagoHandler>;
-
+export class ImagoBuilder {
   constructor(
     public readonly name: string,
-    private handlers: Record<string, ImagoHandler>,
+    private final: Record<string, ImagoHandler> = { ...defaultElements },
+    private middleware: Record<string, ImagoMiddleware[]> = {},
     private slots: Record<string, Template> = {}
-  ) {
-    super();
-    this.final = { ...handlers };
+  ) {}
+
+  layout<T = any>(render: ImagoHandler<T>) {
+    const handlers = this.createHandlers();
+    handlers['layout'] = render;
+
+    return new Imago(this.name, handlers, this.slots);
   }
 
-  static configure(config: TemplateConfig<any>) {
-    const elementsConfig = { ...defaultElements, ...config.elements };
-
-    const handlers: Record<string, ImagoHandler> = {
-      ...elementsConfig,
-      layout: config.layout,
-    }
-
-    const slots = (config.slots || []).reduce((slots, slot) => {
-      slots[(slot as any).name] = slot;
-      return slots;
-    }, {} as Record<string, Template>);
-
-    return new Imago(config.name, handlers, slots);
+  slot() {
+    return new Imago(this.name, this.createHandlers(), this.slots);
   }
 
-  static Project({ slot, nodes, type, enumerate }: ProjectProps) {
-    let children = nodes;
+  private createHandlers() {
+    const handlerMap: Record<string, ImagoHandler> = { ...this.final };
 
-    if (type) {
-      children = React.Children.toArray(nodes).filter(c => {
-        const name = (c as any).type.displayName;
-        return type.includes(name);
-      });
-    }
+    for (const [name, middleware] of Object.entries(this.middleware)) {
+      const final = this.final[name];
 
-    return slot
-      ? <TemplateContext.Provider value={slot}>{ children }</TemplateContext.Provider>
-      : children;
-  }
-
-  static createSlot(name: string) {
-    const elementsConfig = { ...defaultElements };
-
-    const handlers: Record<string, ImagoHandler> = {
-      ...elementsConfig,
-    }
-
-    return new Imago(name, handlers, {});
-  }
-
-  static ordered = (children: React.ReactElement[]) => {
-    const total = React.Children.count(children);
-
-    const ordered = React.Children.map(children, (c, i) =>
-      <OrderingContext.Provider value={new Ordering(i, total)}>
-        { c }
-      </OrderingContext.Provider> 
-    )
-    return ordered;
-  }
-
-  resolve(node: string) {
-    if (node === 'layout') {
-      return (props: any) => (
-        <TemplateContext.Provider value={undefined}>
-          { this.handlers['layout'](props) }
-        </TemplateContext.Provider>
-      );
-    }
-
-    const Component: React.FunctionComponent = (p: any) => {
-      const context = useContext(TemplateContext)
-
-      if (context && context !== this.name) {
-        if (this.slots[context] && this.slots[context] instanceof Imago) {
-          return this.slots[context].resolve(node)(p);
-        }
-      } else {
-        const handler = this.handlers[node];
-
-        if (handler) {
-          return handler(p)
-        }
+      for (const mw of middleware) {
+        let next = handlerMap[name];
+        handlerMap[name] = props => mw(p => p ? next(p) : next(props), p => p ? final(p) : final(props))(props)
       }
-      return null;
     }
-
-    Component.displayName = node;
-    return Component;
+    return handlerMap;
   }
 
   h1(arg1: NodeFilter | ImagoRender<HeadingProps>, arg2?: ImagoRender<HeadingProps>) {
@@ -260,11 +201,88 @@ export class Imago extends Template {
   }
 
   public use<T = any>(type: string, middleware: ImagoMiddleware<T>): this {
-    const next = this.handlers[type];
-    const final = this.final[type];
-
-    this.handlers[type] = props => middleware(p => p ? next(p) : next(props), p => p ? final(p) : final(props))(props)
-
+    if (!this.middleware[type]) {
+      this.middleware[type] = [];
+    }
+    this.middleware[type].unshift(middleware);
     return this;
   }
+}
+
+export class Imago extends Template {
+  constructor(
+    public readonly name: string,
+    private handlers: Record<string, ImagoHandler>,
+    private slots: Record<string, Template> = {}
+  ) {
+    super();
+  }
+
+  static configure(name: string, options?: TemplateOptions) {
+    const final = { ...defaultElements, ...options?.elements || {} };
+
+    const slots = (options?.slots || []).reduce((slots, slot) => {
+      slots[(slot as any).name] = slot;
+      return slots;
+    }, {} as Record<string, Template>);
+
+    return new ImagoBuilder(name, final, {}, slots);
+  }
+
+  static Project({ slot, nodes, type, enumerate }: ProjectProps) {
+    let children = nodes;
+
+    if (type) {
+      children = React.Children.toArray(nodes).filter(c => {
+        const name = (c as any).type.displayName;
+        return type.includes(name);
+      });
+    }
+
+    return slot
+      ? <TemplateContext.Provider value={slot}>{ children }</TemplateContext.Provider>
+      : children;
+  }
+
+  static ordered = (children: React.ReactElement[]) => {
+    const total = React.Children.count(children);
+
+    const ordered = React.Children.map(children, (c, i) =>
+      <OrderingContext.Provider value={new Ordering(i, total)}>
+        { c }
+      </OrderingContext.Provider> 
+    )
+    return ordered;
+  }
+
+  resolve(node: string) {
+    if (node === 'layout') {
+      return (props: any) => (
+        <TemplateContext.Provider value={undefined}>
+          { this.handlers['layout'](props) }
+        </TemplateContext.Provider>
+      );
+    }
+
+    const Component: React.FunctionComponent = (p: any) => {
+      const context = useContext(TemplateContext)
+
+      if (context && context !== this.name) {
+        if (this.slots[context] && this.slots[context] instanceof Imago) {
+          return this.slots[context].resolve(node)(p);
+        }
+      } else {
+        const handler = this.handlers[node];
+
+        if (handler) {
+          return handler(p)
+        }
+      }
+      return null;
+    }
+
+    Component.displayName = node;
+    return Component;
+  }
+
 }
