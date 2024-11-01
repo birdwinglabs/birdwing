@@ -77,6 +77,7 @@ export interface ImagoBuilder {
   link(newClass: string | string[]): ImagoBuilder;
   link(match: NodeFilter, render: ImagoRender<LinkProps>): ImagoBuilder;
 
+  use(middleware: ImagoBuilder): ImagoBuilder;
   use(type: 'heading', middleware: ImagoMiddleware<HeadingProps>): ImagoBuilder;
   use(type: 'paragraph', middleware: ImagoMiddleware<ParagraphProps>): ImagoBuilder;
   use(type: 'hr', middleware: ImagoMiddleware<NodeProps>): ImagoBuilder;
@@ -94,7 +95,7 @@ export class ImagoBuilder {
   constructor(
     public readonly name: string,
     private final: Record<string, ImagoHandler> = { ...defaultElements },
-    private middleware: Record<string, ImagoMiddleware[]> = {},
+    public  middleware: Record<string, ImagoMiddleware[]> = {},
     private slots: Record<string, Template> = {}
   ) {}
 
@@ -200,11 +201,22 @@ export class ImagoBuilder {
     }
   }
 
-  public use<T = any>(type: string, middleware: ImagoMiddleware<T>): this {
-    if (!this.middleware[type]) {
-      this.middleware[type] = [];
+  public use<T = any>(arg1: string | ImagoBuilder, arg2?: ImagoMiddleware<T>): this {
+    if (typeof arg1 === 'string' && arg2) {
+      if (!this.middleware[arg1]) {
+        this.middleware[arg1] = [];
+      }
+      this.middleware[arg1].unshift(arg2);
     }
-    this.middleware[type].unshift(middleware);
+
+    if (typeof arg1 === 'object') {
+      for (const [name, middleware] of Object.entries(arg1.middleware)) {
+        for (const m of middleware) {
+          this.use(name, m);
+        }
+      }
+    }
+
     return this;
   }
 }
