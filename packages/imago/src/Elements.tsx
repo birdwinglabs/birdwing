@@ -1,6 +1,6 @@
 import React from "react";
 import { Link, NavLink } from 'react-router-dom';
-import { HeadingProps, ItemProps, ParagraphProps } from "./interfaces.js";
+import { HeadingProps, ItemProps, NodeProps, ParagraphProps } from "./interfaces.js";
 import { ImagoHandler } from "./interfaces.js";
 
 export const defaultElements: Record<string, ImagoHandler> = {
@@ -9,6 +9,12 @@ export const defaultElements: Record<string, ImagoHandler> = {
   },
   paragraph: ({ children, ...props }: ParagraphProps) => {
     return React.createElement('p', props, children)
+  },
+  strong: ({ children, ...props }: NodeProps) => {
+    return React.createElement('strong', props, children)
+  },
+  code: ({ children, ...props }: NodeProps) => {
+    return React.createElement('code', props, children)
   },
   item: ({ children, ...props }: ItemProps) => {
     return React.createElement('li', props, children)

@@ -61,6 +61,14 @@ export interface ImagoBuilder {
   paragraph(newClass: string | string[]): ImagoBuilder;
   paragraph(match: NodeFilter, render: ImagoRender<ParagraphProps>): ImagoBuilder;
 
+  strong(render: ImagoHandler<NodeProps> | false): ImagoBuilder;
+  strong(newClass: string | string[]): ImagoBuilder;
+  strong(match: NodeFilter, render: ImagoRender<NodeProps>): ImagoBuilder;
+
+  code(render: ImagoHandler<NodeProps> | false): ImagoBuilder;
+  code(newClass: string | string[]): ImagoBuilder;
+  code(match: NodeFilter, render: ImagoRender<NodeProps>): ImagoBuilder;
+
   list(render: ImagoHandler<ListProps> | false): ImagoBuilder;
   list(newClass: string | string[]): ImagoBuilder;
   list(match: NodeFilter, render: ImagoRender<ListProps>): ImagoBuilder;
@@ -155,6 +163,14 @@ export class ImagoBuilder {
 
   paragraph(arg1: ImagoRender<ParagraphProps> | NodeFilter, arg2?: ImagoRender<ParagraphProps>) {
     return this.define('paragraph', arg1, arg2);
+  }
+
+  strong(arg1: ImagoRender<NodeProps> | NodeFilter, arg2?: ImagoRender<NodeProps>) {
+    return this.define('strong', arg1, arg2);
+  }
+
+  code(arg1: ImagoRender<NodeProps> | NodeFilter, arg2?: ImagoRender<NodeProps>) {
+    return this.define('code', arg1, arg2);
   }
 
   list(arg1: ImagoRender<ListProps> | NodeFilter, arg2?: ImagoRender<ListProps>) {
