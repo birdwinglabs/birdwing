@@ -69,6 +69,10 @@ export interface ImagoBuilder {
   code(newClass: string | string[]): ImagoBuilder;
   code(match: NodeFilter, render: ImagoRender<NodeProps>): ImagoBuilder;
 
+  image(render: ImagoHandler<NodeProps> | false): ImagoBuilder;
+  image(newClass: string | string[]): ImagoBuilder;
+  image(match: NodeFilter, render: ImagoRender<NodeProps>): ImagoBuilder;
+
   svg(render: ImagoHandler<NodeProps> | false): ImagoBuilder;
   svg(newClass: string | string[]): ImagoBuilder;
   svg(match: NodeFilter, render: ImagoRender<NodeProps>): ImagoBuilder;
@@ -175,6 +179,10 @@ export class ImagoBuilder {
 
   code(arg1: ImagoRender<NodeProps> | NodeFilter, arg2?: ImagoRender<NodeProps>) {
     return this.define('code', arg1, arg2);
+  }
+
+  image(arg1: ImagoRender<NodeProps> | NodeFilter, arg2?: ImagoRender<NodeProps>) {
+    return this.define('image', arg1, arg2);
   }
 
   svg(arg1: ImagoRender<NodeProps> | NodeFilter, arg2?: ImagoRender<NodeProps>) {
