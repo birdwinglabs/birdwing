@@ -1,4 +1,6 @@
 import http from 'http';
+import fs from 'fs';
+import path from 'path';
 import { Store } from '@birdwing/store';
 import { StorageEngine } from '@tashmet/engine';
 import TashmetServer from '@tashmet/server';
@@ -21,7 +23,17 @@ export class DevServer {
         res.write(content || '');
         res.end();
       } else {
-        const content = await this.store.getOutput(req.url || '');
+        let content = await this.store.getOutput(req.url || '');
+        //if (!content) {
+          //try {
+            //content = fs.readFileSync(path.join('out', req.url || ''), 'utf-8');
+          //} catch (err) {
+
+          //}
+        //}
+        if (req.url?.endsWith('.svg')) {
+          res.setHeader('Content-Type', 'image/svg+xml')
+        }
         if (req.url?.endsWith('.js')) {
           res.setHeader('Content-Type', 'text/javascript')
         }

@@ -58,6 +58,10 @@ export class MarkdocTransformer implements Transformer {
     this.partials[path] = ast;
   }
 
+  setVariable(name: string, value: any) {
+    this.variables[name] = value;
+  }
+
   transform(ast: Node, config: TransformConfig): Tag {
     Object.assign(config.variables || {}, this.variables, {
       urls: this.urlMap,

@@ -101,6 +101,8 @@ export interface Transformer {
 
   setPartial(path: string, ast: Node): void;
 
+  setVariable(name: string, value: any): void;
+
   transform(ast: Node, config: TransformConfig): Tag;
 }
 

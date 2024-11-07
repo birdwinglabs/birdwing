@@ -16,6 +16,12 @@ export const defaultElements: Record<string, ImagoHandler> = {
   code: ({ children, ...props }: NodeProps) => {
     return React.createElement('code', props, children)
   },
+  image: ({ children, ...props }: NodeProps) => {
+    return React.createElement('img', props, children)
+  },
+  svg: ({ children }: NodeProps) => {
+    return <>{ children }</>;
+  },
   item: ({ children, ...props }: ItemProps) => {
     return React.createElement('li', props, children)
   },

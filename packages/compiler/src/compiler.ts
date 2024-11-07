@@ -73,6 +73,10 @@ export class Compiler {
     return new Compiler(plugins, transformer, cache);
   }
 
+  setVariable(name: string, value: any) {
+    this.transformer.setVariable(name, value);
+  }
+
   watch(): CompileContext {
     const watcher = new EventEmitter();
     const ctx = new CompileContext(watcher as any, this.cache, this);

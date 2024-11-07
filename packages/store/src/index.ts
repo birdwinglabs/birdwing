@@ -21,6 +21,7 @@ export class Store {
     private source: Collection<SourceDocument>,
     private routes: Collection<Route>,
     private target: Collection<TargetFile>,
+    private images: Collection<TargetFile>,
     public dispose: () => void,
   ) {
     routes.watch().on('change', change => {
@@ -43,8 +44,9 @@ export class Store {
     const source = db.collection<SourceDocument>('source');
     const routes = db.collection<Route>('routes');
     const target = db.collection<TargetFile>('target');
+    const images = db.collection<TargetFile>('images');
 
-    return new Store(source, routes, target, () => tashmet.close())
+    return new Store(source, routes, target, images, () => tashmet.close())
   }
 
   static fromDatabase(db: Database) {
@@ -52,6 +54,7 @@ export class Store {
       db.collection('source'),
       db.collection('routes'),
       db.collection('target'),
+      db.collection('images'),
       () => {}
     );
   }

@@ -38,6 +38,19 @@ export async function createDatabase(store: StorageEngine, root: string, dev: bo
       }
     }
   });
+  await db.createCollection('images', {
+    storageEngine: {
+      glob: {
+        pattern: path.join(root, 'pages/**/*.{svg,jpg,png}'),
+        format: 'text',
+        construct: {
+          path: {
+            $relativePath: [root, '$_id']
+          }
+        },
+      }
+    }
+  });
   await db.createCollection('pages');
   await db.createCollection('partials');
   await db.createCollection('routes');

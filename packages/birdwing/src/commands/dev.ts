@@ -1,6 +1,7 @@
-import path from 'path';
+import path, { extname } from 'path';
 import * as esbuild from 'esbuild'
 import * as chokidar from 'chokidar';
+import * as glob from 'glob';
 
 import { TargetFile } from '@birdwing/core';
 import { Compiler } from '@birdwing/compiler';
@@ -53,6 +54,12 @@ export class DevCommand extends Command {
       fail: 'Building SPA client failed'
     });
 
+    const images = await db.collection<TargetFile>('images').find().toArray();
+    const out = images.map(file => {
+      return { _id: file._id.replace(/^pages/, ''), content: file.content }
+    });
+    compiler.setVariable('svg', out.filter(file => extname(file._id) === '.svg'));
+
     const routes = await this.executeTask(new CompileRoutesTask(compiler));
     for (const route of routes) {
       await store.updateRoute(route);
@@ -61,7 +68,8 @@ export class DevCommand extends Command {
     const output: TargetFile[] = [
       await this.executeTask(buildTask),
       await this.executeTask(new ProcessHtmlTask(theme)),
-      await this.executeTask(new TailwindCssTask(theme, '/'))
+      await this.executeTask(new TailwindCssTask(theme, '/')),
+      ...out,
     ].flat();
 
     await this.executeTask(new FileWriterTask(store, output));
@@ -99,6 +107,23 @@ export class DevCommand extends Command {
         this.logger.log('File changed: %s', Logger.color('blue', file));
         this.logger.start('Compiling routes...');
         await store.reloadContent(file);
+      });
+
+    chokidar
+      .watch('**/*.css')
+      .on('change', async file => {
+        this.logger.log('File changed: %s', Logger.color('blue', file));
+
+        try {
+          const output: TargetFile[] = [
+            await this.executeTask(buildTask),
+            await this.executeTask(new TailwindCssTask(theme, '/'))
+          ].flat();
+
+          await this.executeTask(new FileWriterTask(store, output));
+        } catch (err) {
+          this.logger.error(err.message);
+        }
       });
 
     chokidar
