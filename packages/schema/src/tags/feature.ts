@@ -9,7 +9,11 @@ export const feature: Schema = {
     const children = new NodeList(node.children);
 
     const { body, side } = children.commentSections(['body', 'side'], 'body');
+    const attributes = {
+      side: side.transformFlat(config),
+      ...node.transformAttributes(config),
+    }
 
-    return new Tag(this.render, { side: side.transformFlat(config) }, body.transformFlat(config));
+    return new Tag(this.render, attributes, body.transformFlat(config));
   }
 }

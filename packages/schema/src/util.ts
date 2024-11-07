@@ -80,6 +80,10 @@ export class NodeList {
     return this.nodes;
   }
 
+  filter(predicate: (value: Node) => boolean) {
+    return new NodeList(this.nodes.filter(predicate));
+  }
+
   *walk() {
     for (const node of this.nodes) {
       for (const child of node.walk()) {
@@ -125,7 +129,11 @@ export class NodeList {
     return this.nodes.findIndex(node => node.type === 'comment' && node.attributes.content === comment)
   }
 
-  commentSections(comments: string[], unmatched: string) {
+  commentSections(comments: string[] = [], unmatched?: string) {
+    if (comments.length === 0) {
+      comments = this.nodes.filter(n => n.type === 'comment').map(n => n.attributes.content);
+    }
+
     const indicies = comments.reduce((res, comment) => {
       res[comment] = this.indexOfComment(comment);
       return res;

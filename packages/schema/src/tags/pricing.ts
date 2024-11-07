@@ -13,7 +13,7 @@ export const pricing: Schema = {
 
     tiers.forEach((tier: Tag, index) => tier.attributes.index = index);
 
-    return new TagCtr(this.render, { tiers }, children );
+    return new TagCtr(this.render, { tiers, ...node.transformAttributes(config) }, children );
   },
 }
 

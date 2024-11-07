@@ -23,6 +23,7 @@ export const cta: Schema = {
       actions: actions.transformFlat(config),
       side: side.transformFlat(config),
       footer: footer.transformFlat(config),
+      ...node.transformAttributes(config),
     }
 
     return new TagCtr(this.render, attributes, []);

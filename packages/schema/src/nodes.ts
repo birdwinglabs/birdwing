@@ -1,7 +1,8 @@
 import pb from 'path-browserify';
 import Markdoc, { Schema } from '@markdoc/markdoc';
+import { TargetFile } from '@birdwing/core';
 
-const { dirname, join } = pb;
+const { dirname, join, extname, isAbsolute } = pb;
 const { Tag, nodes } = Markdoc;
 
 export const heading: Schema = {
@@ -112,3 +113,32 @@ export const link: Schema = {
     return new Tag(this.render, attributes, node.transformChildren(config));
   }
 }
+
+//export { hardbreak } from '@markdoc/markdoc';
+export const hardbreak = Markdoc.nodes.hardbreak;
+
+export const image: Schema = {
+  render: 'image',
+  attributes: {
+    src: { type: String, required: true },
+    alt: { type: String },
+    title: { type: String },
+    // width/height attributes will need to be to be implemented as an extension to markdown-it
+  },
+  transform(node, config) {
+    const svgFiles: TargetFile[] = config.variables?.svg || [];
+
+    let src = node.attributes.src;
+    if (!isAbsolute(src)) {
+      src = join('/', dirname(config.variables?.path), src);
+    }
+
+    const svg = svgFiles.find(file => file._id === src);
+
+    if (svg) {
+      return new Tag('svg', { content: svg.content }, []);
+    }
+
+    return new Tag(this.render, node.transformAttributes(config), node.transformChildren(config));
+  },
+};
