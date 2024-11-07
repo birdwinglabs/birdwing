@@ -10,8 +10,8 @@ export const defaultElements: Record<string, ImagoHandler> = {
   paragraph: ({ children, ...props }: ParagraphProps) => {
     return React.createElement('p', props, children)
   },
-  strong: ({ children, ...props }: NodeProps) => {
-    return React.createElement('strong', props, children)
+  strong: ({ children, className }: NodeProps) => {
+    return React.createElement('strong', { className }, children)
   },
   code: ({ children, ...props }: NodeProps) => {
     return React.createElement('code', props, children)
