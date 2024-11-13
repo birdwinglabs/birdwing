@@ -1,7 +1,26 @@
-import Markdoc, { Schema, Node } from '@markdoc/markdoc';
+import Markdoc, { Schema, Node, Config } from '@markdoc/markdoc';
 import { generateIdIfMissing, NodeList } from '../util';
 
 const { Tag } = Markdoc;
+
+const isIcon = (tag: any) => tag instanceof Tag && tag.name === 'svg' || tag.name === 'image';
+
+export class TabFactory {
+  constructor(private tabName: string, private panelName: string, private config: Config) {}
+
+  createTabs(section: NodeList, headingLevel?: number) {
+    const tabSections = section.headingSections(headingLevel);
+    const tabs = tabSections.map(({ heading }) => {
+      const tags = heading.transformChildren(this.config);
+
+      return new Tag(this.tabName, { icon: tags.find(isIcon) }, tags.filter(t => !isIcon(t)));
+    });
+    const panels = tabSections.map(({ body }) => {
+      return new Tag(this.panelName, {}, body.transformFlat(this.config));
+    });
+    return { tabs, panels };
+  }
+}
 
 /**
  * Tabs component
@@ -24,20 +43,11 @@ export const tabs: Schema = {
   render: 'Tabs',
   transform(node, config) {
     generateIdIfMissing(node, config);
+    const fact = new TabFactory('Tab', 'TabPanel', config);
 
-    const isIcon = (tag: any) => tag instanceof Tag && tag.name === 'svg' || tag.name === 'image';
-
-    const sections = new NodeList(node.children).headingSections();
-    const tabs = sections.map(({ heading }) => {
-      const tags = heading.transformChildren(config);
-
-      return new Tag('Tab', { icon: tags.find(isIcon) }, tags.filter(t => !isIcon(t)));
+    return new Tag(this.render, {
+      ...node.transformAttributes(config),
+      ...fact.createTabs(new NodeList(node.children)),
     });
-    const panels = sections.map(({ body }) => {
-      return new Tag('TabPanel', {}, body.transformFlat(config));
-    });
-    const attributes = { ...node.transformAttributes(config), tabs, panels };
-
-    return new Tag(this.render, attributes);
   }
 }
