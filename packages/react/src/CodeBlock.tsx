@@ -2,10 +2,10 @@ import { createContext } from 'react';
 
 export const HighlightContext = createContext<any>(undefined);
 
-export function CodeBlock({ content, language }: any) {
+export function CodeBlock({ content, language, className }: any) {
   return (
     <HighlightContext.Consumer>
-      { highlight => <code dangerouslySetInnerHTML={{ __html: highlight(content, language) }}></code> }
+      { highlight => <code className={className} dangerouslySetInnerHTML={{ __html: highlight(content, language) }}></code> }
     </HighlightContext.Consumer>
   );
 }
