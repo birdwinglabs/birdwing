@@ -1,4 +1,5 @@
 import path from 'path';
+import fs from 'fs';
 
 import { Compiler } from '@birdwing/compiler';
 import { Store } from '@birdwing/store';
@@ -17,6 +18,7 @@ import { ExtractFenceLanguagesTask } from '../tasks/extract-fence-languages.js';
 import { Logger } from '../logger.js';
 import { configureSsr } from '../buildconfigs/ssr.js';
 import { RenderStaticRoutesTask } from '../tasks/render-static-routes.js';
+import { ImagesTask } from '../tasks/images.js';
 
 export class BuildCommand extends Command {
   async execute() {
@@ -29,6 +31,17 @@ export class BuildCommand extends Command {
     const outDir = path.join(this.root, 'out');
 
     const warnings: TaskWarning[] = [];
+
+    const imagesTask = new ImagesTask(db, compiler, {
+      start: 'Aggregating images',
+      success: files => `Aggregated ${files.length} images`,
+      fail: 'Aggregating images failed',
+    });
+    const images = await this.executeTask(imagesTask);
+
+    for (const file of images) {
+      fs.copyFileSync(path.join('pages', file._id), path.join('out', file._id));
+    }
 
     const routes = await this.executeTask(
       new CompileRoutesTask(compiler)
@@ -55,7 +68,7 @@ export class BuildCommand extends Command {
         })
       ),
       await this.executeTask(new RenderSSRTask(ssrOutput[0].content, routes, this.root, warnings)),
-      await this.executeTask(new TailwindCssTask(theme, outDir))
+      await this.executeTask(new TailwindCssTask(theme, outDir)),
     ].flat()
 
     await this.executeTask(new FileWriterTask(store, output));

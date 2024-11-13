@@ -7,6 +7,10 @@ function isUppercase(word: string){
   return /^\p{Lu}/u.test(word);
 }
 
+function findNestedNodes(value: any) {
+
+}
+
 function applyNamespace(tag: any, component?: string) {
   if (!isUppercase(tag.name) && component) {
     tag.name = `${component}.${tag.name}`;
@@ -17,10 +21,24 @@ function applyNamespace(tag: any, component?: string) {
     if (MarkdocTag.isTag(attr)) {
       applyNamespace(attr, `${component}.${slot}`);
     }
-    if (Array.isArray(attr)) {
+    else if (Array.isArray(attr)) {
       for (const child of attr) {
         if (MarkdocTag.isTag(child)) {
           applyNamespace(child, `${component}.${slot}`);
+        }
+      }
+    }
+    else if (typeof attr === 'object') {
+      for (const child of Object.values(attr as any)) {
+        if (MarkdocTag.isTag(child)) {
+          applyNamespace(child, `${component}.${slot}`);
+        }
+        else if (Array.isArray(child)) {
+          for (const item of child) {
+            if (MarkdocTag.isTag(item)) {
+              applyNamespace(item, `${component}.${slot}`);
+            }
+          }
         }
       }
     }

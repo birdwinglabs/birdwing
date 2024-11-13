@@ -19,6 +19,7 @@ import { TailwindCssTask } from '../tasks/tailwind.js';
 import { FileWriterTask } from '../tasks/file-writer.js';
 import { RebuildTask } from '../tasks/build.js';
 import { CompileRoutesTask } from '../tasks/compile-routes.js';
+import { ImagesTask } from '../tasks/images.js';
 
 class ProcessHtmlTask extends Task<TargetFile> {
   constructor(private theme: Theme) {
@@ -54,11 +55,14 @@ export class DevCommand extends Command {
       fail: 'Building SPA client failed'
     });
 
-    const images = await db.collection<TargetFile>('images').find().toArray();
-    const out = images.map(file => {
-      return { _id: file._id.replace(/^pages/, ''), content: file.content }
+    const imagesTask = new ImagesTask(db, compiler, {
+      start: 'Aggregating images',
+      success: files => `Aggregated ${files.length} images`,
+      fail: 'Aggregating images failed',
     });
-    compiler.setVariable('svg', out.filter(file => extname(file._id) === '.svg'));
+    const images = await this.executeTask(imagesTask);
+
+    console.log(images);
 
     const routes = await this.executeTask(new CompileRoutesTask(compiler));
     for (const route of routes) {
@@ -66,10 +70,10 @@ export class DevCommand extends Command {
     }
 
     const output: TargetFile[] = [
+      images,
       await this.executeTask(buildTask),
       await this.executeTask(new ProcessHtmlTask(theme)),
       await this.executeTask(new TailwindCssTask(theme, '/')),
-      ...out,
     ].flat();
 
     await this.executeTask(new FileWriterTask(store, output));
