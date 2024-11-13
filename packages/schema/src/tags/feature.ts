@@ -8,9 +8,10 @@ export const feature: Schema = {
   transform(node, config) {
     const children = new NodeList(node.children);
 
-    const { body, side } = children.commentSections(['body', 'side'], 'body');
+    const { body, side, bottom } = children.commentSections(['body', 'side', 'bottom'], 'body');
     const attributes = {
       side: side.transformFlat(config),
+      bottom: bottom.transformFlat(config),
       ...node.transformAttributes(config),
     }
 
