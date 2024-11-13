@@ -7,6 +7,7 @@ import { summary } from './documents/summary.js';
 import { footer } from './documents/footer.js';
 
 import { cta } from './tags/cta.js';
+import { editor } from './tags/editor.js';
 import { feature } from './tags/feature.js';
 import { hint } from './tags/hint.js';
 import { steps } from './tags/steps.js';
@@ -23,6 +24,7 @@ export const documents = {
 export const tags = {
   cta,
   'call-to-action': cta,
+  editor,
   feature,
   hint,
   tabs,
