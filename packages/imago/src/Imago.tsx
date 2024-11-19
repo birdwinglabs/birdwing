@@ -60,6 +60,10 @@ export interface ChangeChildrenOptions<T> extends MatchOptions<T> {
   finish?: boolean;
 }
 
+export interface ChangeContextOptions<T> extends MatchOptions<T> {
+  slot: string;
+}
+
 export interface ChangeElementOptions<T> extends MatchOptions<T> {
   replace: string | FunctionComponent;
 }
@@ -202,6 +206,13 @@ export class ImagoBuilder {
 
   changeChildren<T extends NodeProps>(type: NodeType, options: ChangeChildrenOptions<T>) {
     return this.use(type, Imago.changeChildren(options));
+  }
+
+  changeContext<T extends NodeProps>(type: NodeType, options: ChangeContextOptions<T>) {
+    return this.changeChildren(type, {
+      ...options,
+      replace: ({ children }) => <Imago.Project slot={options.slot} nodes={children as any}></Imago.Project>
+    });
   }
 
   h1(arg1: NodeFilter | ImagoRender<HeadingProps>, arg2?: ImagoRender<HeadingProps>) {
@@ -401,7 +412,7 @@ export class Imago extends Template {
 
     return slot
       ? <TemplateContext.Provider value={slot}>{ children }</TemplateContext.Provider>
-      : children;
+      : <>{ children }</>;
   }
 
   static ordered = (children: React.ReactElement[]) => {
