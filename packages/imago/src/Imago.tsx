@@ -53,6 +53,11 @@ export interface ChangeClassOptions<T> extends MatchOptions<T> {
   replace?: Record<string, string>;
 }
 
+export interface ChangeChildrenOptions<T> extends MatchOptions<T> {
+  add?: ReactNode;
+  replace?: ImagoHandler<T>;
+}
+
 export interface ChangeElementOptions<T> extends MatchOptions<T> {
   replace: string | FunctionComponent;
 }
@@ -75,6 +80,19 @@ export interface ImagoBuilder {
   changeClass(type: 'strong', options: ChangeClassOptions<NodeProps>): ImagoBuilder;
   changeClass(type: 'link', options: ChangeClassOptions<LinkProps>): ImagoBuilder;
   changeClass(type: 'code', options: ChangeClassOptions<NodeProps>): ImagoBuilder;
+
+  changeChildren(type: 'section', options: ChangeChildrenOptions<SectionProps>): ImagoBuilder;
+  changeChildren(type: 'heading', options: ChangeChildrenOptions<HeadingProps>): ImagoBuilder;
+  changeChildren(type: 'paragraph', options: ChangeChildrenOptions<ParagraphProps>): ImagoBuilder;
+  changeChildren(type: 'hr', options: ChangeChildrenOptions<NodeProps>): ImagoBuilder;
+  changeChildren(type: 'image', options: ChangeChildrenOptions<NodeProps>): ImagoBuilder;
+  changeChildren(type: 'fence', options: ChangeChildrenOptions<FenceProps>): ImagoBuilder;
+  changeChildren(type: 'blockquote', options: ChangeChildrenOptions<NodeProps>): ImagoBuilder;
+  changeChildren(type: 'list', options: ChangeChildrenOptions<ListProps>): ImagoBuilder;
+  changeChildren(type: 'item', options: ChangeChildrenOptions<ItemProps>): ImagoBuilder;
+  changeChildren(type: 'strong', options: ChangeChildrenOptions<NodeProps>): ImagoBuilder;
+  changeChildren(type: 'link', options: ChangeChildrenOptions<LinkProps>): ImagoBuilder;
+  changeChildren(type: 'code', options: ChangeChildrenOptions<NodeProps>): ImagoBuilder;
 
   section(render: ImagoHandler<SectionProps> | false): ImagoBuilder;
   section(newClass: string | string[]): ImagoBuilder;
@@ -178,6 +196,9 @@ export class ImagoBuilder {
 
   changeClass<T extends NodeProps>(type: NodeType, options: ChangeClassOptions<T>) {
     return this.use(type, Imago.changeClass(options));
+  }
+  changeChildren<T extends NodeProps>(type: NodeType, options: ChangeChildrenOptions<T>) {
+    return this.use(type, Imago.changeChildren(options));
   }
 
   h1(arg1: NodeFilter | ImagoRender<HeadingProps>, arg2?: ImagoRender<HeadingProps>) {
@@ -338,6 +359,20 @@ export class Imago extends Template {
       } else {
         return next(props);
       }
+    }
+  }
+
+  static changeChildren<T extends NodeProps>({ add, replace, ...matchOptions }: ChangeChildrenOptions<T>): ImagoMiddleware<T> {
+    return next => props => {
+      if (isMatching(props, matchOptions)) {
+        if (add) {
+          return next({ ...props, children: <>{ props.children } { add }</>})
+        }
+        if (replace) {
+          return next({ ...props, children: replace(props) })
+        }
+      }
+      return next(props);
     }
   }
 
