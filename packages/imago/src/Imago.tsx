@@ -51,11 +51,13 @@ export interface MatchOptions<T> {
 export interface ChangeClassOptions<T> extends MatchOptions<T> {
   add?: string;
   replace?: Record<string, string>;
+  finish?: boolean;
 }
 
 export interface ChangeChildrenOptions<T> extends MatchOptions<T> {
   add?: ReactNode;
   replace?: ImagoHandler<T>;
+  finish?: boolean;
 }
 
 export interface ChangeElementOptions<T> extends MatchOptions<T> {
@@ -197,6 +199,7 @@ export class ImagoBuilder {
   changeClass<T extends NodeProps>(type: NodeType, options: ChangeClassOptions<T>) {
     return this.use(type, Imago.changeClass(options));
   }
+
   changeChildren<T extends NodeProps>(type: NodeType, options: ChangeChildrenOptions<T>) {
     return this.use(type, Imago.changeChildren(options));
   }
@@ -345,8 +348,10 @@ export class Imago extends Template {
     return new ImagoBuilder(name, final, {}, slots);
   }
 
-  static changeClass<T extends NodeProps>({ add, replace, ...matchOptions }: ChangeClassOptions<T>): ImagoMiddleware<T> {
-    return next => props => {
+  static changeClass<T extends NodeProps>({ add, replace, finish, ...matchOptions }: ChangeClassOptions<T>): ImagoMiddleware<T> {
+    return (next, final) => props => {
+      const n = finish ? final : next;
+
       if (isMatching(props, matchOptions)) {
         let newClass: string = props.className || '';
         for (const [k, v] of Object.entries(replace || {})) {
@@ -355,21 +360,23 @@ export class Imago extends Template {
         if (add) {
           newClass = [newClass, add].join(' ');
         }
-        return next({ ...props, className: newClass });
+        return n({ ...props, className: newClass });
       } else {
         return next(props);
       }
     }
   }
 
-  static changeChildren<T extends NodeProps>({ add, replace, ...matchOptions }: ChangeChildrenOptions<T>): ImagoMiddleware<T> {
-    return next => props => {
+  static changeChildren<T extends NodeProps>({ add, replace, finish, ...matchOptions }: ChangeChildrenOptions<T>): ImagoMiddleware<T> {
+    return (next, final) => props => {
+      const n = finish ? final : next;
+
       if (isMatching(props, matchOptions)) {
         if (add) {
-          return next({ ...props, children: <>{ props.children } { add }</>})
+          return n({ ...props, children: <>{ props.children } { add }</>})
         }
         if (replace) {
-          return next({ ...props, children: replace(props) })
+          return n({ ...props, children: replace(props) })
         }
       }
       return next(props);
