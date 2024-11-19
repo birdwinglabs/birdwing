@@ -42,9 +42,38 @@ export interface HeadingFilter extends NodeFilter {
 
 export type ImagoRender<T> = ImagoHandler<T> | string | string[] | false;
 
+export interface MatchOptions<T> {
+  match?: Partial<T>;
+  matchClass?: string;
+}
+
+export interface ChangeClassOptions<T> extends MatchOptions<T> {
+  add?: string;
+  replace?: Record<string, string>;
+}
+
+export interface ChangeElementOptions<T> extends MatchOptions<T> {
+  replace: string | FunctionComponent;
+}
+
+export type NodeType = 'section' | 'heading' | 'paragraph' | 'hr' | 'image' | 'fence' | 'blockquote' | 'list' | 'item' | 'strong' | 'link' | 'code';
+
 export interface ImagoBuilder {
   slot(): Imago;
   layout<T = any>(render: ImagoHandler<T>): Imago;
+
+  changeClass(type: 'section', options: ChangeClassOptions<SectionProps>): ImagoBuilder;
+  changeClass(type: 'heading', options: ChangeClassOptions<HeadingProps>): ImagoBuilder;
+  changeClass(type: 'paragraph', options: ChangeClassOptions<ParagraphProps>): ImagoBuilder;
+  changeClass(type: 'hr', options: ChangeClassOptions<NodeProps>): ImagoBuilder;
+  changeClass(type: 'image', options: ChangeClassOptions<NodeProps>): ImagoBuilder;
+  changeClass(type: 'fence', options: ChangeClassOptions<FenceProps>): ImagoBuilder;
+  changeClass(type: 'blockquote', options: ChangeClassOptions<NodeProps>): ImagoBuilder;
+  changeClass(type: 'list', options: ChangeClassOptions<ListProps>): ImagoBuilder;
+  changeClass(type: 'item', options: ChangeClassOptions<ItemProps>): ImagoBuilder;
+  changeClass(type: 'strong', options: ChangeClassOptions<NodeProps>): ImagoBuilder;
+  changeClass(type: 'link', options: ChangeClassOptions<LinkProps>): ImagoBuilder;
+  changeClass(type: 'code', options: ChangeClassOptions<NodeProps>): ImagoBuilder;
 
   section(render: ImagoHandler<SectionProps> | false): ImagoBuilder;
   section(newClass: string | string[]): ImagoBuilder;
@@ -144,6 +173,10 @@ export class ImagoBuilder {
       }
     }
     return handlerMap;
+  }
+
+  changeClass<T extends NodeProps>(type: NodeType, options: ChangeClassOptions<T>) {
+    return this.use(type, Imago.changeClass(options));
   }
 
   h1(arg1: NodeFilter | ImagoRender<HeadingProps>, arg2?: ImagoRender<HeadingProps>) {
@@ -263,19 +296,6 @@ export class ImagoBuilder {
   }
 }
 
-export interface MatchOptions<T> {
-  match?: Partial<T>;
-  matchClass?: string;
-}
-
-export interface ChangeClassOptions<T> extends MatchOptions<T> {
-  add?: string;
-  replace?: Record<string, string>;
-}
-
-export interface ChangeElementOptions<T> extends MatchOptions<T> {
-  replace: string | FunctionComponent;
-}
 
 function isMatching<T extends NodeProps>(props: T, { match, matchClass }: MatchOptions<T>) {
   return Object.entries(match || {}).every(([k, v]) => (props as any)[k] === v)
