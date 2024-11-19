@@ -1,4 +1,4 @@
-import React, { createContext, useContext } from "react";
+import React, { createContext, FunctionComponent, ReactNode, useContext } from "react";
 import { Template } from '@birdwing/react';
 import {
   FenceProps,
@@ -263,10 +263,23 @@ export class ImagoBuilder {
   }
 }
 
-export interface ChangeClassOptions<T> {
+export interface MatchOptions<T> {
   match?: Partial<T>;
+  matchClass?: string;
+}
+
+export interface ChangeClassOptions<T> extends MatchOptions<T> {
   add?: string;
   replace?: Record<string, string>;
+}
+
+export interface ChangeElementOptions<T> extends MatchOptions<T> {
+  replace: string | FunctionComponent;
+}
+
+function isMatching<T extends NodeProps>(props: T, { match, matchClass }: MatchOptions<T>) {
+  return Object.entries(match || {}).every(([k, v]) => (props as any)[k] === v)
+    && (matchClass ? ((props.className || '') as string).split(' ').indexOf(matchClass) >= 0 : true)
 }
 
 export class Imago extends Template {
@@ -289,13 +302,9 @@ export class Imago extends Template {
     return new ImagoBuilder(name, final, {}, slots);
   }
 
-  static changeClass<T extends NodeProps>({ match, add, replace }: ChangeClassOptions<T>): ImagoMiddleware<T> {
-    const isMatching = (props: T) => {
-      return Object.entries(match || {}).every(([k, v]) => (props as any)[k] === v)
-    }
-
+  static changeClass<T extends NodeProps>({ add, replace, ...matchOptions }: ChangeClassOptions<T>): ImagoMiddleware<T> {
     return next => props => {
-      if (isMatching(props)) {
+      if (isMatching(props, matchOptions)) {
         let newClass: string = props.className || '';
         for (const [k, v] of Object.entries(replace || {})) {
           newClass = newClass.replace(k, v);
@@ -308,6 +317,12 @@ export class Imago extends Template {
         return next(props);
       }
     }
+  }
+
+  static changeElement<T extends NodeProps>({ replace, ...matchOptions }: ChangeElementOptions<T>): ImagoMiddleware<T> {
+    return next => ({ children, ...props }) => isMatching({ children, ...props } as any, matchOptions)
+      ? React.createElement(replace, props as any, children)
+      : next({ children, ...props } as any);
   }
 
   static Project({ slot, nodes, type, enumerate }: ProjectProps) {
