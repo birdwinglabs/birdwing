@@ -263,6 +263,12 @@ export class ImagoBuilder {
   }
 }
 
+export interface ChangeClassOptions<T> {
+  match?: Partial<T>;
+  add?: string;
+  replace?: Record<string, string>;
+}
+
 export class Imago extends Template {
   constructor(
     public readonly name: string,
@@ -281,6 +287,27 @@ export class Imago extends Template {
     }, {} as Record<string, Template>);
 
     return new ImagoBuilder(name, final, {}, slots);
+  }
+
+  static changeClass<T extends NodeProps>({ match, add, replace }: ChangeClassOptions<T>): ImagoMiddleware<T> {
+    const isMatching = (props: T) => {
+      return Object.entries(match || {}).every(([k, v]) => (props as any)[k] === v)
+    }
+
+    return next => props => {
+      if (isMatching(props)) {
+        let newClass: string = props.className || '';
+        for (const [k, v] of Object.entries(replace || {})) {
+          newClass = newClass.replace(k, v);
+        }
+        if (add) {
+          newClass = [newClass, add].join(' ');
+        }
+        return next({ ...props, className: newClass });
+      } else {
+        return next(props);
+      }
+    }
   }
 
   static Project({ slot, nodes, type, enumerate }: ProjectProps) {
