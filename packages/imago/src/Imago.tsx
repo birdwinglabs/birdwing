@@ -45,6 +45,7 @@ export type ImagoRender<T> = ImagoHandler<T> | string | string[] | false;
 export interface MatchOptions<T> {
   match?: Partial<T>;
   matchClass?: string;
+  matchClassNot?: string;
 }
 
 export interface ChangeClassOptions<T> extends MatchOptions<T> {
@@ -297,9 +298,10 @@ export class ImagoBuilder {
 }
 
 
-function isMatching<T extends NodeProps>(props: T, { match, matchClass }: MatchOptions<T>) {
+function isMatching<T extends NodeProps>(props: T, { match, matchClass, matchClassNot }: MatchOptions<T>) {
   return Object.entries(match || {}).every(([k, v]) => (props as any)[k] === v)
     && (matchClass ? ((props.className || '') as string).split(' ').indexOf(matchClass) >= 0 : true)
+    && (matchClassNot ? ((props.className || '') as string).split(' ').indexOf(matchClassNot) < 0 : true)
 }
 
 export class Imago extends Template {
