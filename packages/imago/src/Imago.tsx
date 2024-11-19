@@ -10,6 +10,7 @@ import {
   NodeProps,
   ParagraphProps,
   ProjectProps,
+  SectionProps,
   TemplateOptions
 } from "./interfaces.js";
 import { defaultElements } from "./Elements.js";
@@ -44,6 +45,10 @@ export type ImagoRender<T> = ImagoHandler<T> | string | string[] | false;
 export interface ImagoBuilder {
   slot(): Imago;
   layout<T = any>(render: ImagoHandler<T>): Imago;
+
+  section(render: ImagoHandler<SectionProps> | false): ImagoBuilder;
+  section(newClass: string | string[]): ImagoBuilder;
+  section(match: NodeFilter, render: ImagoRender<SectionProps>): ImagoBuilder;
 
   heading(render: ImagoHandler<HeadingProps> | false): ImagoBuilder;
   heading(newClass: string | string[]): ImagoBuilder;
@@ -94,6 +99,7 @@ export interface ImagoBuilder {
   link(match: NodeFilter, render: ImagoRender<LinkProps>): ImagoBuilder;
 
   use(middleware: ImagoBuilder): ImagoBuilder;
+  use(type: 'section', middleware: ImagoMiddleware<SectionProps>): ImagoBuilder;
   use(type: 'heading', middleware: ImagoMiddleware<HeadingProps>): ImagoBuilder;
   use(type: 'paragraph', middleware: ImagoMiddleware<ParagraphProps>): ImagoBuilder;
   use(type: 'hr', middleware: ImagoMiddleware<NodeProps>): ImagoBuilder;
@@ -163,6 +169,10 @@ export class ImagoBuilder {
     return typeof arg1 === 'object' && !Array.isArray(arg1)
       ? this.match<HeadingFilter>('heading', { ...arg1, level }, arg2 || false)
       : this.match<HeadingFilter>('heading', { level }, arg1)
+  }
+
+  section(arg1: ImagoRender<SectionProps> | NodeFilter, arg2?: ImagoRender<SectionProps>) {
+    return this.define('section', arg1, arg2);
   }
 
   heading(arg1: HeadingFilter | ImagoRender<HeadingProps>, arg2?: ImagoRender<HeadingProps>) {

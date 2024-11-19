@@ -6,6 +6,10 @@ export interface NodeProps extends Record<string, any>{
   children?: React.ReactNode;
 }
 
+export interface SectionProps extends NodeProps {
+  name: string;
+}
+
 export interface LinkProps extends NodeProps {
   href: string;
 }

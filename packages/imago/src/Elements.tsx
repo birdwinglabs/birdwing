@@ -1,11 +1,14 @@
 import React from "react";
 import { Link, NavLink } from 'react-router-dom';
-import { HeadingProps, ItemProps, NodeProps, ParagraphProps } from "./interfaces.js";
+import { HeadingProps, ItemProps, NodeProps, ParagraphProps, SectionProps } from "./interfaces.js";
 import { ImagoHandler } from "./interfaces.js";
 
 export const defaultElements: Record<string, ImagoHandler> = {
   layout: ({ children, className }: any) => {
     return <div className={className}>{ children }</div>;
+  },
+  section: ({ name, children, className }: SectionProps) => {
+    return <div className={[name, className].join(' ')}>{ children }</div>;
   },
   paragraph: ({ children, ...props }: ParagraphProps) => {
     return React.createElement('p', props, children)
