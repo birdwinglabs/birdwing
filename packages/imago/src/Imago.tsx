@@ -87,6 +87,19 @@ export interface ImagoBuilder {
   changeClass(type: 'link', options: ChangeClassOptions<LinkProps>): ImagoBuilder;
   changeClass(type: 'code', options: ChangeClassOptions<NodeProps>): ImagoBuilder;
 
+  changeElement(type: 'section', options: ChangeElementOptions<SectionProps>): ImagoBuilder;
+  changeElement(type: 'heading', options: ChangeElementOptions<HeadingProps>): ImagoBuilder;
+  changeElement(type: 'paragraph', options: ChangeElementOptions<ParagraphProps>): ImagoBuilder;
+  changeElement(type: 'hr', options: ChangeElementOptions<NodeProps>): ImagoBuilder;
+  changeElement(type: 'image', options: ChangeElementOptions<NodeProps>): ImagoBuilder;
+  changeElement(type: 'fence', options: ChangeElementOptions<FenceProps>): ImagoBuilder;
+  changeElement(type: 'blockquote', options: ChangeElementOptions<NodeProps>): ImagoBuilder;
+  changeElement(type: 'list', options: ChangeElementOptions<ListProps>): ImagoBuilder;
+  changeElement(type: 'item', options: ChangeElementOptions<ItemProps>): ImagoBuilder;
+  changeElement(type: 'strong', options: ChangeElementOptions<NodeProps>): ImagoBuilder;
+  changeElement(type: 'link', options: ChangeElementOptions<LinkProps>): ImagoBuilder;
+  changeElement(type: 'code', options: ChangeElementOptions<NodeProps>): ImagoBuilder;
+
   changeChildren(type: 'section', options: ChangeChildrenOptions<SectionProps>): ImagoBuilder;
   changeChildren(type: 'heading', options: ChangeChildrenOptions<HeadingProps>): ImagoBuilder;
   changeChildren(type: 'paragraph', options: ChangeChildrenOptions<ParagraphProps>): ImagoBuilder;
@@ -202,6 +215,10 @@ export class ImagoBuilder {
 
   changeClass<T extends NodeProps>(type: NodeType, options: ChangeClassOptions<T>) {
     return this.use(type, Imago.changeClass(options));
+  }
+
+  changeElement<T extends NodeProps>(type: NodeType, options: ChangeElementOptions<T>) {
+    return this.use(type, Imago.changeElement(options));
   }
 
   changeChildren<T extends NodeProps>(type: NodeType, options: ChangeChildrenOptions<T>) {
