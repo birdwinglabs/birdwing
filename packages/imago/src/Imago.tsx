@@ -2,6 +2,7 @@ import React, { createContext, FunctionComponent, ReactNode, useContext } from "
 import { Template } from '@birdwing/react';
 import {
   FenceProps,
+  GridProps,
   HeadingProps,
   ImagoHandler,
   ImagoMiddleware,
@@ -11,7 +12,8 @@ import {
   ParagraphProps,
   ProjectProps,
   SectionProps,
-  TemplateOptions
+  TemplateOptions,
+  TileProps
 } from "./interfaces.js";
 import { defaultElements } from "./Elements.js";
 import { LinkProps } from "react-router-dom";
@@ -72,13 +74,15 @@ export interface ReplaceOptions<T> extends MatchOptions<T> {
   render: ImagoHandler<T>;
 }
 
-export type NodeType = 'section' | 'heading' | 'paragraph' | 'hr' | 'image' | 'fence' | 'blockquote' | 'list' | 'item' | 'strong' | 'link' | 'code';
+export type NodeType = 'section' | 'grid' | 'tile' | 'heading' | 'paragraph' | 'hr' | 'image' | 'fence' | 'blockquote' | 'list' | 'item' | 'strong' | 'link' | 'code';
 
 export interface ImagoBuilder {
   slot(): Imago;
   layout<T = any>(render: ImagoHandler<T>): Imago;
 
   changeClass(type: 'section', options: ChangeClassOptions<SectionProps>): ImagoBuilder;
+  changeClass(type: 'grid', options: ChangeClassOptions<GridProps>): ImagoBuilder;
+  changeClass(type: 'tile', options: ChangeClassOptions<TileProps>): ImagoBuilder;
   changeClass(type: 'heading', options: ChangeClassOptions<HeadingProps>): ImagoBuilder;
   changeClass(type: 'paragraph', options: ChangeClassOptions<ParagraphProps>): ImagoBuilder;
   changeClass(type: 'hr', options: ChangeClassOptions<NodeProps>): ImagoBuilder;
@@ -92,6 +96,8 @@ export interface ImagoBuilder {
   changeClass(type: 'code', options: ChangeClassOptions<NodeProps>): ImagoBuilder;
 
   changeElement(type: 'section', options: ChangeElementOptions<SectionProps>): ImagoBuilder;
+  changeElement(type: 'grid', options: ChangeElementOptions<GridProps>): ImagoBuilder;
+  changeElement(type: 'tile', options: ChangeElementOptions<TileProps>): ImagoBuilder;
   changeElement(type: 'heading', options: ChangeElementOptions<HeadingProps>): ImagoBuilder;
   changeElement(type: 'paragraph', options: ChangeElementOptions<ParagraphProps>): ImagoBuilder;
   changeElement(type: 'hr', options: ChangeElementOptions<NodeProps>): ImagoBuilder;
@@ -105,6 +111,8 @@ export interface ImagoBuilder {
   changeElement(type: 'code', options: ChangeElementOptions<NodeProps>): ImagoBuilder;
 
   changeChildren(type: 'section', options: ChangeChildrenOptions<SectionProps>): ImagoBuilder;
+  changeChildren(type: 'grid', options: ChangeChildrenOptions<GridProps>): ImagoBuilder;
+  changeChildren(type: 'tile', options: ChangeChildrenOptions<TileProps>): ImagoBuilder;
   changeChildren(type: 'heading', options: ChangeChildrenOptions<HeadingProps>): ImagoBuilder;
   changeChildren(type: 'paragraph', options: ChangeChildrenOptions<ParagraphProps>): ImagoBuilder;
   changeChildren(type: 'hr', options: ChangeChildrenOptions<NodeProps>): ImagoBuilder;
@@ -118,6 +126,8 @@ export interface ImagoBuilder {
   changeChildren(type: 'code', options: ChangeChildrenOptions<NodeProps>): ImagoBuilder;
 
   replace(type: 'section', options: ReplaceOptions<SectionProps>): ImagoBuilder;
+  replace(type: 'grid', options: ReplaceOptions<GridProps>): ImagoBuilder;
+  replace(type: 'tile', options: ReplaceOptions<TileProps>): ImagoBuilder;
   replace(type: 'heading', options: ReplaceOptions<HeadingProps>): ImagoBuilder;
   replace(type: 'paragraph', options: ReplaceOptions<ParagraphProps>): ImagoBuilder;
   replace(type: 'hr', options: ReplaceOptions<NodeProps>): ImagoBuilder;
@@ -184,6 +194,8 @@ export interface ImagoBuilder {
 
   use(middleware: ImagoBuilder): ImagoBuilder;
   use(type: 'section', middleware: ImagoMiddleware<SectionProps>): ImagoBuilder;
+  use(type: 'grid', middleware: ImagoMiddleware<GridProps>): ImagoBuilder;
+  use(type: 'tile', middleware: ImagoMiddleware<TileProps>): ImagoBuilder;
   use(type: 'heading', middleware: ImagoMiddleware<HeadingProps>): ImagoBuilder;
   use(type: 'paragraph', middleware: ImagoMiddleware<ParagraphProps>): ImagoBuilder;
   use(type: 'hr', middleware: ImagoMiddleware<NodeProps>): ImagoBuilder;

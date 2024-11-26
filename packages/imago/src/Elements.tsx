@@ -1,6 +1,6 @@
 import React from "react";
 import { Link, NavLink } from 'react-router-dom';
-import { HeadingProps, ItemProps, NodeProps, ParagraphProps, SectionProps } from "./interfaces.js";
+import { GridProps, HeadingProps, ItemProps, NodeProps, ParagraphProps, SectionProps, TileProps } from "./interfaces.js";
 import { ImagoHandler } from "./interfaces.js";
 
 export const defaultElements: Record<string, ImagoHandler> = {
@@ -8,6 +8,12 @@ export const defaultElements: Record<string, ImagoHandler> = {
     return <div className={className}>{ children }</div>;
   },
   section: ({ name, children, className }: SectionProps) => {
+    return <div className={[name, className].join(' ')}>{ children }</div>;
+  },
+  grid: ({ name, children, className }: GridProps) => {
+    return <div className={[name, className].join(' ')}>{ children }</div>;
+  },
+  tile: ({ name, children, className }: TileProps) => {
     return <div className={[name, className].join(' ')}>{ children }</div>;
   },
   paragraph: ({ children, ...props }: ParagraphProps) => {

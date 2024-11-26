@@ -10,6 +10,20 @@ export interface SectionProps extends NodeProps {
   name: string;
 }
 
+export interface GridProps extends NodeProps {
+  name?: string;
+
+  columns?: number;
+}
+
+export interface TileProps extends NodeProps {
+  name?: string;
+
+  colspan?: number;
+
+  order?: number;
+}
+
 export interface LinkProps extends NodeProps {
   href: string;
 }
