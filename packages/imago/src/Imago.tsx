@@ -68,6 +68,10 @@ export interface ChangeElementOptions<T> extends MatchOptions<T> {
   replace: string | FunctionComponent;
 }
 
+export interface ReplaceOptions<T> extends MatchOptions<T> {
+  render: ImagoHandler<T>;
+}
+
 export type NodeType = 'section' | 'heading' | 'paragraph' | 'hr' | 'image' | 'fence' | 'blockquote' | 'list' | 'item' | 'strong' | 'link' | 'code';
 
 export interface ImagoBuilder {
@@ -112,6 +116,19 @@ export interface ImagoBuilder {
   changeChildren(type: 'strong', options: ChangeChildrenOptions<NodeProps>): ImagoBuilder;
   changeChildren(type: 'link', options: ChangeChildrenOptions<LinkProps>): ImagoBuilder;
   changeChildren(type: 'code', options: ChangeChildrenOptions<NodeProps>): ImagoBuilder;
+
+  replace(type: 'section', options: ReplaceOptions<SectionProps>): ImagoBuilder;
+  replace(type: 'heading', options: ReplaceOptions<HeadingProps>): ImagoBuilder;
+  replace(type: 'paragraph', options: ReplaceOptions<ParagraphProps>): ImagoBuilder;
+  replace(type: 'hr', options: ReplaceOptions<NodeProps>): ImagoBuilder;
+  replace(type: 'image', options: ReplaceOptions<NodeProps>): ImagoBuilder;
+  replace(type: 'fence', options: ReplaceOptions<FenceProps>): ImagoBuilder;
+  replace(type: 'blockquote', options: ReplaceOptions<NodeProps>): ImagoBuilder;
+  replace(type: 'list', options: ReplaceOptions<ListProps>): ImagoBuilder;
+  replace(type: 'item', options: ReplaceOptions<ItemProps>): ImagoBuilder;
+  replace(type: 'strong', options: ReplaceOptions<NodeProps>): ImagoBuilder;
+  replace(type: 'link', options: ReplaceOptions<LinkProps>): ImagoBuilder;
+  replace(type: 'code', options: ReplaceOptions<NodeProps>): ImagoBuilder;
 
   section(render: ImagoHandler<SectionProps> | false): ImagoBuilder;
   section(newClass: string | string[]): ImagoBuilder;
@@ -230,6 +247,10 @@ export class ImagoBuilder {
       ...options,
       replace: ({ children }) => <Imago.Project slot={options.slot} nodes={children as any}></Imago.Project>
     });
+  }
+
+  replace<T extends NodeProps>(type: NodeType, options: ReplaceOptions<T>) {
+    return this.use(type, Imago.replace(options));
   }
 
   h1(arg1: NodeFilter | ImagoRender<HeadingProps>, arg2?: ImagoRender<HeadingProps>) {
@@ -408,6 +429,12 @@ export class Imago extends Template {
         }
       }
       return next(props);
+    }
+  }
+
+  static replace<T extends NodeProps>({ render, ...matchOptions }: ReplaceOptions<T>): ImagoMiddleware<T> {
+    return (next, final) => props => {
+      return (isMatching(props, matchOptions)) ? render(props) : next(props);
     }
   }
 
