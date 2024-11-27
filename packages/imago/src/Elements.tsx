@@ -7,14 +7,14 @@ export const defaultElements: Record<string, ImagoHandler> = {
   layout: ({ children, className }: any) => {
     return <div className={className}>{ children }</div>;
   },
-  section: ({ name, children, className }: SectionProps) => {
-    return <div className={[name, className].join(' ')}>{ children }</div>;
+  section: ({ children, className }: SectionProps) => {
+    return <div className={className}>{ children }</div>;
   },
-  grid: ({ name, children, className }: GridProps) => {
-    return <div className={[name, className].join(' ')}>{ children }</div>;
+  grid: ({ children, className }: GridProps) => {
+    return <div className={className}>{ children }</div>;
   },
-  tile: ({ name, children, className }: TileProps) => {
-    return <div className={[name, className].join(' ')}>{ children }</div>;
+  tile: ({ children, className }: TileProps) => {
+    return <div className={className}>{ children }</div>;
   },
   paragraph: ({ children, ...props }: ParagraphProps) => {
     return React.createElement('p', props, children)

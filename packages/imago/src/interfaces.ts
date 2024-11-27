@@ -14,12 +14,18 @@ export interface GridProps extends NodeProps {
   name?: string;
 
   columns?: number;
+
+  rows?: number;
+
+  flow?: 'row' | 'column' | 'dense' | 'row dense' | 'column dense';
 }
 
 export interface TileProps extends NodeProps {
   name?: string;
 
   colspan?: number;
+
+  rowspan?: number;
 
   order?: number;
 }
@@ -37,6 +43,7 @@ export interface ItemProps extends NodeProps {}
 export interface FenceProps extends NodeProps {
   language?: string;
   content: string;
+  height: string;
 }
 
 export interface HeadingProps extends NodeProps {
