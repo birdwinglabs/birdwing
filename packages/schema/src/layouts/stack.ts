@@ -6,7 +6,8 @@ export class StackLayout extends Layout {
     super(new Tag('section', { name }, []));
   }
 
-  pushContent(name: string, nodes: RenderableTreeNode[]): void {
+  pushContent(name: string, nodes: RenderableTreeNode[]) {
     this.container.children.push(new Tag('section', { name }, nodes));
+    return this;
   }
 }

@@ -32,5 +32,6 @@ export class GridLayout extends Layout {
     const children = this.container.children;
 
     children.push(new Tag('tile', { name, ...this.tiles[children.length] }, nodes));
+    return this;
   }
 }

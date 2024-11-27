@@ -22,7 +22,7 @@ export class ColumnLayout extends Layout {
     this.container.attributes.columns = this.fractions.reduce((acc, c) => acc + c);
   }
 
-  pushContent(name: string, nodes: RenderableTreeNode[]): void {
+  pushContent(name: string, nodes: RenderableTreeNode[]) {
     const children = this.container.children;
     const i = children.length;
     const n = this.fractions.length;
@@ -30,5 +30,6 @@ export class ColumnLayout extends Layout {
     if (i < n) {
       children.push(new Tag('tile', { name, colspan: this.fractions[i], order: this.mirror ? n - i : i + 1 }, nodes));
     }
+    return this;
   }
 }
