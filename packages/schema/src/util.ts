@@ -71,6 +71,10 @@ export interface HeadingSection {
   heading: Node;
 
   body: NodeList;
+
+  start: number;
+
+  end: number;
 }
 
 export class NodeList {
@@ -80,7 +84,7 @@ export class NodeList {
     return this.nodes;
   }
 
-  filter(predicate: (value: Node) => boolean) {
+  filter(predicate: (value: Node, index: number) => boolean) {
     return new NodeList(this.nodes.filter(predicate));
   }
 
@@ -104,7 +108,9 @@ export class NodeList {
     return indicies.map((value, index) => {
       return {
         heading: this.nodes[value],
-        body: new NodeList(this.nodes.slice(value + 1, indicies[index + 1]))
+        body: new NodeList(this.nodes.slice(value + 1, indicies[index + 1])),
+        start: value,
+        end: indicies[index + 1],
       }
     });
   }
@@ -151,6 +157,24 @@ export class NodeList {
       }
       return res;
     }, {} as Record<string, NodeList>);
+  }
+
+  splitByHr() {
+    const indicies: number[] = [-1];
+
+    this.nodes.forEach((node, index) => {
+      if (node.type === 'hr') {
+        indicies.push(index);
+      }
+    });
+
+    return indicies.map((value, index) => {
+      return {
+        body: new NodeList(this.nodes.slice(value + 1, indicies[index + 1])),
+        start: value,
+        end: indicies[index + 1],
+      }
+    });
   }
 
   beforeComment(comment: string) {
