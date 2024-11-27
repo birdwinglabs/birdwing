@@ -1,18 +1,10 @@
 import Markdoc, { Schema } from '@markdoc/markdoc';
 import { generateIdIfMissing, NodeList } from '../util';
 import { TabFactory } from './tabs';
+import { GridLayout, GridLayoutConfig } from '../layouts/grid';
 
 const { Tag } = Markdoc;
 
-function parseGridTiles(layout: string) {
-  return layout.split(' ').map(e => {
-    const [c, r] = e.split(':');
-    return {
-      colspan: parseInt(c),
-      rowspan: r ? parseInt(r) : undefined ,
-    }
-  })
-}
 
 export const editor: Schema = {
   render: 'Editor',
@@ -50,22 +42,16 @@ export const editor: Schema = {
 
     const attr = node.transformAttributes(config);
     const fact = new TabFactory(config);
-    const sections = new NodeList(node.children).splitByHr();
+    const tabGroups = new NodeList(node.children)
+      .splitByHr()
+      .map(s => fact.createTabGroup(s.body));
 
-    const tiles = parseGridTiles(attr['tiles']);
-    const tabGroups = sections.map(s => fact.createTabGroup(s.body));
+    const layout = new GridLayout({ name: 'container', ...attr } as GridLayoutConfig);
 
-    const container = new Tag('grid', {
-      name: 'container',
-      columns: attr['columns'],
-      rows: attr['rows'],
-      flow: attr['flow']
-    }, []);
-
-    for (let i=0; i<tabGroups.length; i++) {
-      container.children.push(new Tag('tile', tiles[i] || {}, [tabGroups[i]]));
+    for (const tabGroup of tabGroups) {
+      layout.pushContent([tabGroup]);
     }
 
-    return new Tag(this.render, {}, [container]);
+    return new Tag(this.render, {}, [layout.container]);
   }
 }
