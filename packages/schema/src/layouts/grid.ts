@@ -28,9 +28,9 @@ export class GridLayout extends Layout {
     })
   }
 
-  pushContent(nodes: RenderableTreeNode[]) {
+  pushContent(name: string, nodes: RenderableTreeNode[]) {
     const children = this.container.children;
 
-    children.push(new Tag('tile', this.tiles[children.length] || {}, nodes));
+    children.push(new Tag('tile', { name, ...this.tiles[children.length] }, nodes));
   }
 }

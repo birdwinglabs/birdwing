@@ -1,7 +1,7 @@
 import Markdoc, { Schema } from '@markdoc/markdoc';
 import { generateIdIfMissing, NodeList } from '../util';
 import { TabFactory } from './tabs';
-import { GridLayout, GridLayoutConfig } from '../layouts/grid';
+import { createLayout } from '../layouts';
 
 const { Tag } = Markdoc;
 
@@ -46,10 +46,10 @@ export const editor: Schema = {
       .splitByHr()
       .map(s => fact.createTabGroup(s.body));
 
-    const layout = new GridLayout({ name: 'container', ...attr } as GridLayoutConfig);
+    const layout = createLayout('container', attr);
 
     for (const tabGroup of tabGroups) {
-      layout.pushContent([tabGroup]);
+      layout.pushContent('area', [tabGroup]);
     }
 
     return new Tag(this.render, {}, [layout.container]);
