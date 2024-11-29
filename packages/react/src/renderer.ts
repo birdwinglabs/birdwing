@@ -1,37 +1,79 @@
-import Markdoc, { Tag } from '@markdoc/markdoc';
+import { RenderableTreeNodes, Scalar, Tag } from '@markdoc/markdoc';
 import React from 'react';
+import type { ReactNode } from 'react';
 import { Template } from './interfaces.js';
 
+function isUppercase(word: string){
+  return /^\p{Lu}/u.test(word);
+}
+
 export class Renderer {
+  private stack: string[] = [];
+
   constructor(private components: Record<string, Template>) {}
 
   isComponent(name: string) {
     return name in this.components;
   }
 
-  render(renderable: Tag) {
-    const namespace = (name: string) => {
-      if (name.includes('.')) {
-        const ns = name.split('.');
-        if (ns.length === 2) {
-          return { component: ns[0], node: ns[1] };
-        } else {
-          return { component: ns[0], slot: ns[1], node: ns[2] };
-        }
+  private resolveTagName(tagName: string) {
+    if (isUppercase(tagName)) {
+      const template = this.components[tagName];
+      return template.resolve('layout');
+    } else {
+      const componentName = this.stack.at(-1);
+      if (componentName) {
+        const template = this.components[componentName];
+        return template.resolve(tagName);
       } else {
-        return { component: name, node: 'layout' };
+        throw Error('No component tag from stack');
       }
     }
+  }
 
-    return Markdoc.renderers.react(renderable, React, { components: (name: string) => {
-      const ns = namespace(name);
+  render(node: RenderableTreeNodes): ReactNode {
+    if (Array.isArray(node))
+      return React.createElement(React.Fragment, null, ...node.map(n => this.render(n)));
 
-      const template = this.components[ns.component];
+    if (node === null || typeof node !== 'object' || !Tag.isTag(node))
+      return node as any;
 
-      if (!template || !(template instanceof Template)) {
-        throw Error(`Missing component '${ns.component}'`);
-      }
-      return template.resolve(ns.node, ns.slot);
-    }});
+    const {
+      name,
+      attributes: { class: className, ...attrs } = {},
+      children = [],
+    } = node;
+
+    if (isUppercase(name)) {
+      this.stack.push(name);
+    }
+
+    if (className) attrs.className = className;
+
+    const elem = React.createElement(
+      this.resolveTagName(name),
+      Object.keys(attrs).length == 0 ? null : this.deepRender(attrs),
+      ...children.map(c => this.render(c))
+    );
+
+    if (isUppercase(name)) {
+      this.stack.pop();
+    }
+
+    return elem;
+  }
+
+  private deepRender(value: any): any {
+    if (value == null || typeof value !== 'object') return value;
+
+    if (Array.isArray(value)) return value.map((item) => this.deepRender(item));
+
+    if (value.$$mdtype === 'Tag') return this.render(value);
+
+    if (typeof value !== 'object') return value;
+
+    const output: Record<string, Scalar> = {};
+    for (const [k, v] of Object.entries(value)) output[k] = this.deepRender(v);
+    return output;
   }
 }

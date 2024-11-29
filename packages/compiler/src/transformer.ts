@@ -1,58 +1,6 @@
 import Markdoc, { Node, Schema, Tag } from "@markdoc/markdoc";
 import { TransformConfig, Transformer } from '@birdwing/core';
 
-const { Tag: MarkdocTag } = Markdoc;
-
-function isUppercase(word: string){
-  return /^\p{Lu}/u.test(word);
-}
-
-function findNestedNodes(value: any) {
-
-}
-
-function applyNamespace(tag: any, component?: string) {
-  if (!isUppercase(tag.name) && component) {
-    tag.name = `${component}.${tag.name}`;
-  } else {
-    component = tag.name;
-  }
-  for (const [slot, attr] of Object.entries(tag.attributes || {})) {
-    if (MarkdocTag.isTag(attr)) {
-      applyNamespace(attr, `${component}.${slot}`);
-    }
-    else if (Array.isArray(attr)) {
-      for (const child of attr) {
-        if (MarkdocTag.isTag(child)) {
-          applyNamespace(child, `${component}.${slot}`);
-        }
-      }
-    }
-    else if (typeof attr === 'object') {
-      for (const child of Object.values(attr as any)) {
-        if (MarkdocTag.isTag(child)) {
-          applyNamespace(child, `${component}.${slot}`);
-        }
-        else if (Array.isArray(child)) {
-          for (const item of child) {
-            if (MarkdocTag.isTag(item)) {
-              applyNamespace(item, `${component}.${slot}`);
-            }
-          }
-        }
-      }
-    }
-  }
-  for (const child of tag.children || []) {
-    if (MarkdocTag.isTag(child)) {
-      applyNamespace(child, component);
-    }
-  }
-
-  return tag;
-}
-
-
 export class MarkdocTransformer implements Transformer {
   public readonly urlMap: Record<string, string> = {};
 
@@ -93,6 +41,6 @@ export class MarkdocTransformer implements Transformer {
       variables: config.variables,
     }) as any;
 
-    return applyNamespace(tag);
+    return tag;
   }
 }
