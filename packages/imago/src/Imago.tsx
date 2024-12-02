@@ -79,7 +79,22 @@ export interface AttributeToClassOptions<T> extends MatchOptions<T> {
   values: Record<string | number, string>;
 }
 
-export type NodeType = 'section' | 'grid' | 'tile' | 'heading' | 'paragraph' | 'hr' | 'image' | 'fence' | 'blockquote' | 'list' | 'item' | 'strong' | 'link' | 'code';
+export type NodeType = 
+  'section' |
+  'grid' |
+  'tile' |
+  'heading' |
+  'paragraph' |
+  'hr' |
+  'image' |
+  'fence' |
+  'html' |
+  'blockquote' |
+  'list' |
+  'item' |
+  'strong' |
+  'link' |
+  'code';
 
 export interface ImagoBuilder {
   slot(): Imago;
@@ -93,6 +108,7 @@ export interface ImagoBuilder {
   changeClass(type: 'hr', options: ChangeClassOptions<NodeProps>): ImagoBuilder;
   changeClass(type: 'image', options: ChangeClassOptions<NodeProps>): ImagoBuilder;
   changeClass(type: 'fence', options: ChangeClassOptions<FenceProps>): ImagoBuilder;
+  changeClass(type: 'html', options: ChangeClassOptions<NodeProps>): ImagoBuilder;
   changeClass(type: 'blockquote', options: ChangeClassOptions<NodeProps>): ImagoBuilder;
   changeClass(type: 'list', options: ChangeClassOptions<ListProps>): ImagoBuilder;
   changeClass(type: 'item', options: ChangeClassOptions<ItemProps>): ImagoBuilder;
@@ -108,6 +124,7 @@ export interface ImagoBuilder {
   changeElement(type: 'hr', options: ChangeElementOptions<NodeProps>): ImagoBuilder;
   changeElement(type: 'image', options: ChangeElementOptions<NodeProps>): ImagoBuilder;
   changeElement(type: 'fence', options: ChangeElementOptions<FenceProps>): ImagoBuilder;
+  changeElement(type: 'html', options: ChangeElementOptions<NodeProps>): ImagoBuilder;
   changeElement(type: 'blockquote', options: ChangeElementOptions<NodeProps>): ImagoBuilder;
   changeElement(type: 'list', options: ChangeElementOptions<ListProps>): ImagoBuilder;
   changeElement(type: 'item', options: ChangeElementOptions<ItemProps>): ImagoBuilder;
@@ -123,6 +140,7 @@ export interface ImagoBuilder {
   changeChildren(type: 'hr', options: ChangeChildrenOptions<NodeProps>): ImagoBuilder;
   changeChildren(type: 'image', options: ChangeChildrenOptions<NodeProps>): ImagoBuilder;
   changeChildren(type: 'fence', options: ChangeChildrenOptions<FenceProps>): ImagoBuilder;
+  changeChildren(type: 'html', options: ChangeChildrenOptions<NodeProps>): ImagoBuilder;
   changeChildren(type: 'blockquote', options: ChangeChildrenOptions<NodeProps>): ImagoBuilder;
   changeChildren(type: 'list', options: ChangeChildrenOptions<ListProps>): ImagoBuilder;
   changeChildren(type: 'item', options: ChangeChildrenOptions<ItemProps>): ImagoBuilder;
@@ -138,6 +156,7 @@ export interface ImagoBuilder {
   replace(type: 'hr', options: ReplaceOptions<NodeProps>): ImagoBuilder;
   replace(type: 'image', options: ReplaceOptions<NodeProps>): ImagoBuilder;
   replace(type: 'fence', options: ReplaceOptions<FenceProps>): ImagoBuilder;
+  replace(type: 'html', options: ReplaceOptions<NodeProps>): ImagoBuilder;
   replace(type: 'blockquote', options: ReplaceOptions<NodeProps>): ImagoBuilder;
   replace(type: 'list', options: ReplaceOptions<ListProps>): ImagoBuilder;
   replace(type: 'item', options: ReplaceOptions<ItemProps>): ImagoBuilder;
@@ -208,6 +227,7 @@ export interface ImagoBuilder {
   use(type: 'hr', middleware: ImagoMiddleware<NodeProps>): ImagoBuilder;
   use(type: 'image', middleware: ImagoMiddleware<NodeProps>): ImagoBuilder;
   use(type: 'fence', middleware: ImagoMiddleware<NodeProps>): ImagoBuilder;
+  use(type: 'html', middleware: ImagoMiddleware<NodeProps>): ImagoBuilder;
   use(type: 'blockquote', middleware: ImagoMiddleware<NodeProps>): ImagoBuilder;
   use(type: 'list', middleware: ImagoMiddleware<ListProps>): ImagoBuilder;
   use(type: 'item', middleware: ImagoMiddleware<ItemProps>): ImagoBuilder;
@@ -243,6 +263,9 @@ export class ImagoBuilder {
 
       for (const mw of middleware) {
         let next = handlerMap[name];
+        if (!next) {
+          throw Error(`Next handler missing for '${name}'`);
+        }
         handlerMap[name] = props => mw(p => p ? next(p) : next(props), p => p ? final(p) : final(props))(props)
       }
     }

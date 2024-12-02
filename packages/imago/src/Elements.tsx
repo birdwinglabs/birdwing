@@ -2,6 +2,7 @@ import React from "react";
 import { Link, NavLink } from 'react-router-dom';
 import { GridProps, HeadingProps, ItemProps, NodeProps, ParagraphProps, SectionProps, TileProps } from "./interfaces.js";
 import { ImagoHandler } from "./interfaces.js";
+import { CodeBlock } from "@birdwing/react";
 
 export const defaultElements: Record<string, ImagoHandler> = {
   layout: ({ children, className }: any) => {
@@ -28,8 +29,12 @@ export const defaultElements: Record<string, ImagoHandler> = {
   image: ({ children, ...props }: NodeProps) => {
     return React.createElement('img', props, children)
   },
-  svg: ({ content, className }: NodeProps) => {
-    return <div className={className} dangerouslySetInnerHTML={{__html: content}}/>
+  fence: ({ children, language, className }: NodeProps) => {
+    return <pre className={className}><CodeBlock language={language}>{ children }</CodeBlock></pre>;
+  },
+  html: ({ children, className }: NodeProps) => {
+    console.log(className);
+    return <div className={className} dangerouslySetInnerHTML={{__html: children as string }}/>
   },
   item: ({ children, ...props }: ItemProps) => {
     return React.createElement('li', props, children)
