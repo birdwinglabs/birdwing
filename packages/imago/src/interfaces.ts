@@ -42,7 +42,7 @@ export interface ItemProps extends NodeProps {}
 
 export interface FenceProps extends NodeProps {
   language?: string;
-  content: string;
+  html?: boolean;
   height: string;
 }
 

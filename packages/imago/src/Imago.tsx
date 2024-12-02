@@ -74,6 +74,11 @@ export interface ReplaceOptions<T> extends MatchOptions<T> {
   render: ImagoHandler<T>;
 }
 
+export interface AttributeToClassOptions<T> extends MatchOptions<T> {
+  name: string;
+  values: Record<string | number, string>;
+}
+
 export type NodeType = 'section' | 'grid' | 'tile' | 'heading' | 'paragraph' | 'hr' | 'image' | 'fence' | 'blockquote' | 'list' | 'item' | 'strong' | 'link' | 'code';
 
 export interface ImagoBuilder {
@@ -139,6 +144,8 @@ export interface ImagoBuilder {
   replace(type: 'strong', options: ReplaceOptions<NodeProps>): ImagoBuilder;
   replace(type: 'link', options: ReplaceOptions<LinkProps>): ImagoBuilder;
   replace(type: 'code', options: ReplaceOptions<NodeProps>): ImagoBuilder;
+
+  attributeToClass(type: NodeType, options: AttributeToClassOptions<NodeProps>): ImagoBuilder;
 
   section(render: ImagoHandler<SectionProps> | false): ImagoBuilder;
   section(newClass: string | string[]): ImagoBuilder;
@@ -263,6 +270,10 @@ export class ImagoBuilder {
 
   replace<T extends NodeProps>(type: NodeType, options: ReplaceOptions<T>) {
     return this.use(type, Imago.replace(options));
+  }
+
+  attributeToClass(type: NodeType, options: AttributeToClassOptions<NodeProps>) {
+    return this.use(type, Imago.attributeToClass(options));
   }
 
   h1(arg1: NodeFilter | ImagoRender<HeadingProps>, arg2?: ImagoRender<HeadingProps>) {
@@ -454,6 +465,16 @@ export class Imago extends Template {
     return next => ({ children, ...props }) => isMatching({ children, ...props } as any, matchOptions)
       ? React.createElement(replace, props as any, children)
       : next({ children, ...props } as any);
+  }
+
+  static attributeToClass<T extends NodeProps>({ name, values, ...matchOptions }: AttributeToClassOptions<T>): ImagoMiddleware<T> {
+    return next => props => {
+      if (isMatching(props, matchOptions) && props[name] in values) {
+        return next({ ...props, className: [props.className, values[props[name]]].join(' ') });
+      } else {
+        return next(props);
+      }
+    }
   }
 
   static Project({ slot, nodes, type, enumerate }: ProjectProps) {
