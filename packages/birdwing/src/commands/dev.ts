@@ -1,7 +1,6 @@
-import path, { extname } from 'path';
+import path from 'path';
 import * as esbuild from 'esbuild'
 import * as chokidar from 'chokidar';
-import * as glob from 'glob';
 
 import { TargetFile } from '@birdwing/core';
 import { Compiler } from '@birdwing/compiler';
@@ -62,8 +61,6 @@ export class DevCommand extends Command {
     });
     const images = await this.executeTask(imagesTask);
 
-    console.log(images);
-
     const routes = await this.executeTask(new CompileRoutesTask(compiler));
     for (const route of routes) {
       await store.updateRoute(route);
@@ -111,6 +108,16 @@ export class DevCommand extends Command {
         this.logger.log('File changed: %s', Logger.color('blue', file));
         this.logger.start('Compiling routes...');
         await store.reloadContent(file);
+
+        try {
+          const output: TargetFile[] = [
+            await this.executeTask(new TailwindCssTask(theme, '/'))
+          ].flat();
+
+          await this.executeTask(new FileWriterTask(store, output));
+        } catch (err) {
+          this.logger.error(err.message);
+        }
       });
 
     chokidar
