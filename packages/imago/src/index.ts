@@ -1,5 +1,7 @@
 export * from './interfaces.js';
 
+export { Tailwind } from './tailwind';
+
 export { Imago, Ordering, OrderingContext } from './Imago.js';
 
 export interface NavLinkConfig {
