@@ -53,9 +53,19 @@ export default function App({ components, highlight }: any): JSX.Element {
           }
         })
         .on('target-changed', file => {
-          if (file._id === '/main.css') {
-            s.dispose();
-            window.location.reload();
+          switch (file._id) {
+            case '/main.css':
+              var links = document.getElementsByTagName("link");
+              for (var cl in links) {
+                var link = links[cl];
+                if (link.rel === "stylesheet")
+                  link.href += "";
+              }
+              break;
+            case '/dev.js':
+              s.dispose();
+              window.location.reload();
+              break;
           }
         });
     });
