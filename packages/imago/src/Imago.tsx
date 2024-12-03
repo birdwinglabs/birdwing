@@ -80,6 +80,7 @@ export interface AttributeToClassOptions<T> extends MatchOptions<T> {
 }
 
 export type NodeType = 
+  'layout' |
   'section' |
   'grid' |
   'tile' |
@@ -98,8 +99,10 @@ export type NodeType =
 
 export interface ImagoBuilder {
   slot(): Imago;
-  layout<T = any>(render: ImagoHandler<T>): Imago;
+  template(): Imago;
+  //layout<T = any>(render: ImagoHandler<T>): Imago;
 
+  changeClass(type: 'layout', options: ChangeClassOptions<NodeProps>): ImagoBuilder;
   changeClass(type: 'section', options: ChangeClassOptions<SectionProps>): ImagoBuilder;
   changeClass(type: 'grid', options: ChangeClassOptions<GridProps>): ImagoBuilder;
   changeClass(type: 'tile', options: ChangeClassOptions<TileProps>): ImagoBuilder;
@@ -116,6 +119,7 @@ export interface ImagoBuilder {
   changeClass(type: 'link', options: ChangeClassOptions<LinkProps>): ImagoBuilder;
   changeClass(type: 'code', options: ChangeClassOptions<NodeProps>): ImagoBuilder;
 
+  changeElement(type: 'layout', options: ChangeElementOptions<NodeProps>): ImagoBuilder;
   changeElement(type: 'section', options: ChangeElementOptions<SectionProps>): ImagoBuilder;
   changeElement(type: 'grid', options: ChangeElementOptions<GridProps>): ImagoBuilder;
   changeElement(type: 'tile', options: ChangeElementOptions<TileProps>): ImagoBuilder;
@@ -132,6 +136,7 @@ export interface ImagoBuilder {
   changeElement(type: 'link', options: ChangeElementOptions<LinkProps>): ImagoBuilder;
   changeElement(type: 'code', options: ChangeElementOptions<NodeProps>): ImagoBuilder;
 
+  changeChildren(type: 'layout', options: ChangeChildrenOptions<NodeProps>): ImagoBuilder;
   changeChildren(type: 'section', options: ChangeChildrenOptions<SectionProps>): ImagoBuilder;
   changeChildren(type: 'grid', options: ChangeChildrenOptions<GridProps>): ImagoBuilder;
   changeChildren(type: 'tile', options: ChangeChildrenOptions<TileProps>): ImagoBuilder;
@@ -148,6 +153,7 @@ export interface ImagoBuilder {
   changeChildren(type: 'link', options: ChangeChildrenOptions<LinkProps>): ImagoBuilder;
   changeChildren(type: 'code', options: ChangeChildrenOptions<NodeProps>): ImagoBuilder;
 
+  replace(type: 'layout', options: ReplaceOptions<NodeProps>): ImagoBuilder;
   replace(type: 'section', options: ReplaceOptions<SectionProps>): ImagoBuilder;
   replace(type: 'grid', options: ReplaceOptions<GridProps>): ImagoBuilder;
   replace(type: 'tile', options: ReplaceOptions<TileProps>): ImagoBuilder;
@@ -168,6 +174,7 @@ export interface ImagoBuilder {
   addClasses(classes: Partial<Record<NodeType, string>>): ImagoBuilder;
 
   use(middleware: ImagoBuilder): ImagoBuilder;
+  use(type: 'layout', middleware: ImagoMiddleware<NodeProps>): ImagoBuilder;
   use(type: 'section', middleware: ImagoMiddleware<SectionProps>): ImagoBuilder;
   use(type: 'grid', middleware: ImagoMiddleware<GridProps>): ImagoBuilder;
   use(type: 'tile', middleware: ImagoMiddleware<TileProps>): ImagoBuilder;
@@ -193,11 +200,8 @@ export class ImagoBuilder {
     private slots: Record<string, Template> = {}
   ) {}
 
-  layout<T = any>(render: ImagoHandler<T>) {
-    const handlers = this.createHandlers();
-    handlers['layout'] = render;
-
-    return new Imago(this.name, handlers, this.slots);
+  template() {
+    return new Imago(this.name, this.createHandlers(), this.slots);
   }
 
   slot() {
