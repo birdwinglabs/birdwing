@@ -167,58 +167,6 @@ export interface ImagoBuilder {
   attributeToClass(type: NodeType, options: AttributeToClassOptions<NodeProps>): ImagoBuilder;
   addClasses(classes: Partial<Record<NodeType, string>>): ImagoBuilder;
 
-  section(render: ImagoHandler<SectionProps> | false): ImagoBuilder;
-  section(newClass: string | string[]): ImagoBuilder;
-  section(match: NodeFilter, render: ImagoRender<SectionProps>): ImagoBuilder;
-
-  heading(render: ImagoHandler<HeadingProps> | false): ImagoBuilder;
-  heading(newClass: string | string[]): ImagoBuilder;
-  heading(match: HeadingFilter, render: ImagoRender<HeadingProps>): ImagoBuilder;
-
-  h1(newClass: string): ImagoBuilder;
-  h1(render: ImagoHandler<HeadingProps> | false): ImagoBuilder;
-  h1(match: HeadingFilter, render: ImagoRender<HeadingProps>): ImagoBuilder;
-
-  h2(newClass: string): ImagoBuilder;
-  h2(render: ImagoHandler<HeadingProps> | false): ImagoBuilder;
-  h2(match: HeadingFilter, render: ImagoRender<HeadingProps>): ImagoBuilder;
-
-  paragraph(render: ImagoHandler<ParagraphProps> | false): ImagoBuilder;
-  paragraph(newClass: string | string[]): ImagoBuilder;
-  paragraph(match: NodeFilter, render: ImagoRender<ParagraphProps>): ImagoBuilder;
-
-  strong(render: ImagoHandler<NodeProps> | false): ImagoBuilder;
-  strong(newClass: string | string[]): ImagoBuilder;
-  strong(match: NodeFilter, render: ImagoRender<NodeProps>): ImagoBuilder;
-
-  code(render: ImagoHandler<NodeProps> | false): ImagoBuilder;
-  code(newClass: string | string[]): ImagoBuilder;
-  code(match: NodeFilter, render: ImagoRender<NodeProps>): ImagoBuilder;
-
-  image(render: ImagoHandler<NodeProps> | false): ImagoBuilder;
-  image(newClass: string | string[]): ImagoBuilder;
-  image(match: NodeFilter, render: ImagoRender<NodeProps>): ImagoBuilder;
-
-  svg(render: ImagoHandler<NodeProps> | false): ImagoBuilder;
-  svg(newClass: string | string[]): ImagoBuilder;
-  svg(match: NodeFilter, render: ImagoRender<NodeProps>): ImagoBuilder;
-
-  list(render: ImagoHandler<ListProps> | false): ImagoBuilder;
-  list(newClass: string | string[]): ImagoBuilder;
-  list(match: NodeFilter, render: ImagoRender<ListProps>): ImagoBuilder;
-
-  item(render: ImagoHandler<ItemProps> | false): ImagoBuilder;
-  item(newClass: string | string[]): ImagoBuilder;
-  item(match: NodeFilter, render: ImagoRender<ItemProps>): ImagoBuilder;
-
-  fence(render: ImagoHandler<FenceProps> | false): ImagoBuilder;
-  fence(newClass: string | string[]): ImagoBuilder;
-  fence(match: NodeFilter, render: ImagoRender<FenceProps>): ImagoBuilder;
-
-  link(handler: ImagoHandler<LinkProps> | false): ImagoBuilder;
-  link(newClass: string | string[]): ImagoBuilder;
-  link(match: NodeFilter, render: ImagoRender<LinkProps>): ImagoBuilder;
-
   use(middleware: ImagoBuilder): ImagoBuilder;
   use(type: 'section', middleware: ImagoMiddleware<SectionProps>): ImagoBuilder;
   use(type: 'grid', middleware: ImagoMiddleware<GridProps>): ImagoBuilder;
@@ -307,103 +255,6 @@ export class ImagoBuilder {
       });
     }
     return this;
-  }
-
-  h1(arg1: NodeFilter | ImagoRender<HeadingProps>, arg2?: ImagoRender<HeadingProps>) {
-    return this.h(1, arg1, arg2);
-  }
-  h2(arg1: NodeFilter | ImagoRender<HeadingProps>, arg2?: ImagoRender<HeadingProps>) {
-    return this.h(2, arg1, arg2);
-  }
-  h3(arg1: NodeFilter | ImagoRender<HeadingProps>, arg2?: ImagoRender<HeadingProps>) {
-    return this.h(3, arg1, arg2);
-  }
-  h4(arg1: NodeFilter | ImagoRender<HeadingProps>, arg2?: ImagoRender<HeadingProps>) {
-    return this.h(4, arg1, arg2);
-  }
-  h5(arg1: NodeFilter | ImagoRender<HeadingProps>, arg2?: ImagoRender<HeadingProps>) {
-    return this.h(5, arg1, arg2);
-  }
-  h6(arg1: NodeFilter | ImagoRender<HeadingProps>, arg2?: ImagoRender<HeadingProps>) {
-    return this.h(6, arg1, arg2);
-  }
-
-  private h(level: number, arg1: NodeFilter | ImagoRender<HeadingProps>, arg2?: ImagoRender<HeadingProps>) {
-    return typeof arg1 === 'object' && !Array.isArray(arg1)
-      ? this.match<HeadingFilter>('heading', { ...arg1, level }, arg2 || false)
-      : this.match<HeadingFilter>('heading', { level }, arg1)
-  }
-
-  section(arg1: ImagoRender<SectionProps> | NodeFilter, arg2?: ImagoRender<SectionProps>) {
-    return this.define('section', arg1, arg2);
-  }
-
-  heading(arg1: HeadingFilter | ImagoRender<HeadingProps>, arg2?: ImagoRender<HeadingProps>) {
-    return this.define('heading', arg1, arg2);
-  }
-
-  paragraph(arg1: ImagoRender<ParagraphProps> | NodeFilter, arg2?: ImagoRender<ParagraphProps>) {
-    return this.define('paragraph', arg1, arg2);
-  }
-
-  strong(arg1: ImagoRender<NodeProps> | NodeFilter, arg2?: ImagoRender<NodeProps>) {
-    return this.define('strong', arg1, arg2);
-  }
-
-  code(arg1: ImagoRender<NodeProps> | NodeFilter, arg2?: ImagoRender<NodeProps>) {
-    return this.define('code', arg1, arg2);
-  }
-
-  image(arg1: ImagoRender<NodeProps> | NodeFilter, arg2?: ImagoRender<NodeProps>) {
-    return this.define('image', arg1, arg2);
-  }
-
-  svg(arg1: ImagoRender<NodeProps> | NodeFilter, arg2?: ImagoRender<NodeProps>) {
-    return this.define('svg', arg1, arg2);
-  }
-
-  list(arg1: ImagoRender<ListProps> | NodeFilter, arg2?: ImagoRender<ListProps>) {
-    return this.define('list', arg1, arg2);
-  }
-
-  item(arg1: ImagoRender<ItemProps> | NodeFilter, arg2?: ImagoRender<ItemProps>) {
-    return this.define('item', arg1, arg2);
-  }
-
-  link(arg1: ImagoRender<LinkProps> | NodeFilter, arg2?: ImagoRender<LinkProps>) {
-    return this.define('link', arg1, arg2);
-  }
-
-  fence(arg1: ImagoRender<FenceProps> | NodeFilter, arg2?: ImagoRender<FenceProps>) {
-    return this.define('fence', arg1, arg2);
-  }
-
-  private match<TFilter extends NodeFilter = NodeFilter>(type: string, filter: TFilter, render: ImagoRender<any>): this {
-    const match = (props: any) => Object.entries(filter).every(([key, value]) => props[key] === value);
-
-    switch (typeof render) {
-      case 'boolean':
-        return this.use(type, next => props => match(props) ? null : next(props));
-      case 'function':
-        return this.use(type, next => props => match(props) ? render(props) : next(props))
-      case 'object':
-      case 'string':
-        return this.use(type, (next, final) => props => match(props) ? final({
-           ...props,
-           className: Array.isArray(render) ? render.join(' ') : render
-        }) : next(props))
-    }
-  }
-
-  private define<TFilter extends NodeFilter = NodeFilter>(type: string, arg1: ImagoRender<any> | TFilter, arg2?: ImagoRender<any>): this {
-    switch (typeof arg1) {
-      case 'object': return Array.isArray(arg1)
-        ? this.use(type, (next, final) => props => final({ ...props, className: arg1.join(' ') }))
-        : this.match(type, arg1, arg2 || false);
-      case 'string': return this.use(type, (next, final) => props => final({ ...props, className: arg1 }))
-      case 'boolean': return this.use(type, next => props => null);
-      case 'function': return this.use(type, next => arg1);
-    }
   }
 
   public use<T = any>(arg1: string | ImagoBuilder, arg2?: ImagoMiddleware<T>): this {
@@ -565,5 +416,4 @@ export class Imago extends Template {
     Component.displayName = node;
     return Component;
   }
-
 }
