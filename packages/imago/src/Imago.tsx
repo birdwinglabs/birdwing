@@ -165,6 +165,7 @@ export interface ImagoBuilder {
   replace(type: 'code', options: ReplaceOptions<NodeProps>): ImagoBuilder;
 
   attributeToClass(type: NodeType, options: AttributeToClassOptions<NodeProps>): ImagoBuilder;
+  addClasses(classes: Partial<Record<NodeType, string>>): ImagoBuilder;
 
   section(render: ImagoHandler<SectionProps> | false): ImagoBuilder;
   section(newClass: string | string[]): ImagoBuilder;
@@ -297,6 +298,15 @@ export class ImagoBuilder {
 
   attributeToClass(type: NodeType, options: AttributeToClassOptions<NodeProps>) {
     return this.use(type, Imago.attributeToClass(options));
+  }
+
+  addClasses(classes: Partial<Record<NodeType, string>>) {
+    for (const type of Object.keys(classes)) {
+      this.changeClass(type as NodeType, {
+        add: classes[type as NodeType]
+      });
+    }
+    return this;
   }
 
   h1(arg1: NodeFilter | ImagoRender<HeadingProps>, arg2?: ImagoRender<HeadingProps>) {
