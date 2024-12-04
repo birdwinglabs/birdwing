@@ -1,4 +1,4 @@
-import React, { isValidElement, createContext, FunctionComponent, ReactNode, useContext } from "react";
+import React, { isValidElement, createContext, FunctionComponent, ReactNode, useContext, ReactElement, ComponentClass } from "react";
 import { Template } from '@birdwing/react';
 import {
   FenceProps,
@@ -39,53 +39,8 @@ export class Ordering {
 
 export const OrderingContext = createContext(new Ordering(0, 0));
 
-
-export interface SlotOptions {
-  filter?: Record<string, any>;
-}
-
-export interface NodeFilter {
-  className?: string;
-}
-
-export interface HeadingFilter extends NodeFilter {
-  level?: number;
-}
-
-export type ImagoRender<T> = ImagoHandler<T> | string | string[] | false;
-
-export interface MatchOptions<T> {
-  match?: Partial<T>;
-  matchClass?: string;
-  matchClassNot?: string;
-}
-
-export interface ChangeClassOptions<T> extends MatchOptions<T> {
-  add?: string;
-  replace?: Record<string, string>;
-  finish?: boolean;
-}
-
-export interface ChangeChildrenOptions<T> extends MatchOptions<T> {
-  add?: ReactNode;
-  replace?: ImagoHandler<T>;
-  finish?: boolean;
-}
-
-export interface ChangeContextOptions<T> extends MatchOptions<T> {
-  slot: string;
-}
-
-export interface ChangeElementOptions<T> extends MatchOptions<T> {
-  replace: string | FunctionComponent;
-}
-
-export interface ReplaceOptions<T> extends MatchOptions<T> {
-  render: ImagoHandler<T>;
-}
-
-export interface AttributeToClassOptions<T> extends MatchOptions<T> {
-  name: string;
+export interface AttributeToClassOptions<T extends NodeProps> {
+  name: keyof T;
   values: Record<string | number, string>;
 }
 
@@ -101,75 +56,6 @@ export interface TransformOptions<T> {
 export interface ImagoBuilder {
   template(): Imago;
 
-  //class(type: 'layout', options: ChangeClassOptions<NodeProps>): ImagoBuilder;
-  //class(type: 'section', options: ChangeClassOptions<SectionProps>): ImagoBuilder;
-  //class(type: 'grid', options: ChangeClassOptions<GridProps>): ImagoBuilder;
-  //class(type: 'tile', options: ChangeClassOptions<TileProps>): ImagoBuilder;
-  //class(type: 'heading', options: ChangeClassOptions<HeadingProps>): ImagoBuilder;
-  //class(type: 'paragraph', options: ChangeClassOptions<ParagraphProps>): ImagoBuilder;
-  //class(type: 'hr', options: ChangeClassOptions<NodeProps>): ImagoBuilder;
-  //class(type: 'image', options: ChangeClassOptions<NodeProps>): ImagoBuilder;
-  //class(type: 'fence', options: ChangeClassOptions<FenceProps>): ImagoBuilder;
-  //class(type: 'html', options: ChangeClassOptions<NodeProps>): ImagoBuilder;
-  //class(type: 'blockquote', options: ChangeClassOptions<NodeProps>): ImagoBuilder;
-  //class(type: 'list', options: ChangeClassOptions<ListProps>): ImagoBuilder;
-  //class(type: 'item', options: ChangeClassOptions<ItemProps>): ImagoBuilder;
-  //class(type: 'strong', options: ChangeClassOptions<NodeProps>): ImagoBuilder;
-  //class(type: 'link', options: ChangeClassOptions<LinkProps>): ImagoBuilder;
-  //class(type: 'code', options: ChangeClassOptions<NodeProps>): ImagoBuilder;
-
-  //element(type: 'layout', options: ChangeElementOptions<NodeProps>): ImagoBuilder;
-  //element(type: 'section', options: ChangeElementOptions<SectionProps>): ImagoBuilder;
-  //element(type: 'grid', options: ChangeElementOptions<GridProps>): ImagoBuilder;
-  //element(type: 'tile', options: ChangeElementOptions<TileProps>): ImagoBuilder;
-  //element(type: 'heading', options: ChangeElementOptions<HeadingProps>): ImagoBuilder;
-  //element(type: 'paragraph', options: ChangeElementOptions<ParagraphProps>): ImagoBuilder;
-  //element(type: 'hr', options: ChangeElementOptions<NodeProps>): ImagoBuilder;
-  //element(type: 'image', options: ChangeElementOptions<NodeProps>): ImagoBuilder;
-  //element(type: 'fence', options: ChangeElementOptions<FenceProps>): ImagoBuilder;
-  //element(type: 'html', options: ChangeElementOptions<NodeProps>): ImagoBuilder;
-  //element(type: 'blockquote', options: ChangeElementOptions<NodeProps>): ImagoBuilder;
-  //element(type: 'list', options: ChangeElementOptions<ListProps>): ImagoBuilder;
-  //element(type: 'item', options: ChangeElementOptions<ItemProps>): ImagoBuilder;
-  //element(type: 'strong', options: ChangeElementOptions<NodeProps>): ImagoBuilder;
-  //element(type: 'link', options: ChangeElementOptions<LinkProps>): ImagoBuilder;
-  //element(type: 'code', options: ChangeElementOptions<NodeProps>): ImagoBuilder;
-
-  //children(type: 'layout', options: ChangeChildrenOptions<NodeProps>): ImagoBuilder;
-  //children(type: 'section', options: ChangeChildrenOptions<SectionProps>): ImagoBuilder;
-  //children(type: 'grid', options: ChangeChildrenOptions<GridProps>): ImagoBuilder;
-  //children(type: 'tile', options: ChangeChildrenOptions<TileProps>): ImagoBuilder;
-  //children(type: 'heading', options: ChangeChildrenOptions<HeadingProps>): ImagoBuilder;
-  //children(type: 'paragraph', options: ChangeChildrenOptions<ParagraphProps>): ImagoBuilder;
-  //children(type: 'hr', options: ChangeChildrenOptions<NodeProps>): ImagoBuilder;
-  //children(type: 'image', options: ChangeChildrenOptions<NodeProps>): ImagoBuilder;
-  //children(type: 'fence', options: ChangeChildrenOptions<FenceProps>): ImagoBuilder;
-  //children(type: 'html', options: ChangeChildrenOptions<NodeProps>): ImagoBuilder;
-  //children(type: 'blockquote', options: ChangeChildrenOptions<NodeProps>): ImagoBuilder;
-  //children(type: 'list', options: ChangeChildrenOptions<ListProps>): ImagoBuilder;
-  //children(type: 'item', options: ChangeChildrenOptions<ItemProps>): ImagoBuilder;
-  //children(type: 'strong', options: ChangeChildrenOptions<NodeProps>): ImagoBuilder;
-  //children(type: 'link', options: ChangeChildrenOptions<LinkProps>): ImagoBuilder;
-  //children(type: 'code', options: ChangeChildrenOptions<NodeProps>): ImagoBuilder;
-
-  //replace(type: 'layout', options: ReplaceOptions<NodeProps>): ImagoBuilder;
-  //replace(type: 'section', options: ReplaceOptions<SectionProps>): ImagoBuilder;
-  //replace(type: 'grid', options: ReplaceOptions<GridProps>): ImagoBuilder;
-  //replace(type: 'tile', options: ReplaceOptions<TileProps>): ImagoBuilder;
-  //replace(type: 'heading', options: ReplaceOptions<HeadingProps>): ImagoBuilder;
-  //replace(type: 'paragraph', options: ReplaceOptions<ParagraphProps>): ImagoBuilder;
-  //replace(type: 'hr', options: ReplaceOptions<NodeProps>): ImagoBuilder;
-  //replace(type: 'image', options: ReplaceOptions<NodeProps>): ImagoBuilder;
-  //replace(type: 'fence', options: ReplaceOptions<FenceProps>): ImagoBuilder;
-  //replace(type: 'html', options: ReplaceOptions<NodeProps>): ImagoBuilder;
-  //replace(type: 'blockquote', options: ReplaceOptions<NodeProps>): ImagoBuilder;
-  //replace(type: 'list', options: ReplaceOptions<ListProps>): ImagoBuilder;
-  //replace(type: 'item', options: ReplaceOptions<ItemProps>): ImagoBuilder;
-  //replace(type: 'strong', options: ReplaceOptions<NodeProps>): ImagoBuilder;
-  //replace(type: 'link', options: ReplaceOptions<LinkProps>): ImagoBuilder;
-  //replace(type: 'code', options: ReplaceOptions<NodeProps>): ImagoBuilder;
-
-  attributeToClass(type: NodeType, options: AttributeToClassOptions<NodeProps>): ImagoBuilder;
   addClasses(classes: Partial<Record<NodeType, string>>): ImagoBuilder;
 
   use(middleware: ImagoBuilder): ImagoBuilder;
@@ -181,7 +67,7 @@ export interface ImagoBuilder {
   use(type: 'paragraph', middleware: ImagoMiddleware<ParagraphProps>): ImagoBuilder;
   use(type: 'hr', middleware: ImagoMiddleware<NodeProps>): ImagoBuilder;
   use(type: 'image', middleware: ImagoMiddleware<NodeProps>): ImagoBuilder;
-  use(type: 'fence', middleware: ImagoMiddleware<NodeProps>): ImagoBuilder;
+  use(type: 'fence', middleware: ImagoMiddleware<FenceProps>): ImagoBuilder;
   use(type: 'html', middleware: ImagoMiddleware<NodeProps>): ImagoBuilder;
   use(type: 'blockquote', middleware: ImagoMiddleware<NodeProps>): ImagoBuilder;
   use(type: 'list', middleware: ImagoMiddleware<ListProps>): ImagoBuilder;
@@ -227,30 +113,18 @@ export class ImagoBuilder {
     return this.use(selector.type, Imago.render(selector, component));
   }
 
-  class<T extends NodeProps>(type: NodeType, options: ChangeClassOptions<T>) {
-    return this.use(type, Imago.changeClass(options));
+  element<T extends NodeProps>(selector: Selector<T>, element: string | FunctionComponent<T> | ComponentClass<T>) {
+    return this.use(selector.type, Imago.element(selector, element));
   }
 
-  element<T extends NodeProps>(type: NodeType, options: ChangeElementOptions<T>) {
-    return this.use(type, Imago.changeElement(options));
-  }
-
-  children<T extends NodeProps>(type: NodeType, options: ChangeChildrenOptions<T>) {
-    return this.use(type, Imago.changeChildren(options));
-  }
-
-  replace<T extends NodeProps>(type: NodeType, options: ReplaceOptions<T>) {
-    return this.use(type, Imago.replace(options));
-  }
-
-  attributeToClass(type: NodeType, options: AttributeToClassOptions<NodeProps>) {
-    return this.use(type, Imago.attributeToClass(options));
+  attributeToClass<T extends NodeProps>(selector: Selector<T>, options: AttributeToClassOptions<T>) {
+    return this.use(selector.type, Imago.attributeToClass(selector, options));
   }
 
   addClasses(classes: Partial<Record<NodeType, string>>) {
     for (const type of Object.keys(classes)) {
-      this.class(type as NodeType, {
-        add: classes[type as NodeType]
+      this.transform(new Selector<any>(type as NodeType), {
+        addClass: classes[type as NodeType]
       });
     }
     return this;
@@ -276,13 +150,6 @@ export class ImagoBuilder {
   }
 }
 
-
-function isMatching<T extends NodeProps>(props: T, { match, matchClass, matchClassNot }: MatchOptions<T>) {
-  return Object.entries(match || {}).every(([k, v]) => (props as any)[k] === v)
-    && (matchClass ? ((props.className || '') as string).split(' ').indexOf(matchClass) >= 0 : true)
-    && (matchClassNot ? ((props.className || '') as string).split(' ').indexOf(matchClassNot) < 0 : true)
-}
-
 export class Imago extends Template {
   constructor(
     public readonly name: string,
@@ -302,50 +169,11 @@ export class Imago extends Template {
     return new ImagoBuilder(name, final, {});
   }
 
-  static changeClass<T extends NodeProps>({ add, replace, finish, ...matchOptions }: ChangeClassOptions<T>): ImagoMiddleware<T> {
-    return (next, final) => props => {
-      const n = finish ? final : next;
-
-      if (isMatching(props, matchOptions)) {
-        let newClass: string = props.className || '';
-        for (const [k, v] of Object.entries(replace || {})) {
-          newClass = newClass.replace(k, v);
-        }
-        if (add) {
-          newClass = [newClass, add].join(' ');
-        }
-        return n({ ...props, className: newClass });
-      } else {
-        return next(props);
-      }
-    }
-  }
-
-  static changeChildren<T extends NodeProps>({ add, replace, finish, ...matchOptions }: ChangeChildrenOptions<T>): ImagoMiddleware<T> {
-    return (next, final) => props => {
-      const n = finish ? final : next;
-
-      if (isMatching(props, matchOptions)) {
-        if (add) {
-          return n({ ...props, children: <>{ props.children } { add }</>})
-        }
-        if (replace) {
-          return n({ ...props, children: replace(props) })
-        }
-      }
-      return next(props);
-    }
-  }
-
-  static replace<T extends NodeProps>({ render, ...matchOptions }: ReplaceOptions<T>): ImagoMiddleware<T> {
-    return (next, final) => props => {
-      return (isMatching(props, matchOptions)) ? render(props) : next(props);
-    }
-  }
-
-  static render<T extends NodeProps>(selector: Selector<T>, component: ImagoHandler<T>): ImagoMiddleware<T> {
+  static render<T extends NodeProps>(selector: Selector<T>, Component: React.FunctionComponent<T> | ReactElement): ImagoMiddleware<T> {
     return next => props => {
-      return selector.match(props) ? component(props) : next(props);
+      return selector.match(props)
+        ? typeof Component === 'function' ? Component(props) : Component
+        : next(props);
     }
   }
 
@@ -383,16 +211,16 @@ export class Imago extends Template {
     }
   }
 
-  static changeElement<T extends NodeProps>({ replace, ...matchOptions }: ChangeElementOptions<T>): ImagoMiddleware<T> {
-    return next => ({ children, ...props }) => isMatching({ children, ...props } as any, matchOptions)
-      ? React.createElement(replace, props as any, children)
+  static element<T extends NodeProps>(selector: Selector<T>, element: string | FunctionComponent<T> | ComponentClass<T>): ImagoMiddleware<T> {
+    return next => ({ children, ...props }) => selector.match({ children, ...props } as any)
+      ? React.createElement(element, props as any, children)
       : next({ children, ...props } as any);
   }
 
-  static attributeToClass<T extends NodeProps>({ name, values, ...matchOptions }: AttributeToClassOptions<T>): ImagoMiddleware<T> {
+  static attributeToClass<T extends NodeProps>(selector: Selector<T>, { name, values }: AttributeToClassOptions<T>): ImagoMiddleware<T> {
     return next => props => {
-      if (isMatching(props, matchOptions) && props[name] in values) {
-        return next({ ...props, className: [props.className, values[props[name]]].join(' ') });
+      if (selector.match(props) && props[name] in values) {
+        return next({ ...props, className: [props.className, values[props[name]]].join(' ').trim() });
       } else {
         return next(props);
       }

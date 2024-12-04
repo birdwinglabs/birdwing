@@ -14,19 +14,7 @@ export const tabs = Imago.configure('tabs')
       </TabGroup>
     )
   })
-  .element('list', {
-    matchClass: 'tabs',
-    replace: TabList,
-  })
-  .element('list', {
-    matchClass: 'tab-panels',
-    replace: TabPanels,
-  })
-  .element('item', {
-    matchClass: 'tab',
-    replace: Tab,
-  })
-  .element('item', {
-    matchClass: 'tab-panel',
-    replace: TabPanel,
-  });
+  .element(sel.tabs, TabList)
+  .element(sel.tabPanels, TabPanels)
+  .element(sel.tab, Tab)
+  .element(sel.tabPanel, TabPanel)

@@ -41,9 +41,10 @@ export interface ListProps extends NodeProps {
 export interface ItemProps extends NodeProps {}
 
 export interface FenceProps extends NodeProps {
-  language?: string;
+  children: string;
+  language: string;
   html?: boolean;
-  height: string;
+  height?: string;
 }
 
 export interface HeadingProps extends NodeProps {
