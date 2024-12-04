@@ -1,4 +1,5 @@
 import { Imago } from "../Imago";
+import { selectors as sel } from "../selectors.js";
 
 export const grid = Imago.configure('grid')
   .attributeToClass('grid', {
@@ -96,4 +97,4 @@ export const grid = Imago.configure('grid')
       12: 'lg:order-12',
     }
   })
-  .changeClass('grid', { add: 'grid' })
+  .transform(sel.grid, { addClass: 'grid' })

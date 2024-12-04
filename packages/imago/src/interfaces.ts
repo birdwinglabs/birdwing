@@ -60,12 +60,45 @@ export interface TemplateOptions {
   elements?: Record<string, ImagoHandler>;
 }
 
-export interface ProjectProps {
-  slot?: string;
 
-  type?: string[];
+export type NodeType = 
+  'layout' |
+  'section' |
+  'grid' |
+  'tile' |
+  'heading' |
+  'paragraph' |
+  'hr' |
+  'image' |
+  'fence' |
+  'html' |
+  'blockquote' |
+  'list' |
+  'item' |
+  'strong' |
+  'link' |
+  'code';
 
-  nodes: React.ReactNode[];
+export class Selector<T extends NodeProps> {
+  constructor(
+    public readonly type: NodeType,
+    private attributes: Partial<T> = {},
+    private classes: string[] = [],
+  ) {}
 
-  enumerate?: boolean;
+  match(props: T): boolean {
+    const propsClasses = (props.className as string || '').split(' ');
+
+    return Object.entries(this.attributes).every(([k, v]) => (props as any)[k] === v)
+      && (this.classes.every(c => propsClasses.indexOf(c) >= 0))
+      //&& (matchClassNot ? ((props.className || '') as string).split(' ').indexOf(matchClassNot) < 0 : true)
+  }
+
+  withClass(...name: string[]): Selector<T> {
+    return new Selector<T>(this.type, this.attributes, this.classes.concat(...name));
+  }
+
+  withAttr(attrs: Partial<T>): Selector<T> {
+    return new Selector<T>(this.type, {...this.attributes, ...attrs}, this.classes);
+  }
 }

@@ -4,6 +4,7 @@ export { Tailwind } from './tailwind';
 export { HeadlessUI } from './headlessui';
 
 export { Imago, Ordering, OrderingContext } from './Imago.js';
+export { selectors } from './selectors.js';
 
 export interface NavLinkConfig {
   end: boolean;

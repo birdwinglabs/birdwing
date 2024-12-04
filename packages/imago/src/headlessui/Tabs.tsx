@@ -1,34 +1,32 @@
 import { Imago } from "../Imago";
+import { selectors as sel } from "../selectors.js";
 import { PageContext } from '@birdwing/react';
 import { useContext } from 'react';
 import { Tab, TabGroup, TabList, TabPanels, TabPanel } from '@headlessui/react';
 
 export const tabs = Imago.configure('tabs')
-  .replace('section', {
-    match: { name: 'tab-group' },
-    render: ({ id, children }) => {
-      const { state, setState } = useContext(PageContext);
+  .render(sel.tabGroup, ({ id, children }) => {
+    const { state, setState } = useContext(PageContext);
 
-      return (
-        <TabGroup selectedIndex={state(id || '', 0)} onChange={index => setState(id || '', index)}>
-          { children }
-        </TabGroup>
-      )
-    }
+    return (
+      <TabGroup selectedIndex={state(id || '', 0)} onChange={index => setState(id || '', index)}>
+        { children }
+      </TabGroup>
+    )
   })
-  .changeElement('list', {
+  .element('list', {
     matchClass: 'tabs',
     replace: TabList,
   })
-  .changeElement('list', {
+  .element('list', {
     matchClass: 'tab-panels',
     replace: TabPanels,
   })
-  .changeElement('item', {
+  .element('item', {
     matchClass: 'tab',
     replace: Tab,
   })
-  .changeElement('item', {
+  .element('item', {
     matchClass: 'tab-panel',
     replace: TabPanel,
   });
