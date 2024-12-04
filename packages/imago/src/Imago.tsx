@@ -1,4 +1,4 @@
-import React, { createContext, FunctionComponent, ReactNode, useContext } from "react";
+import React, { isValidElement, createContext, FunctionComponent, ReactNode, useContext } from "react";
 import { Template } from '@birdwing/react';
 import {
   FenceProps,
@@ -17,18 +17,15 @@ import {
   TileProps
 } from "./interfaces.js";
 import { defaultElements } from "./Elements.js";
-import { LinkProps } from "react-router-dom";
 
 const TemplateContext = createContext<Imago | undefined>(undefined);
 
 export interface ProjectProps {
-  slot?: string;
-
   template?: Imago;
 
-  type?: string[];
+  filter?: Selector<any> | Selector<any>[]
 
-  nodes: React.ReactNode[];
+  children: React.ReactNode;
 
   enumerate?: boolean;
 }
@@ -242,13 +239,6 @@ export class ImagoBuilder {
     return this.use(type, Imago.changeChildren(options));
   }
 
-  context<T extends NodeProps>(type: NodeType, options: ChangeContextOptions<T>) {
-    return this.children(type, {
-      ...options,
-      replace: ({ children }) => <Imago.Project slot={options.slot} nodes={children as any}></Imago.Project>
-    });
-  }
-
   replace<T extends NodeProps>(type: NodeType, options: ReplaceOptions<T>) {
     return this.use(type, Imago.replace(options));
   }
@@ -409,13 +399,14 @@ export class Imago extends Template {
     }
   }
 
-  static Project({ template, nodes, type, enumerate }: ProjectProps) {
-    let children = nodes;
-
-    if (type) {
-      children = React.Children.toArray(nodes).filter(c => {
-        const name = (c as any).type.displayName;
-        return type.includes(name);
+  static Project({ template, children, filter, enumerate }: ProjectProps) {
+    if (filter) {
+      const filters = Array.isArray(filter) ? filter : [filter];
+      children = React.Children.toArray(children).filter(c => {
+        if (isValidElement(c)) {
+          return filters.some(f => f.type === (c.type as any).displayName && f.match(c.props));
+        }
+        return false;
       });
     }
 
