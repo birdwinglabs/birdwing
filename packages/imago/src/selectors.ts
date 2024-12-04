@@ -12,10 +12,10 @@ import {
   TileProps
 } from "./interfaces";
 
-function layout<T extends NodeProps = NodeProps>() { return new Selector<T>('layout') };
-const section = new Selector<SectionProps>('section');
-const grid = new Selector<GridProps>('grid');
-const tile = new Selector<TileProps>('tile');
+function layout<T extends NodeProps = NodeProps>(attr?: Partial<T>) { return new Selector<T>('layout', attr) };
+const section = (name?: string) => new Selector<SectionProps>('section', { name });
+const grid = (name?: string) => new Selector<GridProps>('grid', { name });
+const tile = (name?: string) => new Selector<TileProps>('tile', { name });
 const heading = new Selector<HeadingProps>('heading');
 const paragraph = new Selector<ParagraphProps>('paragraph');
 const hr = new Selector<NodeProps>('hr');
@@ -54,7 +54,7 @@ export const selectors = {
   h5: heading.withAttr({ level: 5 }),
   h6: heading.withAttr({ level: 6 }),
 
-  tabGroup: section.withClass('tab-group'),
+  tabGroup: section('tab-group'),
   tabs: list.withClass('tabs'),
   tab: item.withClass('tab'),
   tabPanels: list.withClass('tab-panels'),

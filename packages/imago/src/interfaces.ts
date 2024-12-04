@@ -89,7 +89,7 @@ export class Selector<T extends NodeProps> {
   match(props: T): boolean {
     const propsClasses = (props.className as string || '').split(' ');
 
-    return Object.entries(this.attributes).every(([k, v]) => (props as any)[k] === v)
+    return Object.entries(this.attributes).every(([k, v]) => v === undefined || (props as any)[k] === v)
       && (this.classes.every(c => propsClasses.indexOf(c) >= 0))
       //&& (matchClassNot ? ((props.className || '') as string).split(' ').indexOf(matchClassNot) < 0 : true)
   }

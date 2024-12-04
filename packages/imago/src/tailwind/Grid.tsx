@@ -97,4 +97,4 @@ export const grid = Imago.configure('grid')
       12: 'lg:order-12',
     }
   })
-  .transform(sel.grid, { addClass: 'grid' })
+  .transform(sel.grid(), { addClass: 'grid' })
