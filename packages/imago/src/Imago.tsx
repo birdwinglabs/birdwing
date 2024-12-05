@@ -21,7 +21,7 @@ import { defaultElements } from "./Elements.js";
 const TemplateContext = createContext<Imago | undefined>(undefined);
 
 export interface ProjectProps {
-  template?: Imago;
+  template?: ImagoBuilder;
 
   filter?: Selector<any> | Selector<any>[]
 
@@ -48,11 +48,27 @@ export interface TransformOptions<T> {
   /** Set the class  */
   class?: string | string[];
   addClass?: string | string[];
-  template?: Imago;
+  template?: ImagoBuilder;
   children?: ImagoHandler<T>;
   childAfter?: ReactNode;
   childBefore?: ReactNode;
   final?: boolean;
+}
+
+export class ImagoTemplate extends Template {
+  private components: Record<string, Imago> = {};
+
+  component(name: string, builder: ImagoBuilder) {
+    this.components[name] = builder.template();
+    return this;
+  }
+
+  resolve(component: string, node?: string): React.FunctionComponent<any> {
+    if (!this.components[component]) {
+      this.components[component] = Imago.configure().template()
+    }
+    return this.components[component].resolve(node);
+  }
 }
 
 
@@ -82,13 +98,13 @@ export interface ImagoBuilder {
 
 export class ImagoBuilder {
   constructor(
-    public readonly name: string,
+    //public readonly name: string,
     private final: Record<string, ImagoHandler> = { ...defaultElements },
     public  middleware: Record<string, ImagoMiddleware[]> = {},
   ) {}
 
   template() {
-    return new Imago(this.name, this.createHandlers());
+    return new Imago(this.createHandlers());
   }
 
   private createHandlers() {
@@ -142,7 +158,7 @@ export class ImagoBuilder {
 
       if (opts.template) {
         p = { ...p, children: (
-          <TemplateContext.Provider value={opts.template}>{ p.children }</TemplateContext.Provider>
+          <TemplateContext.Provider value={opts.template.template()}>{ p.children }</TemplateContext.Provider>
         )}
       }
 
@@ -199,17 +215,17 @@ export class ImagoBuilder {
   }
 }
 
-export class Imago extends Template {
+export class Imago {
   constructor(
-    public readonly name: string,
+    //public readonly name: string,
     private handlers: Record<string, ImagoHandler>,
   ) {
-    super();
+    //super();
   }
 
-  static configure(name: string, options?: TemplateOptions) {
+  static configure(options?: TemplateOptions) {
     const final = { ...defaultElements, ...options?.elements || {} };
-    return new ImagoBuilder(name, final, {});
+    return new ImagoBuilder(final, {});
   }
 
   static Project({ template, children, filter, enumerate }: ProjectProps) {
@@ -224,7 +240,7 @@ export class Imago extends Template {
     }
 
     return template
-      ? <TemplateContext.Provider value={template}>{ children }</TemplateContext.Provider>
+      ? <TemplateContext.Provider value={template.template()}>{ children }</TemplateContext.Provider>
       : <>{ children }</>;
   }
 
@@ -239,8 +255,8 @@ export class Imago extends Template {
     return ordered;
   }
 
-  resolve(node: string) {
-    if (node === 'layout') {
+  resolve(node?: string) {
+    if (!node) {
       return (props: any) => (
         <TemplateContext.Provider value={undefined}>
           { this.handlers['layout'](props) }
@@ -251,7 +267,7 @@ export class Imago extends Template {
     const Component: React.FunctionComponent = (p: any) => {
       const template = useContext(TemplateContext)
 
-      if (template && template.name !== this.name) {
+      if (template && template !== this) {
         return template.resolve(node)(p);
       } else {
         const handler = this.handlers[node];

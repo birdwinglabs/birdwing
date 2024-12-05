@@ -4,7 +4,7 @@ import { PageContext } from '@birdwing/react';
 import { useContext } from 'react';
 import { Tab, TabGroup, TabList, TabPanels, TabPanel } from '@headlessui/react';
 
-export const tabs = Imago.configure('tabs')
+export const tabs = Imago.configure()
   .render(sel.tabGroup, ({ id, children }) => {
     const { state, setState } = useContext(PageContext);
 

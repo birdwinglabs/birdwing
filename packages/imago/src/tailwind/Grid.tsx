@@ -1,7 +1,7 @@
 import { Imago } from "../Imago";
 import { selectors as sel } from "../selectors.js";
 
-export const grid = Imago.configure('grid')
+export const grid = Imago.configure()
   .attributeToClass(sel.grid(), {
     name: 'flow',
     values: {
