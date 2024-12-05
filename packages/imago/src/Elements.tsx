@@ -33,7 +33,6 @@ export const defaultElements: Record<string, ImagoHandler> = {
     return <pre className={className}><CodeBlock language={language}>{ children }</CodeBlock></pre>;
   },
   html: ({ children, className }: NodeProps) => {
-    console.log(className);
     return <div className={className} dangerouslySetInnerHTML={{__html: children as string }}/>
   },
   item: ({ children, ...props }: ItemProps) => {

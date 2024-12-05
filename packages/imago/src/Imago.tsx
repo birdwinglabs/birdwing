@@ -56,16 +56,16 @@ export interface TransformOptions<T> {
 }
 
 export class ImagoTemplate extends Template {
-  private components: Record<string, Imago> = {};
+  private components: Record<string, ImagoComponent<any>> = {};
 
-  component(name: string, builder: ImagoBuilder) {
-    this.components[name] = builder.template();
+  component(name: string, component: ImagoComponent<any>) {
+    this.components[name] = component;
     return this;
   }
 
   resolve(component: string, node?: string): React.FunctionComponent<any> {
     if (!this.components[component]) {
-      this.components[component] = Imago.configure().template()
+      this.components[component] = Imago.configure().component();
     }
     return this.components[component].resolve(node);
   }
@@ -96,9 +96,24 @@ export interface ImagoBuilder {
   use(type: 'code', middleware: ImagoMiddleware<NodeProps>): ImagoBuilder;
 }
 
+export class ImagoComponent<T extends NodeProps> {
+  constructor(private template: Imago, private render: FunctionComponent<T>) {}
+
+  resolve(node?: string) {
+    if (!node) {
+      return (props: any) => (
+        <TemplateContext.Provider value={undefined}>
+          { this.render(props) }
+        </TemplateContext.Provider>
+      );
+    } else {
+      return this.template.resolve(node);
+    }
+  }
+}
+
 export class ImagoBuilder {
   constructor(
-    //public readonly name: string,
     private final: Record<string, ImagoHandler> = { ...defaultElements },
     public  middleware: Record<string, ImagoMiddleware[]> = {},
   ) {}
@@ -107,13 +122,18 @@ export class ImagoBuilder {
     return new Imago(this.createHandlers());
   }
 
+  component<T extends NodeProps = NodeProps>(render?: FunctionComponent<T>) {
+    const defaultRender = ({ children, className, id }: NodeProps) => React.createElement('div', { className, id }, children);
+    return new ImagoComponent(this.template(), render || defaultRender);
+  }
+
   private createHandlers() {
     const handlerMap: Record<string, ImagoHandler> = { ...this.final };
 
     for (const [name, middleware] of Object.entries(this.middleware)) {
       const final = this.final[name];
 
-      for (const mw of middleware) {
+      for (const mw of middleware.slice().reverse()) {
         let next = handlerMap[name];
         if (!next) {
           throw Error(`Next handler missing for '${name}'`);
@@ -200,7 +220,7 @@ export class ImagoBuilder {
       if (!this.middleware[arg1]) {
         this.middleware[arg1] = [];
       }
-      this.middleware[arg1].unshift(arg2);
+      this.middleware[arg1].push(arg2);
     }
 
     if (typeof arg1 === 'object') {
@@ -255,15 +275,7 @@ export class Imago {
     return ordered;
   }
 
-  resolve(node?: string) {
-    if (!node) {
-      return (props: any) => (
-        <TemplateContext.Provider value={undefined}>
-          { this.handlers['layout'](props) }
-        </TemplateContext.Provider>
-      );
-    }
-
+  resolve(node: string) {
     const Component: React.FunctionComponent = (p: any) => {
       const template = useContext(TemplateContext)
 
