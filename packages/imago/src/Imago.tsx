@@ -1,4 +1,4 @@
-import React, { isValidElement, createContext, FunctionComponent, ReactNode, useContext, ReactElement, ComponentClass } from "react";
+import React, { isValidElement, createContext, FunctionComponent, ReactNode, useContext, ComponentClass } from "react";
 import { Template } from '@birdwing/react';
 import {
   FenceProps,
@@ -107,20 +107,62 @@ export class ImagoBuilder {
     return handlerMap;
   }
 
-  transform<T extends NodeProps>(selector: Selector<T>, options: TransformOptions<T>) {
-    return this.use(selector.type, Imago.transform(selector, options));
+  transform<T extends NodeProps>(selector: Selector<T>, opts: TransformOptions<T>) {
+    return this.use(selector.type, (next, finish) => props => {
+      const n = opts.final ? finish : next;
+
+      if (!selector.match(props)) {
+        return next(props);
+      }
+
+      let p = props;
+
+      if (opts.class) {
+        p = { ...p, className: Array.isArray(opts.class) ? opts.class.join(' ') : opts.class };
+      }
+
+      if (opts.addClass) {
+        const oldClass = props.className as string || '';
+        const newClass = Array.isArray(opts.addClass) ? opts.addClass.join(' ') : opts.addClass;
+        p = { ...p, className: [oldClass, newClass].join(' ').trim() };
+      }
+
+      if (opts.children) {
+        p = { ...p, children: opts.children(p) }
+      }
+      
+      if (opts.addChild) {
+        p = { ...p, children: <>{ p.children } { opts.addChild }</> }
+      }
+
+      if (opts.template) {
+        p = { ...p, children: (
+          <TemplateContext.Provider value={opts.template}>{ p.children }</TemplateContext.Provider>
+        )}
+      }
+
+      return n(p);
+    })
   }
 
-  render<T extends NodeProps>(selector: Selector<T>, component: ImagoHandler<T>) {
-    return this.use(selector.type, Imago.render(selector, component));
+  render<T extends NodeProps>(selector: Selector<T>, component: FunctionComponent<T>) {
+    return this.use(selector.type, next => props => selector.match(props) ? component(props) : next(props));
   }
 
   element<T extends NodeProps>(selector: Selector<T>, element: string | FunctionComponent<T> | ComponentClass<T>) {
-    return this.use(selector.type, Imago.element(selector, element));
+    return this.use(selector.type, next => ({ children, ...props }) => selector.match({ children, ...props } as any)
+      ? React.createElement(element, props as any, children)
+      : next({ children, ...props } as any));
   }
 
-  attributeToClass<T extends NodeProps>(selector: Selector<T>, options: AttributeToClassOptions<T>) {
-    return this.use(selector.type, Imago.attributeToClass(selector, options));
+  attributeToClass<T extends NodeProps>(selector: Selector<T>, { name, values }: AttributeToClassOptions<T>) {
+    return this.use(selector.type, next => props => {
+      if (selector.match(props) && props[name] in values) {
+        return next({ ...props, className: [props.className, values[props[name]]].join(' ').trim() });
+      } else {
+        return next(props);
+      }
+    });
   }
 
   addClasses(classes: Partial<Record<NodeType, string>>) {
@@ -162,75 +204,7 @@ export class Imago extends Template {
 
   static configure(name: string, options?: TemplateOptions) {
     const final = { ...defaultElements, ...options?.elements || {} };
-
-    const slots = (options?.slots || []).reduce((slots, slot) => {
-      slots[(slot as any).name] = slot;
-      return slots;
-    }, {} as Record<string, Template>);
-
     return new ImagoBuilder(name, final, {});
-  }
-
-  static render<T extends NodeProps>(selector: Selector<T>, Component: React.FunctionComponent<T> | ReactElement): ImagoMiddleware<T> {
-    return next => props => {
-      return selector.match(props)
-        ? typeof Component === 'function' ? Component(props) : Component
-        : next(props);
-    }
-  }
-
-  static transform<T extends NodeProps>(selector: Selector<T>, opts: TransformOptions<T>): ImagoMiddleware<T> {
-    return (next, finish) => props => {
-      const n = opts.final ? finish : next;
-
-      if (!selector.match(props)) {
-        return next(props);
-      }
-
-      let p = props;
-
-      if (opts.class) {
-        p = { ...p, className: Array.isArray(opts.class) ? opts.class.join(' ') : opts.class };
-      }
-
-      if (opts.addClass) {
-        const oldClass = props.className as string || '';
-        const newClass = Array.isArray(opts.addClass) ? opts.addClass.join(' ') : opts.addClass;
-        p = { ...p, className: [oldClass, newClass].join(' ').trim() };
-      }
-
-      if (opts.children) {
-        p = { ...p, children: opts.children(p) }
-      }
-      
-      if (opts.addChild) {
-        p = { ...p, children: <>{ p.children } { opts.addChild }</> }
-      }
-
-      if (opts.template) {
-        p = { ...p, children: (
-          <TemplateContext.Provider value={opts.template}>{ p.children }</TemplateContext.Provider>
-        )}
-      }
-
-      return n(p);
-    }
-  }
-
-  static element<T extends NodeProps>(selector: Selector<T>, element: string | FunctionComponent<T> | ComponentClass<T>): ImagoMiddleware<T> {
-    return next => ({ children, ...props }) => selector.match({ children, ...props } as any)
-      ? React.createElement(element, props as any, children)
-      : next({ children, ...props } as any);
-  }
-
-  static attributeToClass<T extends NodeProps>(selector: Selector<T>, { name, values }: AttributeToClassOptions<T>): ImagoMiddleware<T> {
-    return next => props => {
-      if (selector.match(props) && props[name] in values) {
-        return next({ ...props, className: [props.className, values[props[name]]].join(' ').trim() });
-      } else {
-        return next(props);
-      }
-    }
   }
 
   static Project({ template, children, filter, enumerate }: ProjectProps) {
