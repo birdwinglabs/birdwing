@@ -50,7 +50,8 @@ export interface TransformOptions<T> {
   addClass?: string | string[];
   template?: Imago;
   children?: ImagoHandler<T>;
-  addChild?: ReactNode;
+  childAfter?: ReactNode;
+  childBefore?: ReactNode;
   final?: boolean;
 }
 
@@ -131,8 +132,12 @@ export class ImagoBuilder {
         p = { ...p, children: opts.children(p) }
       }
       
-      if (opts.addChild) {
-        p = { ...p, children: <>{ p.children } { opts.addChild }</> }
+      if (opts.childBefore) {
+        p = { ...p, children: <>{ opts.childBefore } { p.children }</> }
+      }
+
+      if (opts.childAfter) {
+        p = { ...p, children: <>{ p.children } { opts.childAfter }</> }
       }
 
       if (opts.template) {
