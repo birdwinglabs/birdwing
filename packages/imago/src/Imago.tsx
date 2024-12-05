@@ -45,9 +45,11 @@ export interface AttributeToClassOptions<T extends NodeProps> {
 }
 
 export interface TransformOptions<T> {
+  /** Set the class  */
+  class?: string | string[];
   addClass?: string | string[];
   template?: Imago;
-  replaceChildren?: ImagoHandler<T>;
+  children?: ImagoHandler<T>;
   addChild?: ReactNode;
   final?: boolean;
 }
@@ -177,9 +179,9 @@ export class Imago extends Template {
     }
   }
 
-  static transform<T extends NodeProps>(selector: Selector<T>, { addClass, template, replaceChildren, addChild, final }: TransformOptions<T>): ImagoMiddleware<T> {
+  static transform<T extends NodeProps>(selector: Selector<T>, opts: TransformOptions<T>): ImagoMiddleware<T> {
     return (next, finish) => props => {
-      const n = final ? finish : next;
+      const n = opts.final ? finish : next;
 
       if (!selector.match(props)) {
         return next(props);
@@ -187,23 +189,27 @@ export class Imago extends Template {
 
       let p = props;
 
-      if (addClass) {
+      if (opts.class) {
+        p = { ...p, className: Array.isArray(opts.class) ? opts.class.join(' ') : opts.class };
+      }
+
+      if (opts.addClass) {
         const oldClass = props.className as string || '';
-        const newClass = Array.isArray(addClass) ? addClass.join(' ') : addClass;
+        const newClass = Array.isArray(opts.addClass) ? opts.addClass.join(' ') : opts.addClass;
         p = { ...p, className: [oldClass, newClass].join(' ').trim() };
       }
 
-      if (replaceChildren) {
-        p = { ...p, children: replaceChildren(p) }
+      if (opts.children) {
+        p = { ...p, children: opts.children(p) }
       }
       
-      if (addChild) {
-        p = { ...p, children: <>{ p.children } { addChild }</> }
+      if (opts.addChild) {
+        p = { ...p, children: <>{ p.children } { opts.addChild }</> }
       }
 
-      if (template) {
+      if (opts.template) {
         p = { ...p, children: (
-          <TemplateContext.Provider value={template}>{ p.children }</TemplateContext.Provider>
+          <TemplateContext.Provider value={opts.template}>{ p.children }</TemplateContext.Provider>
         )}
       }
 
