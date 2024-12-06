@@ -196,6 +196,12 @@ export class ImagoBuilder {
       : next({ children, ...props } as any));
   }
 
+  wrap<T extends NodeProps, U extends {}>(selector: Selector<T>, wrapper: string | FunctionComponent<U> | ComponentClass<U>, wrapperProps: Omit<U, 'children'>) {
+    return this.use(selector.type, next => ({ children, ...props }) => selector.match({ children, ...props } as any)
+      ? React.createElement(wrapper, wrapperProps as any, next({ children, ...props }))
+      : next({ children, ...props } as any));
+  }
+
   attributeToClass<T extends NodeProps>(selector: Selector<T>, { name, values }: AttributeToClassOptions<T>) {
     return this.use(selector.type, next => props => {
       if (selector.match(props) && props[name] in values) {
