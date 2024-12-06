@@ -1,5 +1,5 @@
 import React, { isValidElement, createContext, FunctionComponent, ReactNode, useContext, ComponentClass } from "react";
-import { Template } from '@birdwing/react';
+import { ComponentDescription, Template } from '@birdwing/react';
 import {
   FenceProps,
   GridProps,
@@ -56,18 +56,18 @@ export interface TransformOptions<T> {
 }
 
 export class ImagoTemplate extends Template {
-  private components: Record<string, ImagoComponent<any>> = {};
+  private components: Record<string, ImagoResolver> = {};
 
-  component(name: string, component: ImagoComponent<any>) {
+  component(name: string, component: ImagoResolver) {
     this.components[name] = component;
     return this;
   }
 
-  resolve(component: string, node?: string): React.FunctionComponent<any> {
-    if (!this.components[component]) {
-      this.components[component] = Imago.configure().component();
+  resolve(component: ComponentDescription, node?: string): React.FunctionComponent<any> {
+    if (!this.components[component.name]) {
+      this.components[component.name] = Imago.configure().component();
     }
-    return this.components[component].resolve(node);
+    return this.components[component.name].resolve(component.attributes, node);
   }
 }
 
@@ -96,12 +96,24 @@ export interface ImagoBuilder {
   use(type: 'code', middleware: ImagoMiddleware<NodeProps>): ImagoBuilder;
 }
 
-export class ImagoComponent<T extends NodeProps> {
+export interface ImagoResolver {
+  resolve(attributes: any, node?: string): FunctionComponent<any>
+}
+
+export class ImagoSwitch<T extends Record<string, any>> implements ImagoResolver {
+  constructor(private resolver: (attrs: T) => ImagoComponent<T>) {}
+
+  resolve(attrs: any, node?: string) {
+    return this.resolver(attrs).resolve(attrs, node);
+  }
+}
+
+export class ImagoComponent<T extends NodeProps> implements ImagoResolver {
   constructor(private template: Imago, private render: FunctionComponent<T>) {}
 
-  resolve(node?: string) {
+  resolve(attrs: any, node?: string) {
     if (!node) {
-      return (props: any) => (
+      return (props: T) => (
         <TemplateContext.Provider value={undefined}>
           { this.render(props) }
         </TemplateContext.Provider>
@@ -242,16 +254,15 @@ export class ImagoBuilder {
 }
 
 export class Imago {
-  constructor(
-    //public readonly name: string,
-    private handlers: Record<string, ImagoHandler>,
-  ) {
-    //super();
-  }
+  constructor(private handlers: Record<string, ImagoHandler>) {}
 
   static configure(options?: TemplateOptions) {
     const final = { ...defaultElements, ...options?.elements || {} };
     return new ImagoBuilder(final, {});
+  }
+
+  static resolver<T extends Record<string, any>>(resolver: (attrs: T) => ImagoComponent<any>) {
+    return new ImagoSwitch(resolver);
   }
 
   static Project({ template, children, filter, enumerate }: ProjectProps) {
