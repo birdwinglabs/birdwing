@@ -1,3 +1,3 @@
 export abstract class Template {
-  abstract resolve(node: string, slot?: string): React.FunctionComponent<any>;
+  abstract resolve(component: string, node?: string): React.FunctionComponent<any>;
 }

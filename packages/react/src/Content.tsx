@@ -1,14 +1,15 @@
 import { Tag } from '@markdoc/markdoc';
 import { Renderer } from './renderer';
+import { Template } from './interfaces';
 
 export interface ContentProps {
-  components: any;
+  template: Template;
 
   tag: Tag;
 }
 
-export function Content({ components, tag }: ContentProps) {
-  const renderer = new Renderer(components);
+export function Content({ template, tag }: ContentProps) {
+  const renderer = new Renderer(template);
 
   return <>{ renderer.render(tag) }</>;
 }

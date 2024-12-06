@@ -10,21 +10,15 @@ function isUppercase(word: string){
 export class Renderer {
   private stack: string[] = [];
 
-  constructor(private components: Record<string, Template>) {}
-
-  isComponent(name: string) {
-    return name in this.components;
-  }
+  constructor(private template: Template) {}
 
   private resolveTagName(tagName: string) {
     if (isUppercase(tagName)) {
-      const template = this.components[tagName];
-      return template.resolve('layout');
+      return this.template.resolve(tagName);
     } else {
       const componentName = this.stack.at(-1);
       if (componentName) {
-        const template = this.components[componentName];
-        return template.resolve(tagName);
+        return this.template.resolve(componentName, tagName);
       } else {
         throw Error('No component tag from stack');
       }
