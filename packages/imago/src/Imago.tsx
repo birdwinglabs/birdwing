@@ -75,6 +75,50 @@ export class ImagoTemplate extends Template {
 export interface ImagoBuilder {
   template(): Imago;
 
+  /**
+   * Transform a node.
+   * 
+   * This operation selects a node and changes its props and/or children.
+   * 
+   * @param selector 
+   * @param options
+   */
+  transform<T extends NodeProps>(selector: Selector<T>, options: TransformOptions<T>): ImagoBuilder;
+
+  /**
+   * Render a node
+   * 
+   * This operation finishes the chain of middleware for the selected node and renders it.
+   * 
+   * @param selector 
+   * @param element 
+   */
+  render<T extends NodeProps>(selector: Selector<T>, element: string | FunctionComponent<T> | ComponentClass<T>): ImagoBuilder
+
+  /**
+   * Wrap a node in another component
+   * 
+   * @param selector 
+   * @param wrapper 
+   * @param wrapperProps 
+   */
+  wrap<T extends NodeProps, U extends {}>(
+    selector: Selector<T>,
+    wrapper: string | FunctionComponent<U> | ComponentClass<U>,
+    wrapperProps: Omit<U, 'children'>
+  ): ImagoBuilder;
+
+  /**
+   * 
+   * @param selector 
+   * @param param1 
+   */
+  attributeToClass<T extends NodeProps>(selector: Selector<T>, { name, values }: AttributeToClassOptions<T>): ImagoBuilder;
+
+  /**
+   * 
+   * @param classes 
+   */
   addClasses(classes: Partial<Record<NodeType, string>>): ImagoBuilder;
 
   use(middleware: ImagoBuilder): ImagoBuilder;
@@ -198,11 +242,7 @@ export class ImagoBuilder {
     })
   }
 
-  render<T extends NodeProps>(selector: Selector<T>, component: FunctionComponent<T>) {
-    return this.use(selector.type, next => props => selector.match(props) ? component(props) : next(props));
-  }
-
-  element<T extends NodeProps>(selector: Selector<T>, element: string | FunctionComponent<T> | ComponentClass<T>) {
+  render<T extends NodeProps>(selector: Selector<T>, element: string | FunctionComponent<T> | ComponentClass<T>) {
     return this.use(selector.type, next => ({ children, ...props }) => selector.match({ children, ...props } as any)
       ? React.createElement(element, props as any, children)
       : next({ children, ...props } as any));
