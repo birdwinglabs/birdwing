@@ -145,7 +145,7 @@ export interface ImagoResolver {
 }
 
 export class ImagoSwitch<T extends Record<string, any>> implements ImagoResolver {
-  constructor(private resolver: (attrs: T) => ImagoComponent<T>) {}
+  constructor(private resolver: (attrs: T) => ImagoComponent<any>) {}
 
   resolve(attrs: any, node?: string) {
     return this.resolver(attrs).resolve(attrs, node);
@@ -179,7 +179,7 @@ export class ImagoBuilder {
   }
 
   component<T extends NodeProps = NodeProps>(render?: FunctionComponent<T>) {
-    const defaultRender = ({ children, className, id }: NodeProps) => React.createElement('div', { className, id }, children);
+    const defaultRender = ({ children, className, id, index, isLast }: T) => React.createElement('div', { className, id, index, isLast }, children);
     return new ImagoComponent(this.template(), render || defaultRender);
   }
 

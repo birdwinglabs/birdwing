@@ -4,6 +4,8 @@ export interface NodeProps extends Record<string, any>{
   id?: string;
   className?: string | any;
   children?: React.ReactNode;
+  index: number;
+  isLast: boolean;
 }
 
 export interface SectionProps extends NodeProps {
