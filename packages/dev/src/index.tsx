@@ -6,7 +6,7 @@ import { Store } from '@birdwing/store';
 import { Route } from '@birdwing/core';
 
 
-export default function App({ components, highlight }: any): JSX.Element {
+export default function App({ theme, highlight }: any): JSX.Element {
   const [content, setContent] = React.useState<Tag | null>(null);
   const [store, setStore] = React.useState<Store | null>(null);
   const location = useLocation();
@@ -80,7 +80,7 @@ export default function App({ components, highlight }: any): JSX.Element {
   if (content) {
     return (
       <PageContainer highlight={highlight}>
-        <Content components={components} tag={content} />
+        <Content template={theme} tag={content} />
       </PageContainer>
     )
   }
