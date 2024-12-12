@@ -1,31 +1,18 @@
 import { RenderableTreeNodes, Scalar, Tag } from '@markdoc/markdoc';
 import React from 'react';
 import type { ReactNode } from 'react';
-import { Template } from './interfaces.js';
+import { ComponentDescription, Template } from './interfaces.js';
 
 function isUppercase(word: string){
   return /^\p{Lu}/u.test(word);
 }
 
 export class Renderer {
-  private stack: string[] = [];
+  private stack: ComponentDescription<any>[] = [];
 
   constructor(private template: Template) {}
 
-  private resolveTagName(tagName: string) {
-    if (isUppercase(tagName)) {
-      return this.template.resolve(tagName);
-    } else {
-      const componentName = this.stack.at(-1);
-      if (componentName) {
-        return this.template.resolve(componentName, tagName);
-      } else {
-        throw Error('No component tag from stack');
-      }
-    }
-  }
-
-  render(node: RenderableTreeNodes): ReactNode {
+  render(node: RenderableTreeNodes, index: number = 0, isLast: boolean = false): ReactNode {
     if (Array.isArray(node))
       return React.createElement(React.Fragment, null, ...node.map(n => this.render(n)));
 
@@ -37,17 +24,29 @@ export class Renderer {
       attributes: { class: className, ...attrs } = {},
       children = [],
     } = node;
-
-    if (isUppercase(name)) {
-      this.stack.push(name);
-    }
-
+    
     if (className) attrs.className = className;
 
+    attrs.index = index;
+    attrs.isLast = isLast;
+
+    if (isUppercase(name)) {
+      this.stack.push({ name, attributes: attrs });
+    }
+    const component = this.stack.at(-1);
+
+    if (!component) {
+      throw Error('No component tag from stack');
+    }
+
+    const childCount = children.length;
+
+    const componentId = this.template.resolveId(component, name === component.name ? undefined : name);
+
     const elem = React.createElement(
-      this.resolveTagName(name),
+      this.template.component(componentId),
       Object.keys(attrs).length == 0 ? null : this.deepRender(attrs),
-      ...children.map(c => this.render(c))
+      ...children.map((c, i) => this.render(c, i, i === childCount - 1))
     );
 
     if (isUppercase(name)) {
