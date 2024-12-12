@@ -23,8 +23,11 @@ export const defaultElements: Record<string, ImagoHandler> = {
   strong: ({ children, className }: NodeProps) => {
     return React.createElement('strong', { className }, children)
   },
-  code: ({ children, ...props }: NodeProps) => {
-    return React.createElement('code', props, children)
+  code: ({ children, className }: NodeProps) => {
+    return React.createElement('code', { className }, children)
+  },
+  em: ({ children, className }: NodeProps) => {
+    return React.createElement('em', { className }, children)
   },
   image: ({ children, ...props }: NodeProps) => {
     return React.createElement('img', props, children)

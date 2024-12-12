@@ -55,19 +55,42 @@ export interface TransformOptions<T> {
   final?: boolean;
 }
 
-export class ImagoTemplate extends Template {
-  private components: Record<string, ImagoResolver> = {};
+const nodeTypes = ['section', 'grid', 'tile', 'paragraph', 'heading', 'strong', 'code', 'image', 'fence', 'html', 'item', 'list', 'link', 'hr', 'em'];
 
-  component(name: string, component: ImagoResolver) {
-    this.components[name] = component;
+
+export class ImagoTheme extends Template {
+  private components: ImagoComponent[] = [];
+
+  private handlers: Record<string, React.FunctionComponent> = {};
+
+  use(component: ImagoComponent) {
+    const { name, options } = component;
+    this.components.push(component);
+
+    const template = options.template.template();
+
+    this.handlers[name] = options.render;
+    for (const node of nodeTypes) {
+      this.handlers[`${name}.${node}`] = template.resolve(node);
+    }
+
     return this;
   }
 
-  resolve(component: ComponentDescription, node?: string): React.FunctionComponent<any> {
-    if (!this.components[component.name]) {
-      this.components[component.name] = Imago.configure().component();
+  resolveId(tag: ComponentDescription, node?: string) {
+    const c = this.components
+      .filter(c => c.options.tag === tag.name)
+      .find(c => c.options.match ? c.options.match(tag.attributes) : true);
+
+    if (!c) {
+      throw Error(`Missing component for tag: ${tag.name}`);
     }
-    return this.components[component.name].resolve(component.attributes, node);
+
+    return node ? `${c.name}.${node}` : c.name;
+  }
+
+  component(id: string) {
+    return this.handlers[id];
   }
 }
 
@@ -140,32 +163,20 @@ export interface ImagoBuilder {
   use(type: 'code', middleware: ImagoMiddleware<NodeProps>): ImagoBuilder;
 }
 
-export interface ImagoResolver {
-  resolve(attributes: any, node?: string): FunctionComponent<any>
+export interface ImagoComponent {
+  name: string;
+
+  options: ImagoComponentOptions;
 }
 
-export class ImagoSwitch<T extends Record<string, any>> implements ImagoResolver {
-  constructor(private resolver: (attrs: T) => ImagoComponent<any>) {}
+export interface ImagoComponentOptions {
+  tag: string;
 
-  resolve(attrs: any, node?: string) {
-    return this.resolver(attrs).resolve(attrs, node);
-  }
-}
+  match?: (attr: Record<string, any>) => boolean;
 
-export class ImagoComponent<T extends NodeProps> implements ImagoResolver {
-  constructor(private template: Imago, private render: FunctionComponent<T>) {}
+  template: ImagoBuilder;
 
-  resolve(attrs: any, node?: string) {
-    if (!node) {
-      return (props: T) => (
-        <TemplateContext.Provider value={undefined}>
-          { this.render(props) }
-        </TemplateContext.Provider>
-      );
-    } else {
-      return this.template.resolve(node);
-    }
-  }
+  render: FunctionComponent<any>;
 }
 
 export class ImagoBuilder {
@@ -176,11 +187,6 @@ export class ImagoBuilder {
 
   template() {
     return new Imago(this.createHandlers());
-  }
-
-  component<T extends NodeProps = NodeProps>(render?: FunctionComponent<T>) {
-    const defaultRender = ({ children, className, id, index, isLast }: T) => React.createElement('div', { className, id, index, isLast }, children);
-    return new ImagoComponent(this.template(), render || defaultRender);
   }
 
   private createHandlers() {
@@ -301,8 +307,15 @@ export class Imago {
     return new ImagoBuilder(final, {});
   }
 
-  static resolver<T extends Record<string, any>>(resolver: (attrs: T) => ImagoComponent<any>) {
-    return new ImagoSwitch(resolver);
+  static component<T extends NodeProps = NodeProps>(name: string, options: Partial<ImagoComponentOptions>): ImagoComponent {
+    const defaultOptions: ImagoComponentOptions = {
+      tag: name,
+      template: Imago.configure(),
+      render: ({ children, className, id, index, isLast }: T) => {
+        return React.createElement('div', { className, id, index, isLast }, children);
+      },
+    }
+    return { name, options: { ...defaultOptions, ...options } };
   }
 
   static Project({ template, children, filter, enumerate }: ProjectProps) {
