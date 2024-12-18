@@ -12,10 +12,10 @@ import {
   TileProps
 } from "./interfaces";
 
-function layout<T extends NodeProps = NodeProps>(attr?: Partial<T>) { return new Selector<T>('layout', attr) };
-const section = (name?: string) => new Selector<SectionProps>('section', { name });
-const grid = (name?: string) => new Selector<GridProps>('grid', { name });
-const tile = (name?: string) => new Selector<TileProps>('tile', { name });
+function layout<T extends NodeProps = NodeProps>(attr?: Partial<T>) { return new Selector<T>('layout').withAttr(attr || {}) };
+const section = (name?: string) => new Selector<SectionProps>('section').withAttr({ name });
+const grid = (name?: string) => new Selector<GridProps>('grid').withAttr({ name });
+const tile = (name?: string) => new Selector<TileProps>('tile').withAttr({ name });
 const heading = new Selector<HeadingProps>('heading');
 const paragraph = new Selector<ParagraphProps>('paragraph');
 const hr = new Selector<NodeProps>('hr');

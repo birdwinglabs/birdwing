@@ -1,4 +1,5 @@
 import { Template } from "@birdwing/react";
+import React from "react";
 
 export interface NodeProps extends Record<string, any>{
   id?: string;
@@ -82,26 +83,46 @@ export type NodeType =
   'link' |
   'code';
 
+export type Matcher<T extends NodeProps> = (props: T) => boolean;
+
 export class Selector<T extends NodeProps> {
   constructor(
     public readonly type: NodeType,
-    private attributes: Partial<T> = {},
-    private classes: string[] = [],
+    private matchers: Matcher<T>[] = [],
   ) {}
 
   match(props: T): boolean {
-    const propsClasses = (props.className as string || '').split(' ');
+    return this.matchers.every(m => m(props));
+  }
 
-    return Object.entries(this.attributes).every(([k, v]) => v === undefined || (props as any)[k] === v)
-      && (this.classes.every(c => propsClasses.indexOf(c) >= 0))
-      //&& (matchClassNot ? ((props.className || '') as string).split(' ').indexOf(matchClassNot) < 0 : true)
+  condition(condition: Matcher<T>) {
+    return new Selector<T>(this.type, [...this.matchers, condition]);
   }
 
   withClass(...name: string[]): Selector<T> {
-    return new Selector<T>(this.type, this.attributes, this.classes.concat(...name));
+    return this.condition(({ className }) => {
+      const classes = (className as string || '').split(' ');
+      return name.every(c => classes.indexOf(c) >= 0)
+    });
+  }
+
+  withoutClass(name: string): Selector<T> {
+    return this.condition(({ className }) => !((className as string || '').split(' ').includes(name)));
   }
 
   withAttr(attrs: Partial<T>): Selector<T> {
-    return new Selector<T>(this.type, {...this.attributes, ...attrs}, this.classes);
+    return this.condition(props => Object.entries(attrs).every(([k, v]) => v === undefined || (props as any)[k] === v));
+  }
+
+  withChild(selector: Selector<any>) {
+    return this.condition(({ children }) => {
+      return React.Children.toArray(children).some(c => React.isValidElement(c) && selector.match(c.props));
+    });
+  }
+
+  withoutChild(selector: Selector<any>) {
+    return this.condition(({ children }) => {
+      return !React.Children.toArray(children).some(c => React.isValidElement(c) && selector.match(c.props))
+    });
   }
 }
