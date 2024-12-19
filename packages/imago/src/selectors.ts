@@ -13,7 +13,7 @@ import {
 } from "./interfaces";
 
 function layout<T extends NodeProps = NodeProps>(attr?: Partial<T>) { return new Selector<T>('layout').withAttr(attr || {}) };
-const section = (name?: string) => new Selector<SectionProps>('section').withAttr({ name });
+const section = (...names: string[]) => new Selector<SectionProps>('section').condition(({ name }) => names.includes(name) );
 const grid = (name?: string) => new Selector<GridProps>('grid').withAttr({ name });
 const tile = (name?: string) => new Selector<TileProps>('tile').withAttr({ name });
 const heading = new Selector<HeadingProps>('heading');

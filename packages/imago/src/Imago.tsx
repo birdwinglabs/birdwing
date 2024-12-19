@@ -18,7 +18,7 @@ import {
 } from "./interfaces.js";
 import { defaultElements } from "./Elements.js";
 
-const TemplateContext = createContext<Imago | undefined>(undefined);
+export const TemplateContext = createContext<Imago | undefined>(undefined);
 
 export interface ProjectProps {
   template?: ImagoBuilder;

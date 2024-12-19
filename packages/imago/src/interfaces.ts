@@ -1,5 +1,6 @@
 import { Template } from "@birdwing/react";
 import React from "react";
+import { TemplateContext } from "./Imago";
 
 export interface NodeProps extends Record<string, any>{
   id?: string;
@@ -116,13 +117,21 @@ export class Selector<T extends NodeProps> {
 
   withChild(selector: Selector<any>) {
     return this.condition(({ children }) => {
-      return React.Children.toArray(children).some(c => React.isValidElement(c) && selector.match(c.props));
+      const nodes = React.isValidElement(children) && children.type === TemplateContext.Provider
+        ? children.props.children
+        : children;
+
+      return React.Children.toArray(nodes).some(c => React.isValidElement(c) && selector.match(c.props));
     });
   }
 
   withoutChild(selector: Selector<any>) {
     return this.condition(({ children }) => {
-      return !React.Children.toArray(children).some(c => React.isValidElement(c) && selector.match(c.props))
+      const nodes = React.isValidElement(children) && children.type === TemplateContext.Provider
+        ? children.props.children
+        : children;
+
+      return React.Children.toArray(nodes).every(c => !React.isValidElement(c) || !selector.match(c.props));
     });
   }
 }
