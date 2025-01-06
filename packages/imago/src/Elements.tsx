@@ -8,8 +8,8 @@ export const defaultElements: Record<string, ImagoHandler> = {
   layout: ({ children, className }: any) => {
     return <div className={className}>{ children }</div>;
   },
-  section: ({ children, className }: SectionProps) => {
-    return <div className={className}>{ children }</div>;
+  section: ({ children, name, ...props }: SectionProps) => {
+    return <div {...props}>{ children }</div>;
   },
   grid: ({ children, className }: GridProps) => {
     return <div className={className}>{ children }</div>;

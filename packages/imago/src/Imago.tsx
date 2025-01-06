@@ -12,13 +12,25 @@ import {
   NodeType,
   ParagraphProps,
   SectionProps,
-  Selector,
   TemplateOptions,
   TileProps
 } from "./interfaces.js";
 import { defaultElements } from "./Elements.js";
+import { Selector, selectors } from "./selectors.js";
 
 export const TemplateContext = createContext<Imago | undefined>(undefined);
+
+export interface SectionSlotProps {
+  name: string;
+
+  template?: ImagoBuilder;
+}
+
+export function sectionSlot(children: React.ReactNode) {
+  return ({ name, ...restProps }: SectionSlotProps) => {
+    return <Imago.Project {...restProps} filter={selectors.section(name)}>{ children }</Imago.Project>
+  }
+}
 
 export interface ProjectProps {
   template?: ImagoBuilder;
