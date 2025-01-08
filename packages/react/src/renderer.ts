@@ -1,15 +1,9 @@
 import { RenderableTreeNodes, Scalar, Tag } from '@markdoc/markdoc';
 import React from 'react';
 import type { ReactNode } from 'react';
-import { ComponentDescription, Template } from './interfaces.js';
-
-function isUppercase(word: string){
-  return /^\p{Lu}/u.test(word);
-}
+import { Template } from './interfaces.js';
 
 export class Renderer {
-  private stack: ComponentDescription<any>[] = [];
-
   constructor(private template: Template) {}
 
   render(node: RenderableTreeNodes, index: number = 0, isLast: boolean = false): ReactNode {
@@ -30,28 +24,13 @@ export class Renderer {
     attrs.index = index;
     attrs.isLast = isLast;
 
-    if (isUppercase(name)) {
-      this.stack.push({ name, attributes: attrs });
-    }
-    const component = this.stack.at(-1);
-
-    if (!component) {
-      throw Error('No component tag from stack');
-    }
-
     const childCount = children.length;
 
-    const componentId = this.template.resolveId(component, name === component.name ? undefined : name);
-
     const elem = React.createElement(
-      this.template.component(componentId),
+      this.template.resolve(name),
       Object.keys(attrs).length == 0 ? null : this.deepRender(attrs),
       ...children.map((c, i) => this.render(c, i, i === childCount - 1))
     );
-
-    if (isUppercase(name)) {
-      this.stack.pop();
-    }
 
     return elem;
   }
