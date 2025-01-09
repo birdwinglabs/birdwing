@@ -14,7 +14,7 @@ import {
   TileProps
 } from "./interfaces.js";
 import { defaultElements } from "./Elements.js";
-import { Selector } from "./selectors.js";
+import { Selector } from "./selector.js";
 
 export const TemplateContext = createContext<Imago | undefined>(undefined);
 

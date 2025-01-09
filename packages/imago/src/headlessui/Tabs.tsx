@@ -1,11 +1,11 @@
 import { Imago } from "../Imago";
-import { selectors as sel } from "../selectors.js";
+import { schema } from "../schema.js";
 import { PageContext } from '@birdwing/react';
 import { useContext } from 'react';
 import { Tab, TabGroup, TabList, TabPanels, TabPanel } from '@headlessui/react';
 
 export const tabs = Imago.configure()
-  .render(sel.section.typeof('bw:TabGroup'), ({ id, className, children }) => {
+  .render(schema.TabGroup, ({ id, className, children }) => {
     const { state, setState } = useContext(PageContext);
 
     return (
@@ -14,7 +14,7 @@ export const tabs = Imago.configure()
       </TabGroup>
     )
   })
-  .render(sel.list.property('bw:tabs'), TabList)
-  .render(sel.list.property('bw:panels'), TabPanels)
-  .render(sel.item.property('bw:tab'), Tab)
-  .render(sel.item.property('bw:panel'), TabPanel)
+  .render(schema.TabList, TabList)
+  .render(schema.Tab, Tab)
+  .render(schema.TabPanels, TabPanels)
+  .render(schema.TabPanel, TabPanel)

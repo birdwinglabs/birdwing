@@ -1,8 +1,8 @@
 import { Imago } from "../Imago";
-import { selectors as sel } from "../selectors.js";
+import { schema } from "../schema.js";
 
 export const grid = Imago.configure()
-  .attributeToClass(sel.grid, {
+  .attributeToClass(schema.grid, {
     name: 'flow',
     values: {
       'column': 'lg:grid-flow-col',
@@ -12,7 +12,7 @@ export const grid = Imago.configure()
       'row dense': 'lg:grid-flow-row-dense',
     }
   })
-  .attributeToClass(sel.grid, {
+  .attributeToClass(schema.grid, {
     name: 'columns',
     values: {
       1: 'lg:grid-cols-1',
@@ -29,7 +29,7 @@ export const grid = Imago.configure()
       12: 'lg:grid-cols-12',
     }
   })
-  .attributeToClass(sel.grid, {
+  .attributeToClass(schema.grid, {
     name: 'rows',
     values: {
       1: 'lg:grid-rows-1',
@@ -46,7 +46,7 @@ export const grid = Imago.configure()
       12: 'lg:grid-rows-12',
     }
   })
-  .attributeToClass(sel.tile, {
+  .attributeToClass(schema.tile, {
     name: 'colspan',
     values: {
       1: 'lg:col-span-1',
@@ -63,7 +63,7 @@ export const grid = Imago.configure()
       12: 'lg:col-span-12',
     }
   })
-  .attributeToClass(sel.tile, {
+  .attributeToClass(schema.tile, {
     name: 'rowspan',
     values: {
       1: 'lg:row-span-1',
@@ -80,7 +80,7 @@ export const grid = Imago.configure()
       12: 'lg:row-span-12',
     }
   })
-  .attributeToClass(sel.tile, {
+  .attributeToClass(schema.tile, {
     name: 'order',
     values: {
       1: 'lg:order-1',
@@ -97,4 +97,4 @@ export const grid = Imago.configure()
       12: 'lg:order-12',
     }
   })
-  .transform(sel.grid, { addClass: 'grid' })
+  .transform(schema.grid, { addClass: 'grid' })

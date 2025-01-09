@@ -1,17 +1,5 @@
 import React from "react";
-import {
-  FenceProps,
-  GridProps,
-  HeadingProps,
-  ItemProps,
-  LinkProps,
-  ListProps,
-  Matcher,
-  NodeProps,
-  NodeType,
-  ParagraphProps,
-  TileProps
-} from "./interfaces";
+import { Matcher, NodeProps, NodeType } from "./interfaces";
 import { TemplateContext } from "./Imago";
 
 export class Selector<T extends NodeProps> {
@@ -95,48 +83,3 @@ export class Selector<T extends NodeProps> {
     });
   }
 }
-
-const document = new Selector<NodeProps>('document');
-const meta = new Selector<NodeProps>('meta');
-const section = new Selector<NodeProps>('section');
-const grid = new Selector<GridProps>('grid');
-const tile = new Selector<TileProps>('tile');
-const heading = new Selector<HeadingProps>('heading');
-const paragraph = new Selector<ParagraphProps>('paragraph');
-const hr = new Selector<NodeProps>('hr');
-const image = new Selector<NodeProps>('image');
-const fence = new Selector<FenceProps>('fence');
-const html = new Selector<NodeProps>('html');
-const blockquote = new Selector<NodeProps>('blockquote');
-const list = new Selector<ListProps>('list');
-const item = new Selector<ItemProps>('item');
-const strong = new Selector<NodeProps>('strong');
-const link = new Selector<LinkProps>('link');
-const code = new Selector<NodeProps>('code');
-
-export const selectors = {
-  document,
-  meta,
-  section,
-  grid,
-  tile,
-  heading,
-  paragraph,
-  hr,
-  image,
-  fence,
-  html,
-  blockquote,
-  list,
-  item,
-  strong,
-  link,
-  code,
-
-  h1: heading.attr({ level: 1 }),
-  h2: heading.attr({ level: 2 }),
-  h3: heading.attr({ level: 3 }),
-  h4: heading.attr({ level: 4 }),
-  h5: heading.attr({ level: 5 }),
-  h6: heading.attr({ level: 6 }),
-};
