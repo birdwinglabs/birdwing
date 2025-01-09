@@ -1,14 +1,20 @@
 import React from "react";
 import { Link, NavLink } from 'react-router-dom';
-import { GridProps, HeadingProps, ItemProps, NodeProps, ParagraphProps, SectionProps, TileProps } from "./interfaces.js";
+import { GridProps, HeadingProps, ItemProps, MetaProps, NodeProps, ParagraphProps, TileProps } from "./interfaces.js";
 import { ImagoHandler } from "./interfaces.js";
 import { CodeBlock } from "@birdwing/react";
 
 export const defaultElements: Record<string, ImagoHandler> = {
+  document: ({ children, className }: any) => {
+    return <article className={className}>{ children }</article>;
+  },
+  meta: ({ ...props }: MetaProps) => {
+    return <meta {...props}/>
+  },
   layout: ({ children, className }: any) => {
     return <div className={className}>{ children }</div>;
   },
-  section: ({ children, name, ...props }: SectionProps) => {
+  section: ({ children, name, ...props }: NodeProps) => {
     return <div {...props}>{ children }</div>;
   },
   grid: ({ children, className }: GridProps) => {
@@ -17,8 +23,8 @@ export const defaultElements: Record<string, ImagoHandler> = {
   tile: ({ children, className }: TileProps) => {
     return <div className={className}>{ children }</div>;
   },
-  paragraph: ({ children, ...props }: ParagraphProps) => {
-    return React.createElement('p', props, children)
+  paragraph: ({ children, className }: ParagraphProps) => {
+    return React.createElement('p', { className }, children)
   },
   strong: ({ children, className }: NodeProps) => {
     return React.createElement('strong', { className }, children)

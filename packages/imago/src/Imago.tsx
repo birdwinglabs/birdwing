@@ -1,5 +1,4 @@
 import React, { isValidElement, createContext, FunctionComponent, ReactNode, useContext, ComponentClass } from "react";
-import { ComponentDescription, Template } from '@birdwing/react';
 import {
   FenceProps,
   GridProps,
@@ -11,25 +10,28 @@ import {
   NodeProps,
   NodeType,
   ParagraphProps,
-  SectionProps,
   TemplateOptions,
   TileProps
 } from "./interfaces.js";
 import { defaultElements } from "./Elements.js";
-import { Selector, selectors } from "./selectors.js";
+import { Selector } from "./selectors.js";
 
 export const TemplateContext = createContext<Imago | undefined>(undefined);
 
-export interface SectionSlotProps {
-  name: string;
+export interface SlotProps {
+  select?: Selector<any>;
 
   template?: ImagoBuilder;
 }
 
-export function sectionSlot(children: React.ReactNode) {
-  return ({ name, ...restProps }: SectionSlotProps) => {
-    return <Imago.Project {...restProps} filter={selectors.section(name)}>{ children }</Imago.Project>
+export function slot(children: React.ReactNode) {
+  return ({ select, template }: SlotProps) => {
+    return <Imago.Project template={template} filter={select}>{ children }</Imago.Project>
   }
+}
+
+export function hasProperty(children: React.ReactNode, property: string) {
+  return React.Children.toArray(children).some(c => React.isValidElement(c) && c.props.property === property);
 }
 
 export interface ProjectProps {
@@ -66,46 +68,6 @@ export interface TransformOptions<T> {
   childBefore?: ReactNode;
   final?: boolean;
 }
-
-const nodeTypes = ['section', 'grid', 'tile', 'paragraph', 'heading', 'strong', 'code', 'image', 'fence', 'html', 'item', 'list', 'link', 'hr', 'em'];
-
-
-export class ImagoTheme extends Template {
-  private components: ImagoComponent[] = [];
-
-  private handlers: Record<string, React.FunctionComponent> = {};
-
-  use(component: ImagoComponent) {
-    const { name, options } = component;
-    this.components.push(component);
-
-    const template = options.template.template();
-
-    this.handlers[name] = options.render;
-    for (const node of nodeTypes) {
-      this.handlers[`${name}.${node}`] = template.resolve(node);
-    }
-
-    return this;
-  }
-
-  resolveId(tag: ComponentDescription, node?: string) {
-    const c = this.components
-      .filter(c => c.options.tag === tag.name)
-      .find(c => c.options.match ? c.options.match(tag.attributes) : true);
-
-    if (!c) {
-      throw Error(`Missing component for tag: ${tag.name}`);
-    }
-
-    return node ? `${c.name}.${node}` : c.name;
-  }
-
-  component(id: string) {
-    return this.handlers[id];
-  }
-}
-
 
 export interface ImagoBuilder {
   template(): Imago;
@@ -157,8 +119,8 @@ export interface ImagoBuilder {
   addClasses(classes: Partial<Record<NodeType, string>>): ImagoBuilder;
 
   use(middleware: ImagoBuilder): ImagoBuilder;
-  use(type: 'layout', middleware: ImagoMiddleware<NodeProps>): ImagoBuilder;
-  use(type: 'section', middleware: ImagoMiddleware<SectionProps>): ImagoBuilder;
+  use(type: 'document', middleware: ImagoMiddleware<NodeProps>): ImagoBuilder;
+  use(type: 'section', middleware: ImagoMiddleware<NodeProps>): ImagoBuilder;
   use(type: 'grid', middleware: ImagoMiddleware<GridProps>): ImagoBuilder;
   use(type: 'tile', middleware: ImagoMiddleware<TileProps>): ImagoBuilder;
   use(type: 'heading', middleware: ImagoMiddleware<HeadingProps>): ImagoBuilder;
@@ -173,22 +135,6 @@ export interface ImagoBuilder {
   use(type: 'strong', middleware: ImagoMiddleware<NodeProps>): ImagoBuilder;
   use(type: 'link', middleware: ImagoMiddleware<NodeProps>): ImagoBuilder;
   use(type: 'code', middleware: ImagoMiddleware<NodeProps>): ImagoBuilder;
-}
-
-export interface ImagoComponent {
-  name: string;
-
-  options: ImagoComponentOptions;
-}
-
-export interface ImagoComponentOptions {
-  tag: string;
-
-  match?: (attr: Record<string, any>) => boolean;
-
-  template: ImagoBuilder;
-
-  render: FunctionComponent<any>;
 }
 
 export class ImagoBuilder {
@@ -266,6 +212,22 @@ export class ImagoBuilder {
       : next({ children, ...props } as any));
   }
 
+  apply<T extends NodeProps>(selector: Selector<T>, template: ImagoBuilder) {
+    return this.use(selector.type, next => ({ children, ...props }) => {
+      if (selector.match({ children, ...props } as any)) {
+        const t = template.template();
+        const handler = template.createHandlers()[selector.type];
+        return (
+          <TemplateContext.Provider value={t}>
+            { handler({ children, ...props })}
+          </TemplateContext.Provider>
+        );
+      } else {
+        return next({ children, ...props} as any);
+      }
+    });
+  }
+
   wrap<T extends NodeProps, U extends {}>(selector: Selector<T>, wrapper: string | FunctionComponent<U> | ComponentClass<U>, wrapperProps: Omit<U, 'children'>) {
     return this.use(selector.type, next => ({ children, ...props }) => selector.match({ children, ...props } as any)
       ? React.createElement(wrapper, wrapperProps as any, next({ children, ...props }))
@@ -317,17 +279,6 @@ export class Imago {
   static configure(options?: TemplateOptions) {
     const final = { ...defaultElements, ...options?.elements || {} };
     return new ImagoBuilder(final, {});
-  }
-
-  static component<T extends NodeProps = NodeProps>(name: string, options: Partial<ImagoComponentOptions>): ImagoComponent {
-    const defaultOptions: ImagoComponentOptions = {
-      tag: name,
-      template: Imago.configure(),
-      render: ({ children, className, id, index, isLast }: T) => {
-        return React.createElement('div', { className, id, index, isLast }, children);
-      },
-    }
-    return { name, options: { ...defaultOptions, ...options } };
   }
 
   static Project({ template, children, filter, enumerate }: ProjectProps) {

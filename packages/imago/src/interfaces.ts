@@ -6,12 +6,15 @@ export interface NodeProps extends Record<string, any>{
   id?: string;
   className?: string | any;
   children?: React.ReactNode;
+  name?: string;
+  typeof?: string;
+  property?: string;
   index: number;
   isLast: boolean;
 }
 
-export interface SectionProps extends NodeProps {
-  name: string;
+export interface MetaProps extends NodeProps {
+  content: string;
 }
 
 export interface GridProps extends NodeProps {
@@ -68,6 +71,8 @@ export interface TemplateOptions {
 
 export type NodeType = 
   'layout' |
+  'document' |
+  'meta' |
   'section' |
   'grid' |
   'tile' |

@@ -10,7 +10,6 @@ import {
   NodeProps,
   NodeType,
   ParagraphProps,
-  SectionProps,
   TileProps
 } from "./interfaces";
 import { TemplateContext } from "./Imago";
@@ -29,22 +28,54 @@ export class Selector<T extends NodeProps> {
     return new Selector<T>(this.type, [...this.matchers, condition]);
   }
 
-  withClass(...name: string[]): Selector<T> {
+  property(value: string) {
+    return this.attr({ property: value } as any);
+  }
+
+  typeof(type: string) {
+    return this.attr({ typeof: type } as any);
+  }
+
+  name(name: string) {
+    return this.attr({ name } as any);
+  }
+
+  get first() {
+    return this.condition(({ index }) => index === 0);
+  }
+
+  get notFirst() {
+    return this.condition(({ index }) => index > 0);
+  }
+
+  get last() {
+    return this.condition(({ isLast }) => isLast);
+  }
+
+  get notLast() {
+    return this.condition(({ isLast }) => !isLast);
+  }
+
+  class(...name: string[]): Selector<T> {
     return this.condition(({ className }) => {
       const classes = (className as string || '').split(' ');
       return name.every(c => classes.indexOf(c) >= 0)
     });
   }
 
-  withoutClass(name: string): Selector<T> {
+  notClass(name: string): Selector<T> {
     return this.condition(({ className }) => !((className as string || '').split(' ').includes(name)));
   }
 
-  withAttr(attrs: Partial<T>): Selector<T> {
+  attr(attrs: Partial<T>): Selector<T> {
     return this.condition(props => Object.entries(attrs).every(([k, v]) => v === undefined || (props as any)[k] === v));
   }
 
-  withChild(selector: Selector<any>) {
+  notAttr(name: string): Selector<T> {
+    return this.condition(props => !Object.keys(props).includes(name));
+  }
+
+  child(selector: Selector<any>) {
     return this.condition(({ children }) => {
       const nodes = React.isValidElement(children) && children.type === TemplateContext.Provider
         ? children.props.children
@@ -54,7 +85,7 @@ export class Selector<T extends NodeProps> {
     });
   }
 
-  withoutChild(selector: Selector<any>) {
+  notChild(selector: Selector<any>) {
     return this.condition(({ children }) => {
       const nodes = React.isValidElement(children) && children.type === TemplateContext.Provider
         ? children.props.children
@@ -65,10 +96,11 @@ export class Selector<T extends NodeProps> {
   }
 }
 
-function layout<T extends NodeProps = NodeProps>(attr?: Partial<T>) { return new Selector<T>('layout').withAttr(attr || {}) };
-const section = (...names: string[]) => new Selector<SectionProps>('section').condition(({ name }) => names.includes(name) );
-const grid = (name?: string) => new Selector<GridProps>('grid').withAttr({ name });
-const tile = (name?: string) => new Selector<TileProps>('tile').withAttr({ name });
+const document = new Selector<NodeProps>('document');
+const meta = new Selector<NodeProps>('meta');
+const section = new Selector<NodeProps>('section');
+const grid = new Selector<GridProps>('grid');
+const tile = new Selector<TileProps>('tile');
 const heading = new Selector<HeadingProps>('heading');
 const paragraph = new Selector<ParagraphProps>('paragraph');
 const hr = new Selector<NodeProps>('hr');
@@ -83,7 +115,8 @@ const link = new Selector<LinkProps>('link');
 const code = new Selector<NodeProps>('code');
 
 export const selectors = {
-  layout,
+  document,
+  meta,
   section,
   grid,
   tile,
@@ -100,16 +133,10 @@ export const selectors = {
   link,
   code,
 
-  h1: heading.withAttr({ level: 1 }),
-  h2: heading.withAttr({ level: 2 }),
-  h3: heading.withAttr({ level: 3 }),
-  h4: heading.withAttr({ level: 4 }),
-  h5: heading.withAttr({ level: 5 }),
-  h6: heading.withAttr({ level: 6 }),
-
-  tabGroup: section('tab-group'),
-  tabs: list.withClass('tabs'),
-  tab: item.withClass('tab'),
-  tabPanels: list.withClass('tab-panels'),
-  tabPanel: item.withClass('tab-panel'),
+  h1: heading.attr({ level: 1 }),
+  h2: heading.attr({ level: 2 }),
+  h3: heading.attr({ level: 3 }),
+  h4: heading.attr({ level: 4 }),
+  h5: heading.attr({ level: 5 }),
+  h6: heading.attr({ level: 6 }),
 };
