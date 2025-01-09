@@ -1,12 +1,12 @@
 import React from "react";
-import { Matcher, NodeProps, NodeType } from "./interfaces";
+import { AbstractSelector, Matcher, NodeProps, NodeType } from "./interfaces";
 import { TemplateContext } from "./Imago";
 
-export class Selector<T extends NodeProps> {
+export class Selector<T extends NodeProps> extends AbstractSelector<T> {
   constructor(
-    public readonly type: NodeType,
+    type: NodeType,
     private matchers: Matcher<T>[] = [],
-  ) {}
+  ) { super(type); }
 
   match(props: T): boolean {
     return this.matchers.every(m => m(props));

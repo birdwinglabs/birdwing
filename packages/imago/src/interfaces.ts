@@ -63,11 +63,17 @@ export interface ParagraphProps extends NodeProps {}
 export type ImagoHandler<T = any> = React.FunctionComponent<T>;
 export type ImagoMiddleware<T = any> = (next: ImagoHandler<T> | (() => React.ReactElement | null), final: ImagoHandler<T>) => ImagoHandler<T>;
 
+export abstract class AbstractSelector<T extends NodeProps> {
+  constructor(public readonly type: NodeType) {}
+
+  abstract match(props: T): boolean;
+}
+
 export interface TemplateOptions {
   slots?: Template[],
   elements?: Record<string, ImagoHandler>;
+  selector?: AbstractSelector<any>;
 }
-
 
 export type NodeType = 
   'layout' |

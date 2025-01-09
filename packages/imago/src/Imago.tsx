@@ -1,5 +1,6 @@
 import React, { isValidElement, createContext, FunctionComponent, ReactNode, useContext, ComponentClass } from "react";
 import {
+  AbstractSelector,
   FenceProps,
   GridProps,
   HeadingProps,
@@ -140,7 +141,8 @@ export interface ImagoBuilder {
 export class ImagoBuilder {
   constructor(
     private final: Record<string, ImagoHandler> = { ...defaultElements },
-    public  middleware: Record<string, ImagoMiddleware[]> = {},
+    private middleware: Record<string, ImagoMiddleware[]> = {},
+    private selector: AbstractSelector<any> | undefined = undefined,
   ) {}
 
   template() {
@@ -212,22 +214,6 @@ export class ImagoBuilder {
       : next({ children, ...props } as any));
   }
 
-  apply<T extends NodeProps>(selector: Selector<T>, template: ImagoBuilder) {
-    return this.use(selector.type, next => ({ children, ...props }) => {
-      if (selector.match({ children, ...props } as any)) {
-        const t = template.template();
-        const handler = template.createHandlers()[selector.type];
-        return (
-          <TemplateContext.Provider value={t}>
-            { handler({ children, ...props })}
-          </TemplateContext.Provider>
-        );
-      } else {
-        return next({ children, ...props} as any);
-      }
-    });
-  }
-
   wrap<T extends NodeProps, U extends {}>(selector: Selector<T>, wrapper: string | FunctionComponent<U> | ComponentClass<U>, wrapperProps: Omit<U, 'children'>) {
     return this.use(selector.type, next => ({ children, ...props }) => selector.match({ children, ...props } as any)
       ? React.createElement(wrapper, wrapperProps as any, next({ children, ...props }))
@@ -262,14 +248,36 @@ export class ImagoBuilder {
     }
 
     if (typeof arg1 === 'object') {
-      for (const [name, middleware] of Object.entries(arg1.middleware)) {
-        for (const m of middleware) {
-          this.use(name, m);
-        }
-      }
+      arg1.applyMiddleware(this);
     }
 
     return this;
+  }
+
+  private applyMiddleware(parent: ImagoBuilder) {
+    const selector = this.selector;
+
+    if (selector) {
+      parent.use(selector.type, next => ({ children, ...props }) => {
+        if (selector.match({ children, ...props } as any)) {
+          const t = this.template();
+          const handler = this.createHandlers()[selector.type];
+          return (
+            <TemplateContext.Provider value={t}>
+              { handler({ children, ...props })}
+            </TemplateContext.Provider>
+          );
+        } else {
+          return next({ children, ...props} as any);
+        }
+      });
+    } else {
+      for (const [name, middleware] of Object.entries(this.middleware)) {
+        for (const m of middleware) {
+          parent.use(name, m);
+        }
+      }
+    }
   }
 }
 
@@ -278,7 +286,7 @@ export class Imago {
 
   static configure(options?: TemplateOptions) {
     const final = { ...defaultElements, ...options?.elements || {} };
-    return new ImagoBuilder(final, {});
+    return new ImagoBuilder(final, {}, options?.selector);
   }
 
   static Project({ template, children, filter, enumerate }: ProjectProps) {
