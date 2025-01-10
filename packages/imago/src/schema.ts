@@ -1,7 +1,7 @@
 import { Selector } from './selector.js';
 
 const document = new Selector('document');
-const meta = new Selector('meta');
+const value = new Selector('value');
 const section = new Selector('section');
 const grid = new Selector('grid');
 const tile = new Selector('tile');
@@ -21,7 +21,7 @@ const code = new Selector('code');
 export const schema = {
   // Nodes
   document,
-  meta,
+  value,
   section,
   grid,
   tile,

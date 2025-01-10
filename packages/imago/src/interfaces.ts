@@ -64,7 +64,7 @@ export type ImagoMiddleware<T = any> = (next: ImagoHandler<T> | (() => React.Rea
 
 export type NodeType = 
   'document' |
-  'meta' |
+  'value' |
   'section' |
   'grid' |
   'tile' |

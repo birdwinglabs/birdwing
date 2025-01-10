@@ -8,8 +8,8 @@ export const defaultElements: Record<NodeType, ImagoHandler> = {
   document: ({ children, className }: any) => {
     return <article className={className}>{ children }</article>;
   },
-  meta: ({ ...props }: MetaProps) => {
-    return <meta {...props}/>
+  value: ({ ...props }: MetaProps) => {
+    return <span {...props}/>
   },
   section: ({ children, name, ...props }: NodeProps) => {
     return <div {...props}>{ children }</div>;
