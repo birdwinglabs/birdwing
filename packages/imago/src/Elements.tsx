@@ -1,18 +1,15 @@
 import React from "react";
 import { Link, NavLink } from 'react-router-dom';
-import { GridProps, HeadingProps, ItemProps, MetaProps, NodeProps, ParagraphProps, TileProps } from "./interfaces.js";
+import { GridProps, HeadingProps, ItemProps, MetaProps, NodeProps, NodeType, ParagraphProps, TileProps } from "./interfaces.js";
 import { ImagoHandler } from "./interfaces.js";
 import { CodeBlock } from "@birdwing/react";
 
-export const defaultElements: Record<string, ImagoHandler> = {
+export const defaultElements: Record<NodeType, ImagoHandler> = {
   document: ({ children, className }: any) => {
     return <article className={className}>{ children }</article>;
   },
   meta: ({ ...props }: MetaProps) => {
     return <meta {...props}/>
-  },
-  layout: ({ children, className }: any) => {
-    return <div className={className}>{ children }</div>;
   },
   section: ({ children, name, ...props }: NodeProps) => {
     return <div {...props}>{ children }</div>;
@@ -32,9 +29,15 @@ export const defaultElements: Record<string, ImagoHandler> = {
   code: ({ children, className }: NodeProps) => {
     return React.createElement('code', { className }, children)
   },
-  em: ({ children, className }: NodeProps) => {
-    return React.createElement('em', { className }, children)
+  hr: ({ children, className}: NodeProps) => {
+    return React.createElement('hr', { className }, children);
   },
+  blockquote: ({ children, className}: NodeProps) => {
+    return React.createElement('blockquote', { className }, children);
+  },
+  //em: ({ children, className }: NodeProps) => {
+    //return React.createElement('em', { className }, children)
+  //},
   image: ({ children, ...props }: NodeProps) => {
     return React.createElement('img', props, children)
   },

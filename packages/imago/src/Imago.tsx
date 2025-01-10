@@ -1,18 +1,12 @@
 import React, { isValidElement, createContext, FunctionComponent, ReactNode, useContext, ComponentClass } from "react";
 import {
   AbstractSelector,
-  FenceProps,
-  GridProps,
-  HeadingProps,
   ImagoHandler,
   ImagoMiddleware,
-  ItemProps,
-  ListProps,
   NodeProps,
   NodeType,
-  ParagraphProps,
+  TagProps,
   TemplateOptions,
-  TileProps
 } from "./interfaces.js";
 import { defaultElements } from "./Elements.js";
 import { Selector } from "./selector.js";
@@ -38,7 +32,7 @@ export function hasProperty(children: React.ReactNode, property: string) {
 export interface ProjectProps {
   template?: ImagoBuilder;
 
-  filter?: Selector<any> | Selector<any>[]
+  filter?: Selector<any>;
 
   children: React.ReactNode;
 
@@ -81,7 +75,7 @@ export interface ImagoBuilder {
    * @param selector 
    * @param options
    */
-  transform<T extends NodeProps>(selector: Selector<T>, options: TransformOptions<T>): ImagoBuilder;
+  transform<T extends NodeType>(selector: Selector<T>, options: TransformOptions<TagProps<T>>): ImagoBuilder;
 
   /**
    * Render a node
@@ -91,7 +85,7 @@ export interface ImagoBuilder {
    * @param selector 
    * @param element 
    */
-  render<T extends NodeProps>(selector: Selector<T>, element: string | FunctionComponent<T> | ComponentClass<T>): ImagoBuilder
+  render<T extends NodeType>(selector: Selector<T>, element: string | FunctionComponent<TagProps<T>> | ComponentClass<TagProps<T>>): ImagoBuilder
 
   /**
    * Wrap a node in another component
@@ -100,7 +94,7 @@ export interface ImagoBuilder {
    * @param wrapper 
    * @param wrapperProps 
    */
-  wrap<T extends NodeProps, U extends {}>(
+  wrap<T extends NodeType, U extends {}>(
     selector: Selector<T>,
     wrapper: string | FunctionComponent<U> | ComponentClass<U>,
     wrapperProps: Omit<U, 'children'>
@@ -111,7 +105,7 @@ export interface ImagoBuilder {
    * @param selector 
    * @param param1 
    */
-  attributeToClass<T extends NodeProps>(selector: Selector<T>, { name, values }: AttributeToClassOptions<T>): ImagoBuilder;
+  attributeToClass<T extends NodeType>(selector: Selector<T>, { name, values }: AttributeToClassOptions<TagProps<T>>): ImagoBuilder;
 
   /**
    * 
@@ -120,22 +114,8 @@ export interface ImagoBuilder {
   addClasses(classes: Partial<Record<NodeType, string>>): ImagoBuilder;
 
   use(middleware: ImagoBuilder): ImagoBuilder;
-  use(type: 'document', middleware: ImagoMiddleware<NodeProps>): ImagoBuilder;
-  use(type: 'section', middleware: ImagoMiddleware<NodeProps>): ImagoBuilder;
-  use(type: 'grid', middleware: ImagoMiddleware<GridProps>): ImagoBuilder;
-  use(type: 'tile', middleware: ImagoMiddleware<TileProps>): ImagoBuilder;
-  use(type: 'heading', middleware: ImagoMiddleware<HeadingProps>): ImagoBuilder;
-  use(type: 'paragraph', middleware: ImagoMiddleware<ParagraphProps>): ImagoBuilder;
-  use(type: 'hr', middleware: ImagoMiddleware<NodeProps>): ImagoBuilder;
-  use(type: 'image', middleware: ImagoMiddleware<NodeProps>): ImagoBuilder;
-  use(type: 'fence', middleware: ImagoMiddleware<FenceProps>): ImagoBuilder;
-  use(type: 'html', middleware: ImagoMiddleware<NodeProps>): ImagoBuilder;
-  use(type: 'blockquote', middleware: ImagoMiddleware<NodeProps>): ImagoBuilder;
-  use(type: 'list', middleware: ImagoMiddleware<ListProps>): ImagoBuilder;
-  use(type: 'item', middleware: ImagoMiddleware<ItemProps>): ImagoBuilder;
-  use(type: 'strong', middleware: ImagoMiddleware<NodeProps>): ImagoBuilder;
-  use(type: 'link', middleware: ImagoMiddleware<NodeProps>): ImagoBuilder;
-  use(type: 'code', middleware: ImagoMiddleware<NodeProps>): ImagoBuilder;
+
+  use<T extends NodeType>(type: T, middleware: ImagoMiddleware<TagProps<T>>): ImagoBuilder;
 }
 
 export class ImagoBuilder {
@@ -166,11 +146,18 @@ export class ImagoBuilder {
     return handlerMap;
   }
 
-  transform<T extends NodeProps>(selector: Selector<T>, opts: TransformOptions<T>) {
-    return this.use(selector.type, (next, finish) => props => {
+  private useMany(types: NodeType[], middleware: ImagoMiddleware<NodeProps>): ImagoBuilder {
+    for (const type of types) {
+      this.use(type, middleware);
+    }
+    return this;
+  }
+
+  transform<T extends NodeType>(selector: Selector<T>, opts: TransformOptions<TagProps<T>>) {
+    return this.useMany(selector.types, (next, finish) => props => {
       const n = opts.final ? finish : next;
 
-      if (!selector.match(props)) {
+      if (!selector.match(props as any)) {
         return next(props);
       }
 
@@ -187,7 +174,7 @@ export class ImagoBuilder {
       }
 
       if (opts.children) {
-        p = { ...p, children: opts.children(p) }
+        p = { ...p, children: opts.children(p as any) }
       }
       
       if (opts.childBefore) {
@@ -208,22 +195,22 @@ export class ImagoBuilder {
     })
   }
 
-  render<T extends NodeProps>(selector: Selector<T>, element: string | FunctionComponent<T> | ComponentClass<T>) {
-    return this.use(selector.type, next => ({ children, ...props }) => selector.match({ children, ...props } as any)
+  render<T extends NodeType>(selector: Selector<T>, element: string | FunctionComponent<TagProps<T>> | ComponentClass<TagProps<T>>) {
+    return this.useMany(selector.types, next => ({ children, ...props }) => selector.match({ children, ...props } as any)
       ? React.createElement(element, props as any, children)
       : next({ children, ...props } as any));
   }
 
-  wrap<T extends NodeProps, U extends {}>(selector: Selector<T>, wrapper: string | FunctionComponent<U> | ComponentClass<U>, wrapperProps: Omit<U, 'children'>) {
-    return this.use(selector.type, next => ({ children, ...props }) => selector.match({ children, ...props } as any)
+  wrap<T extends NodeType, U extends {}>(selector: Selector<T>, wrapper: string | FunctionComponent<U> | ComponentClass<U>, wrapperProps: Omit<U, 'children'>) {
+    return this.useMany(selector.types, next => ({ children, ...props }) => selector.match({ children, ...props } as any)
       ? React.createElement(wrapper, wrapperProps as any, next({ children, ...props }))
       : next({ children, ...props } as any));
   }
 
-  attributeToClass<T extends NodeProps>(selector: Selector<T>, { name, values }: AttributeToClassOptions<T>) {
-    return this.use(selector.type, next => props => {
-      if (selector.match(props) && props[name] in values) {
-        return next({ ...props, className: [props.className, values[props[name]]].join(' ').trim() });
+  attributeToClass<T extends NodeType>(selector: Selector<T>, { name, values }: AttributeToClassOptions<TagProps<T>>) {
+    return this.useMany(selector.types, next => props => {
+      if (selector.match(props as any) && (props as any)[name] in values) {
+        return next({ ...props, className: [props.className, values[(props as any)[name]]].join(' ').trim() });
       } else {
         return next(props);
       }
@@ -258,19 +245,21 @@ export class ImagoBuilder {
     const selector = this.selector;
 
     if (selector) {
-      parent.use(selector.type, next => ({ children, ...props }) => {
-        if (selector.match({ children, ...props } as any)) {
-          const t = this.template();
-          const handler = this.createHandlers()[selector.type];
-          return (
-            <TemplateContext.Provider value={t}>
-              { handler({ children, ...props })}
-            </TemplateContext.Provider>
-          );
-        } else {
-          return next({ children, ...props} as any);
-        }
-      });
+      for (const type of selector.types) {
+        parent.use(type, next => ({ children, ...props }) => {
+          if (selector.match({ children, ...props } as any)) {
+            const t = this.template();
+            const handler = this.createHandlers()[type];
+            return (
+              <TemplateContext.Provider value={t}>
+                { handler({ children, ...props })}
+              </TemplateContext.Provider>
+            );
+          } else {
+            return next({ children, ...props} as any);
+          }
+        });
+      }
     } else {
       for (const [name, middleware] of Object.entries(this.middleware)) {
         for (const m of middleware) {
@@ -291,10 +280,9 @@ export class Imago {
 
   static Project({ template, children, filter, enumerate }: ProjectProps) {
     if (filter) {
-      const filters = Array.isArray(filter) ? filter : [filter];
       children = React.Children.toArray(children).filter(c => {
         if (isValidElement(c)) {
-          return filters.some(f => f.type === (c.type as any).displayName && f.match(c.props));
+          return filter.types.some(type => type === (c.type as any).displayName && filter.match(c.props));
         }
         return false;
       });

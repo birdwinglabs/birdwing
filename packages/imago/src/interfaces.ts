@@ -1,7 +1,6 @@
 import { Template } from "@birdwing/react";
 import React from "react";
 
-
 export interface NodeProps extends Record<string, any>{
   id?: string;
   className?: string | any;
@@ -63,20 +62,7 @@ export interface ParagraphProps extends NodeProps {}
 export type ImagoHandler<T = any> = React.FunctionComponent<T>;
 export type ImagoMiddleware<T = any> = (next: ImagoHandler<T> | (() => React.ReactElement | null), final: ImagoHandler<T>) => ImagoHandler<T>;
 
-export abstract class AbstractSelector<T extends NodeProps> {
-  constructor(public readonly type: NodeType) {}
-
-  abstract match(props: T): boolean;
-}
-
-export interface TemplateOptions {
-  slots?: Template[],
-  elements?: Record<string, ImagoHandler>;
-  selector?: AbstractSelector<any>;
-}
-
 export type NodeType = 
-  'layout' |
   'document' |
   'meta' |
   'section' |
@@ -94,5 +80,28 @@ export type NodeType =
   'strong' |
   'link' |
   'code';
+
+export type TagProps<T extends NodeType> = 
+  T extends 'grid' ? GridProps :
+  T extends 'tile' ? TileProps :
+  T extends 'heading' ? HeadingProps :
+  T extends 'paragraph' ? ParagraphProps :
+  T extends 'fence' ? FenceProps :
+  T extends 'list' ? ListProps :
+  T extends 'item' ? ItemProps :
+  T extends 'link' ? LinkProps :
+  NodeProps;
+
+export abstract class AbstractSelector<T extends NodeType> {
+  constructor(public readonly types: NodeType[]) {}
+
+  abstract match(props: TagProps<T>): boolean;
+}
+
+export interface TemplateOptions {
+  slots?: Template[],
+  elements?: Record<string, ImagoHandler>;
+  selector?: AbstractSelector<any>;
+}
 
 export type Matcher<T extends NodeProps> = (props: T) => boolean;

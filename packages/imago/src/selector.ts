@@ -1,19 +1,20 @@
 import React from "react";
-import { AbstractSelector, Matcher, NodeProps, NodeType } from "./interfaces";
+import { AbstractSelector, Matcher, NodeType, TagProps } from "./interfaces";
 import { TemplateContext } from "./Imago";
 
-export class Selector<T extends NodeProps> extends AbstractSelector<T> {
-  constructor(
-    type: NodeType,
-    private matchers: Matcher<T>[] = [],
-  ) { super(type); }
 
-  match(props: T): boolean {
+export class Selector<T extends NodeType> extends AbstractSelector<T> {
+  constructor(
+    type: T | T[],
+    private matchers: Matcher<TagProps<T>>[] = [],
+  ) { super(Array.isArray(type) ? type : [type]); }
+
+  match(props: TagProps<T>): boolean {
     return this.matchers.every(m => m(props));
   }
 
-  condition(condition: Matcher<T>) {
-    return new Selector<T>(this.type, [...this.matchers, condition]);
+  condition(condition: Matcher<TagProps<T>>) {
+    return new Selector(this.types, [...this.matchers, condition]);
   }
 
   property(value: string) {
@@ -26,6 +27,10 @@ export class Selector<T extends NodeProps> extends AbstractSelector<T> {
 
   name(name: string) {
     return this.attr({ name } as any);
+  }
+
+  tag<U extends T>(type: U) {
+    return new Selector<U>(type, this.matchers);
   }
 
   get first() {
@@ -55,7 +60,7 @@ export class Selector<T extends NodeProps> extends AbstractSelector<T> {
     return this.condition(({ className }) => !((className as string || '').split(' ').includes(name)));
   }
 
-  attr(attrs: Partial<T>): Selector<T> {
+  attr(attrs: Partial<TagProps<T>>): Selector<T> {
     return this.condition(props => Object.entries(attrs).every(([k, v]) => v === undefined || (props as any)[k] === v));
   }
 

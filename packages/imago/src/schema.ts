@@ -1,33 +1,22 @@
-import {
-  FenceProps,
-  GridProps,
-  HeadingProps,
-  ItemProps,
-  ListProps,
-  LinkProps,
-  NodeProps,
-  ParagraphProps,
-  TileProps
-} from './interfaces.js';
 import { Selector } from './selector.js';
 
-const document = new Selector<NodeProps>('document');
-const meta = new Selector<NodeProps>('meta');
-const section = new Selector<NodeProps>('section');
-const grid = new Selector<GridProps>('grid');
-const tile = new Selector<TileProps>('tile');
-const heading = new Selector<HeadingProps>('heading');
-const paragraph = new Selector<ParagraphProps>('paragraph');
-const hr = new Selector<NodeProps>('hr');
-const image = new Selector<NodeProps>('image');
-const fence = new Selector<FenceProps>('fence');
-const html = new Selector<NodeProps>('html');
-const blockquote = new Selector<NodeProps>('blockquote');
-const list = new Selector<ListProps>('list');
-const item = new Selector<ItemProps>('item');
-const strong = new Selector<NodeProps>('strong');
-const link = new Selector<LinkProps>('link');
-const code = new Selector<NodeProps>('code');
+const document = new Selector('document');
+const meta = new Selector('meta');
+const section = new Selector('section');
+const grid = new Selector('grid');
+const tile = new Selector('tile');
+const heading = new Selector('heading');
+const paragraph = new Selector('paragraph');
+const hr = new Selector('hr');
+const image = new Selector('image');
+const fence = new Selector('fence');
+const html = new Selector('html');
+const blockquote = new Selector('blockquote');
+const list = new Selector('list');
+const item = new Selector('item');
+const strong = new Selector('strong');
+const link = new Selector('link');
+const code = new Selector('code');
 
 export const schema = {
   // Nodes
@@ -59,10 +48,8 @@ export const schema = {
   // Types
   Page: document.typeof('bw:Page'),
   DocPage: document.typeof('bw:DocPage'),
-  CallToActionStack: section.typeof('bw:CallToAction'),
-  CallToActionGrid: grid.typeof('bw:CallToAction'),
-  FeatureStack: section.typeof('bw:Feature'),
-  FeatureGrid: grid.typeof('bw:Feature'),
+  CallToAction: new Selector(['section', 'grid']).typeof('bw:CallToAction'),
+  Feature: new Selector(['section', 'grid']).typeof('bw:Feature'),
   HintNote: section.typeof('bw:HintNote'),
   HintCheck: section.typeof('bw:HintCheck'),
   HintWarning: section.typeof('bw:HintWarning'),
