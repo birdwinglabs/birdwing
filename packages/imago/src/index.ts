@@ -15,3 +15,7 @@ export interface NavLinkConfig {
   active: string;
   inactive: string;
 }
+
+import HeadlessUITabs from './headlessui/Tabs.js';
+
+export { HeadlessUITabs };

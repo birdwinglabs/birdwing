@@ -167,27 +167,14 @@ export interface ComponentType<TNode extends NodeType = NodeType, TProperties ex
 export interface TOptions<T extends NodeType = NodeType> {
   render?: React.FunctionComponent<HandlerProps<TagProps<T>>>;
   class?: string;
+  children?: React.FunctionComponent<HandlerProps<TagProps<T>>>,
   childAfter?: ReactNode;
   childBefore?: ReactNode;
   middleware?: ImagoMiddleware<Element<T>>
 }
 
-//export type NamedChildOptions<T extends NodeMap> = { [P in keyof T]: TOptions<T[P]> | string };
 export type NamedChildOptions<T extends NodeMap> = { [P in keyof T]: TagHandler<T[P]> };
-//export type TagOptions<T extends NodeMap> = { [P in keyof T]: TOptions<TagProps<T[P]>> | string };
 export type TagMap = { [P in NodeType ]: TagHandler<P> }
-  //TOptions<P> | string | ImagoMiddleware<Element<P>> };
-
-
-//type PropertyMap<T extends NodeMap> = { [P in keyof T]: Property<T[P]> };
-
-//type PropertyValue<T extends NodeType> = string;
-
-//interface Property<T extends NodeType> {
-  //value: PropertyValue<T>;
-
-  //Slot: React.FunctionComponent<{}>;
-//}
 
 export interface SlotOptions<TProperties extends PropertyMap, TSlots extends NodeMap> {
   property?: keyof TProperties;
@@ -214,23 +201,6 @@ export interface ImagoComponentOptions<T extends ComponentType> {
   render?: ComponentRenderFunction<T>,
 }
 
-//class PropertyAccess<T extends NodeType> implements Property<T> {
-  //constructor(private children: React.ReactNode, private property: string) {
-    ////for (const child of React.Children.toArray(children)) {
-
-    ////}
-  //}
-
-  //get value() {
-    //return this.property;
-  //}
-
-  //Slot() {
-    //return this.children;
-  //}
-//}
-
-
 export const TemplateContext = createContext<AbstractTemplate | undefined>(undefined);
 
 export interface Element<T extends NodeType = NodeType> {
@@ -239,12 +209,9 @@ export interface Element<T extends NodeType = NodeType> {
   props: TagProps<T>;
 }
 
-
 export class TypeSelector<T extends ComponentType> {
   constructor(public readonly tag: T["tag"], public readonly type: string) {}
 }
-
-
 
 export interface SequencePaginationProperties extends PropertyMap {
   nextPage: Property<'link', string>;
@@ -274,16 +241,12 @@ export const schema2 = {
   TableOfContents: new TypeSelector<any>('section', 'TableOfContents'),
   Footer: new TypeSelector<any>('section', 'Footer'),
   Menu: new TypeSelector<any>('section', 'Menu'),
-}
-
-abstract class TagTemplate<T extends NodeType> {
-  resolve(props: TagProps<T>) {
-
-  }
-}
-
-class HeadingTemplate extends TagTemplate<'heading'> {
-
+  Tabs: new TypeSelector<any>('section', 'TabGroup'),
+  TabList: new TypeSelector<any>('list', 'TabList'),
+  TabPanels: new TypeSelector<any>('list', 'TabPanels'),
+  Tab: new TypeSelector<any>('item', 'Tab'),
+  TabPanel: new TypeSelector<any>('item', 'TabPanel'),
+  Headings: new TypeSelector<any>('section', 'Headings'),
 }
 
 export type TagHandler<T extends NodeType> =

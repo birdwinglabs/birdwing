@@ -46,6 +46,9 @@ export function transform<T extends NodeType>(options: TOptions<T>): ImagoMiddle
       if (options.class) {
         pNext = { ...pNext, className: Array.isArray(options.class) ? options.class.join(' ') : options.class };
       }
+      if (options.children) {
+        pNext = { ...pNext, children: <>{ options.children({ ...pNext, Slot: makeSlot(pNext.children) })}</>}
+      }
       if (options.childBefore) {
         pNext = { ...pNext, children: <>{ options.childBefore } { pNext.children }</> }
       }
@@ -55,7 +58,7 @@ export function transform<T extends NodeType>(options: TOptions<T>): ImagoMiddle
 
       const render = options.render;
       if (render) {
-        return render({ ...props, Slot: makeSlot(props.children) });
+        return render({ ...pNext, Slot: makeSlot(pNext.children) });
       }
 
       return next({ name, props: pNext });
@@ -149,12 +152,6 @@ export class ImagoComponentFactory<T extends ComponentType> extends AbstractTemp
       }
     }
 
-    //const children = options.children;
-
-    //if (children) {
-      //this.
-    //}
-
     const render = options.render;
 
     if (render) {
@@ -165,10 +162,19 @@ export class ImagoComponentFactory<T extends ComponentType> extends AbstractTemp
           },
         });
 
-        return render({ properties, Slot: makeSlot(props.children) });
+        return render({ ...props, properties, Slot: makeSlot(props.children) });
       }
     } else {
       this.handlers[this.handlerId] = ({ name, props }) => defaultElements[name](props);
+    }
+
+    const children = options.children;
+
+    if (children) {
+      const next = this.handlers[this.handlerId];
+      this.handlers[this.handlerId] = ({ name, props }) => {
+        return next({ name, props: { ...props, children: children(props as any)}})
+      }
     }
 
     if (options.class) {
