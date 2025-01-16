@@ -1,6 +1,6 @@
 import React from "react";
 import { AbstractSelector, Matcher, NodeType, TagProps } from "./interfaces";
-import { TemplateContext } from "./Imago";
+import { TemplateContext } from "./interfaces.js";
 
 
 export class Selector<T extends NodeType> extends AbstractSelector<T> {

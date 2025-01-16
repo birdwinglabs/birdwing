@@ -1,22 +1,24 @@
 import React, { isValidElement, createContext, FunctionComponent, ReactNode, useContext, ComponentClass } from "react";
 import {
   AbstractSelector,
+  AbstractTemplate,
+  AbstractTemplateFactory,
   ImagoHandler,
   ImagoMiddleware,
   NodeProps,
   NodeType,
   TagProps,
+  TemplateContext,
   TemplateOptions,
 } from "./interfaces.js";
 import { defaultElements } from "./Elements.js";
 import { Selector } from "./selector.js";
 
-export const TemplateContext = createContext<Imago | undefined>(undefined);
 
 export interface SlotProps {
   select?: Selector<any>;
 
-  template?: ImagoBuilder;
+  template?: AbstractTemplate | AbstractTemplateFactory;
 }
 
 export function slot(children: React.ReactNode) {
@@ -30,7 +32,7 @@ export function hasProperty(children: React.ReactNode, property: string) {
 }
 
 export interface ProjectProps {
-  template?: ImagoBuilder;
+  template?: AbstractTemplate | AbstractTemplateFactory;
 
   filter?: Selector<any>;
 
@@ -57,7 +59,7 @@ export interface TransformOptions<T> {
   /** Set the class  */
   class?: string | string[];
   addClass?: string | string[];
-  template?: ImagoBuilder;
+  template?: AbstractTemplateFactory;
   children?: ImagoHandler<T>;
   childAfter?: ReactNode;
   childBefore?: ReactNode;
@@ -113,17 +115,17 @@ export interface ImagoBuilder {
    */
   addClasses(classes: Partial<Record<NodeType, string>>): ImagoBuilder;
 
-  use(middleware: ImagoBuilder): ImagoBuilder;
+  use(middleware: AbstractTemplateFactory): ImagoBuilder;
 
   use<T extends NodeType>(type: T, middleware: ImagoMiddleware<TagProps<T>>): ImagoBuilder;
 }
 
-export class ImagoBuilder {
+export class ImagoBuilder extends AbstractTemplateFactory {
   constructor(
     private final: Record<string, ImagoHandler> = { ...defaultElements },
     private middleware: Record<string, ImagoMiddleware[]> = {},
     private selector: AbstractSelector<any> | undefined = undefined,
-  ) {}
+  ) { super(); }
 
   template() {
     return new Imago(this.createHandlers());
@@ -226,7 +228,7 @@ export class ImagoBuilder {
     return this;
   }
 
-  public use<T = any>(arg1: string | ImagoBuilder, arg2?: ImagoMiddleware<T>): this {
+  public use<T = any>(arg1: string | AbstractTemplateFactory, arg2?: ImagoMiddleware<T>): this {
     if (typeof arg1 === 'string' && arg2) {
       if (!this.middleware[arg1]) {
         this.middleware[arg1] = [];
@@ -241,7 +243,7 @@ export class ImagoBuilder {
     return this;
   }
 
-  private applyMiddleware(parent: ImagoBuilder) {
+  public applyMiddleware(parent: AbstractTemplateFactory) {
     const selector = this.selector;
 
     if (selector) {
@@ -263,15 +265,15 @@ export class ImagoBuilder {
     } else {
       for (const [name, middleware] of Object.entries(this.middleware)) {
         for (const m of middleware) {
-          parent.use(name, m);
+          parent.use(name as NodeType, m);
         }
       }
     }
   }
 }
 
-export class Imago {
-  constructor(private handlers: Record<string, ImagoHandler>) {}
+export class Imago extends AbstractTemplate {
+  constructor(private handlers: Record<string, ImagoHandler>) { super(); }
 
   static configure(options?: TemplateOptions) {
     const final = { ...defaultElements, ...options?.elements || {} };
@@ -289,7 +291,7 @@ export class Imago {
     }
 
     return template
-      ? <TemplateContext.Provider value={template.template()}>{ children }</TemplateContext.Provider>
+      ? <TemplateContext.Provider value={template instanceof AbstractTemplateFactory ? template.template() : template}>{ children }</TemplateContext.Provider>
       : <>{ children }</>;
   }
 
@@ -324,3 +326,4 @@ export class Imago {
     return Component;
   }
 }
+
