@@ -1,78 +1,27 @@
-import React, { createContext, useContext } from "react";
-import { AbstractTemplate, ImagoComponentOptions, ImagoMiddleware, NodeProps, NodeType, PropertyTypes, ComponentType, Element, TagProps, TemplateContext, TypeSelector, AbstractTemplateFactory, SlotOptions, ComponentFactory, TOptions, HeadingTemplateOptions, TagHandler } from "./interfaces";
+import React from "react";
+import {
+  AbstractTemplate,
+  ImagoComponentOptions,
+  ImagoMiddleware,
+  NodeProps,
+  NodeType,
+  ComponentType,
+  Element,
+  TemplateContext,
+  TypeSelector,
+  AbstractTemplateFactory,
+  ComponentFactory,
+  TOptions,
+  HeadingTemplateOptions,
+  TagHandler
+} from "./interfaces";
 import { defaultElements } from "./Elements";
-import { SlotProps } from "./Imago";
+import { TypeContext, TypeMap } from "./types";
 
 function makeRenderProps(props: NodeProps, typeMap: TypeMap) {
   return { ...props, Slot: makeSlot(props.children), properties: typeMap.get(props.k) };
 }
 
-export interface TypeContextProperty {
-  value: any;
-
-  index: number | undefined;
-
-  key: any;
-}
-
-const listProps = new Set(['step', 'tab', 'panel', 'contentSection']);
-
-class TypeMap {
-  public types: Map<number, any> = new Map();
-
-  get(key: number) {
-    return this.types.has(key) ? this.types.get(key) : {};
-  }
-
-  parse(tag: NodeType, props: NodeProps): Property {
-    const childProps: Property[] = [...this.parseProperties(props)]
-
-    if (childProps.length === 0) {
-      if (props.typeof) {
-        return { name: props.property as string, key: props.k, value: { '@type': props.typeof }};
-      }
-      return { name: props.property as string, key: props.k, value: parseValue(tag, props) };
-    }
-
-    const p: Property = {
-      key: props.k,
-      name: props.property as string,
-      value: { '@type': props.typeof },
-    }
-
-    for (const cp of childProps) {
-      if (listProps.has(cp.name)) {
-        if (!p.value[cp.name]) {
-          p.value[cp.name] = [];
-        }
-        p.value[cp.name].push(cp.value);
-      } else {
-        p.value[cp.name] = cp.value;
-      }
-    }
-
-    this.types.set(p.key, p.value);
-
-    return p;
-  }
-
-  private * parseProperties(props: NodeProps): Generator<Property> {
-    for (const c of React.Children.toArray(props.children)) {
-      if (React.isValidElement(c)) {
-        if (c.props.property) {
-          const p = this.parse((c.type as any).displayName, c.props);
-          yield p;
-        } else {
-          for (const p of this.parseProperties(c.props)) {
-            yield p;
-          }
-        }
-      }
-    }
-  }
-}
-
-export const TypeContext = createContext<TypeMap>(new TypeMap());
 
 export function makeSlot(children: React.ReactNode) {
   return ({ name, property }: any) => {
@@ -112,9 +61,8 @@ export function transform<T extends NodeType>(options: TOptions<T>): ImagoMiddle
         pNext = { ...pNext, children: <>{ pNext.children } { options.childAfter }</> }
       }
 
-      const render = options.render;
-      if (render) {
-        return render({ ...pNext, Slot: makeSlot(pNext.children) });
+      if (options.render) {
+        return options.render({ ...pNext, Slot: makeSlot(pNext.children) });
       }
 
       return next({ name, props: pNext });
@@ -128,12 +76,7 @@ export function transform<T extends NodeType>(options: TOptions<T>): ImagoMiddle
   }
 }
 
-//if try import in module
-// start vision lib with conxtfw
-// 
 export class ImagoComponentFactory<T extends ComponentType> extends AbstractTemplateFactory implements ComponentFactory {
-  private handlers: Record<string, React.FunctionComponent<Element>> = {};
-
   constructor(
     public readonly tag: NodeType,
     public readonly type: string,
@@ -173,11 +116,12 @@ export class ImagoComponentFactory<T extends ComponentType> extends AbstractTemp
 
   template(): AbstractTemplate {
     const options = this.options;
+    const handlers: Record<string, React.FunctionComponent<Element>> = {};
 
     // Components
     for (const c of options.components || []) {
       const t = c.template();
-      this.handlers[`typeof:${c.type}`] = ({ name, props }) => this.resolveInOther(c.tag, t, props);
+      handlers[`typeof:${c.type}`] = ({ name, props }) => this.resolveInOther(c.tag, t, props);
     }
 
     // Properties
@@ -186,7 +130,7 @@ export class ImagoComponentFactory<T extends ComponentType> extends AbstractTemp
     if (properties) {
       for (const propName of Object.keys(properties)) {
         const p = properties[propName];
-        this.handlers[`property:${propName}`] = p
+        handlers[`property:${propName}`] = p
           ? this.createPropertyHandler(p as any)
           : this.createDefaultHandler()
       }
@@ -194,19 +138,19 @@ export class ImagoComponentFactory<T extends ComponentType> extends AbstractTemp
 
     // Tags
     for (const k in defaultElements) {
-      this.handlers[k] = ({name, props}) => defaultElements[k as NodeType](props);
+      handlers[k] = ({name, props}) => defaultElements[k as NodeType](props);
     }
     for (const t of Object.keys(options.tags || {})) {
-      this.handlers[t] = ({ name, props }) => {
+      handlers[t] = ({ name, props }) => {
         return defaultElements[name](props);
       }
       const tags = options.tags;
       if (tags) {
         for (const [t, handler] of Object.entries(tags)) {
-          const next = this.handlers[t];
+          const next = handlers[t];
           const mw = tagHandlerToMiddleware<any>(handler);
 
-          this.handlers[t] = (elem) => mw(next, next)(elem);
+          handlers[t] = (elem) => mw(next, next)(elem);
         }
       }
     }
@@ -214,7 +158,7 @@ export class ImagoComponentFactory<T extends ComponentType> extends AbstractTemp
     const render = options.render;
 
     if (render) {
-      this.handlers[this.handlerId] = ({ name, props }) => {
+      handlers[this.handlerId] = ({ name, props }) => {
         return (
           <TypeContext.Consumer>
             { typeMap => render(makeRenderProps(props, typeMap)) }
@@ -222,14 +166,14 @@ export class ImagoComponentFactory<T extends ComponentType> extends AbstractTemp
         );
       }
     } else {
-      this.handlers[this.handlerId] = ({ name, props }) => defaultElements[name](props);
+      handlers[this.handlerId] = ({ name, props }) => defaultElements[name](props);
     }
 
     const children = options.children;
 
     if (children) {
-      const next = this.handlers[this.handlerId];
-      this.handlers[this.handlerId] = ({ name, props }) => {
+      const next = handlers[this.handlerId];
+      handlers[this.handlerId] = ({ name, props }) => {
         return (
           <TypeContext.Consumer>
             { typeMap => next({ name, props: { ...props, children: children(makeRenderProps(props, typeMap) as any)}})}
@@ -241,8 +185,8 @@ export class ImagoComponentFactory<T extends ComponentType> extends AbstractTemp
     const cls = options.class;
 
     if (cls) {
-      const next = this.handlers[this.handlerId];
-      this.handlers[this.handlerId] = ({ name, props }) => {
+      const next = handlers[this.handlerId];
+      handlers[this.handlerId] = ({ name, props }) => {
         if (typeof cls === 'string') {
           return next({ name, props: { ...props, className: options.class }});
         } else if (typeof cls === 'function') {
@@ -255,34 +199,13 @@ export class ImagoComponentFactory<T extends ComponentType> extends AbstractTemp
       }
     }
 
-    return new ImagoComponent(this.handlers);
+    return new ImagoComponent(handlers);
   }
 
   private get handlerId() {
     return `typeof:${this.type}`;
   }
 }
-
-interface Property {
-  name: string;
-  value: any;
-  key: number;
-}
-
-function parseValue<T extends NodeType>(tag: NodeType, props: TagProps<T>) {
-  switch (tag) {
-    case 'link': return props.href;
-    case 'item':
-    case 'paragraph':
-    case 'heading':
-      return props.children?.toString();
-    case 'value':
-      return props.content;
-    default:
-      return undefined;
-  }
-}
-
 
 export class ImagoComponent extends AbstractTemplate {
   constructor(
