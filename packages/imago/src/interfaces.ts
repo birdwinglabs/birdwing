@@ -47,6 +47,10 @@ export interface ListProps extends NodeProps {
 
 export interface ItemProps extends NodeProps {}
 
+export interface ValueProps extends NodeProps {
+  content: string;
+}
+
 export interface FenceProps extends NodeProps {
   children: string;
   language: string;
@@ -98,6 +102,7 @@ export type TagProps<T extends NodeType> =
   T extends 'list' ? ListProps :
   T extends 'item' ? ItemProps :
   T extends 'link' ? LinkProps :
+  T extends 'value' ? ValueProps :
   NodeProps;
 
 export abstract class AbstractSelector<T extends NodeType> {
@@ -197,7 +202,7 @@ export interface ImagoComponentOptions<T extends ComponentType> {
   properties?: Partial<NamedChildOptions<PropertyNodes<T["properties"]>>>,
   slots?: Partial<NamedChildOptions<T["slots"]>>,
   tags?: Partial<TagMap>,
-  children?: React.FunctionComponent<HandlerProps<TagProps<T["tag"]>>>,
+  children?: React.FunctionComponent<TagProps<T["tag"]> & ComponentRenderFunctionProps<T["properties"], T["slots"]>>,
   render?: ComponentRenderFunction<T>,
 }
 
@@ -232,8 +237,14 @@ export interface DocPageSlots extends NodeMap {
   body: 'section';
 }
 
+export interface HintProperties extends PropertyMap {
+  hintType: Property<'value', 'caution' | 'check' | 'note' | 'warning'>;
+  message: Property<'section', any>;
+}
+
 type SequencePagination = ComponentType<'section', SequencePaginationProperties, {}>;
 type DocPage = ComponentType<'document', DocPageProperties, DocPageSlots>;
+type Hint = ComponentType<'section', HintProperties>;
 
 export const schema2 = {
   SequentionalPagination: new TypeSelector<SequencePagination>('section', 'SequentialPagination'),
@@ -247,6 +258,9 @@ export const schema2 = {
   Tab: new TypeSelector<any>('item', 'Tab'),
   TabPanel: new TypeSelector<any>('item', 'TabPanel'),
   Headings: new TypeSelector<any>('section', 'Headings'),
+  Steps: new TypeSelector<any>('list', 'Steps'),
+  Step: new TypeSelector<any>('item', 'Step'),
+  Hint: new TypeSelector<Hint>('section', 'Hint'),
 }
 
 export type TagHandler<T extends NodeType> =

@@ -1,22 +1,78 @@
-import React from "react";
+import React, { createContext, useContext } from "react";
 import { AbstractTemplate, ImagoComponentOptions, ImagoMiddleware, NodeProps, NodeType, PropertyTypes, ComponentType, Element, TagProps, TemplateContext, TypeSelector, AbstractTemplateFactory, SlotOptions, ComponentFactory, TOptions, HeadingTemplateOptions, TagHandler } from "./interfaces";
 import { defaultElements } from "./Elements";
 import { SlotProps } from "./Imago";
 
-function getProperty(children: React.ReactNode, name: string) {
-  for (const c of React.Children.toArray(children)) {
-    if (React.isValidElement(c) && c.props.property === name) {
-      const type = (c.type as any).displayName;
-      switch (type) {
-        case 'link': return c.props.href;
-        case 'section': return null;
-        default:
-          throw Error(`Unknown node type: ${type}`);
+function makeRenderProps(props: NodeProps, typeMap: TypeMap) {
+  return { ...props, Slot: makeSlot(props.children), properties: typeMap.get(props.k) };
+}
+
+export interface TypeContextProperty {
+  value: any;
+
+  index: number | undefined;
+
+  key: any;
+}
+
+const listProps = new Set(['step', 'tab', 'panel', 'contentSection']);
+
+class TypeMap {
+  public types: Map<number, any> = new Map();
+
+  get(key: number) {
+    return this.types.has(key) ? this.types.get(key) : {};
+  }
+
+  parse(tag: NodeType, props: NodeProps): Property {
+    const childProps: Property[] = [...this.parseProperties(props)]
+
+    if (childProps.length === 0) {
+      if (props.typeof) {
+        return { name: props.property as string, key: props.k, value: { '@type': props.typeof }};
+      }
+      return { name: props.property as string, key: props.k, value: parseValue(tag, props) };
+    }
+
+    const p: Property = {
+      key: props.k,
+      name: props.property as string,
+      value: { '@type': props.typeof },
+    }
+
+    for (const cp of childProps) {
+      if (listProps.has(cp.name)) {
+        if (!p.value[cp.name]) {
+          p.value[cp.name] = [];
+        }
+        p.value[cp.name].push(cp.value);
+      } else {
+        p.value[cp.name] = cp.value;
+      }
+    }
+
+    this.types.set(p.key, p.value);
+
+    return p;
+  }
+
+  private * parseProperties(props: NodeProps): Generator<Property> {
+    for (const c of React.Children.toArray(props.children)) {
+      if (React.isValidElement(c)) {
+        if (c.props.property) {
+          const p = this.parse((c.type as any).displayName, c.props);
+          yield p;
+        } else {
+          for (const p of this.parseProperties(c.props)) {
+            yield p;
+          }
+        }
       }
     }
   }
-  return undefined;
 }
+
+export const TypeContext = createContext<TypeMap>(new TypeMap());
 
 export function makeSlot(children: React.ReactNode) {
   return ({ name, property }: any) => {
@@ -105,6 +161,16 @@ export class ImagoComponentFactory<T extends ComponentType> extends AbstractTemp
     )
   }
 
+  private createDefaultHandler(): React.FunctionComponent<Element> {
+    return ({ name, props }) => defaultElements[name](props);
+  }
+
+  private createPropertyHandler(property: TagHandler<NodeType>): React.FunctionComponent<Element> {
+    const next = this.createDefaultHandler();
+    const mw = tagHandlerToMiddleware(property);
+    return (elem) => mw(next, next)(elem);
+  }
+
   template(): AbstractTemplate {
     const options = this.options;
 
@@ -120,16 +186,9 @@ export class ImagoComponentFactory<T extends ComponentType> extends AbstractTemp
     if (properties) {
       for (const propName of Object.keys(properties)) {
         const p = properties[propName];
-        this.handlers[`property:${propName}`] = ({ name, props }) => {
-          return defaultElements[name](props);
-        }
-        if (p) {
-          const mw = tagHandlerToMiddleware(p);
-          const next = this.handlers[`property:${propName}`];
-          this.handlers[`property:${propName}`] = elem => {
-            return mw(next, next)(elem);
-          }
-        }
+        this.handlers[`property:${propName}`] = p
+          ? this.createPropertyHandler(p as any)
+          : this.createDefaultHandler()
       }
     }
 
@@ -156,13 +215,11 @@ export class ImagoComponentFactory<T extends ComponentType> extends AbstractTemp
 
     if (render) {
       this.handlers[this.handlerId] = ({ name, props }) => {
-        let properties = new Proxy<PropertyTypes<T['properties']>>({} as any, {
-          get(target, prop, receiver) {
-            return getProperty(props.children, prop as string);
-          },
-        });
-
-        return render({ ...props, properties, Slot: makeSlot(props.children) });
+        return (
+          <TypeContext.Consumer>
+            { typeMap => render(makeRenderProps(props, typeMap)) }
+          </TypeContext.Consumer>
+        );
       }
     } else {
       this.handlers[this.handlerId] = ({ name, props }) => defaultElements[name](props);
@@ -173,22 +230,27 @@ export class ImagoComponentFactory<T extends ComponentType> extends AbstractTemp
     if (children) {
       const next = this.handlers[this.handlerId];
       this.handlers[this.handlerId] = ({ name, props }) => {
-        return next({ name, props: { ...props, children: children(props as any)}})
+        return (
+          <TypeContext.Consumer>
+            { typeMap => next({ name, props: { ...props, children: children(makeRenderProps(props, typeMap) as any)}})}
+          </TypeContext.Consumer>
+        );
       }
     }
 
-    if (options.class) {
+    const cls = options.class;
+
+    if (cls) {
       const next = this.handlers[this.handlerId];
       this.handlers[this.handlerId] = ({ name, props }) => {
-        if (typeof options.class === 'string') {
+        if (typeof cls === 'string') {
           return next({ name, props: { ...props, className: options.class }});
-        } else if (typeof options.class === 'function') {
-          const properties = new Proxy<PropertyTypes<T['properties']>>({} as any, {
-            get(target, prop, receiver) {
-              return getProperty(props.children, prop as string);
-            },
-          });
-          return next({ name, props: { ...props, className: options.class(properties) }});
+        } else if (typeof cls === 'function') {
+          return (
+            <TypeContext.Consumer>
+              { value => next({ name, props: { ...props, className: cls(value.types.get(props.k)) }}) }
+            </TypeContext.Consumer>
+          )
         }
       }
     }
@@ -200,6 +262,27 @@ export class ImagoComponentFactory<T extends ComponentType> extends AbstractTemp
     return `typeof:${this.type}`;
   }
 }
+
+interface Property {
+  name: string;
+  value: any;
+  key: number;
+}
+
+function parseValue<T extends NodeType>(tag: NodeType, props: TagProps<T>) {
+  switch (tag) {
+    case 'link': return props.href;
+    case 'item':
+    case 'paragraph':
+    case 'heading':
+      return props.children?.toString();
+    case 'value':
+      return props.content;
+    default:
+      return undefined;
+  }
+}
+
 
 export class ImagoComponent extends AbstractTemplate {
   constructor(
@@ -220,7 +303,16 @@ export class ImagoComponent extends AbstractTemplate {
         return name;
       }
 
-      return this.handlers[handlerName()]({ name, props })
+      if (name === 'document') {
+        const tm = new TypeMap();
+        tm.parse(name, props);
+        return (
+          <TypeContext.Provider value={tm}>
+            { this.handlers[handlerName()]({ name, props: { ...props } }) }
+          </TypeContext.Provider>
+        )
+      }
+      return this.handlers[handlerName()]({ name, props });
     }
   }
 }

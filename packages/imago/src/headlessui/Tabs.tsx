@@ -9,13 +9,15 @@ export default {
   TabList: ({ Slot, className }: any) => <TabList className={className}><Slot/></TabList>,
   TabPanels: ({ Slot, className }: any) => <TabPanels className={className}><Slot/></TabPanels>,
   TabPanel: ({ Slot, className }: any) => <TabPanel className={className}><Slot/></TabPanel>,
-  TabGroup: ({ id, className, children}: any) => {
-    const { state, setState } = useContext(PageContext);
-
+  TabGroup: ({ id, className, Slot}: any) => {
     return (
-      <TabGroup className={className} selectedIndex={state(id || '', 0)} onChange={index => setState(id || '', index)}>
-        { children }
-      </TabGroup>
+      <PageContext.Consumer>
+        {({ state, setState }) => (
+          <TabGroup className={className} selectedIndex={state(id || '', 0)} onChange={index => setState(id || '', index)}>
+            <Slot/>
+          </TabGroup>
+        )}
+      </PageContext.Consumer>
     )
   }
 };
