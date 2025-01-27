@@ -153,20 +153,29 @@ export abstract class AbstractTemplateFactory {
   }
 }
 
-export interface ComponentFactory {
-  tag: NodeType;
+export abstract class ComponentFactory<T extends NodeType> extends AbstractTemplateFactory {
+  tag: T;
 
   type: string;
 
-  template(): AbstractTemplate;
+  //template(): AbstractTemplate;
 }
 
-export interface ComponentType<TNode extends NodeType = NodeType, TProperties extends PropertyMap = PropertyMap, TSlots extends NodeMap = NodeMap> {
-  tag: TNode;
+//export interface ComponentType<TNode extends NodeType = NodeType, TProperties extends NodeMap = NodeMap, TSlots extends NodeMap = NodeMap> {
+  //tag: TNode;
 
-  properties: TProperties;
+  //properties: TProperties;
 
-  slots: TSlots;
+  //slots: TSlots;
+//}
+export interface ComponentType<TSchema> {
+  tag: NodeType;
+
+  schema: TSchema;
+
+  properties: {[P in keyof TSchema]: NodeType};
+
+  slots: Record<string, NodeType>
 }
 
 export interface TOptions<T extends NodeType = NodeType> {
@@ -181,29 +190,53 @@ export interface TOptions<T extends NodeType = NodeType> {
 export type NamedChildOptions<T extends NodeMap> = { [P in keyof T]: TagHandler<T[P]> };
 export type TagMap = { [P in NodeType ]: TagHandler<P> }
 
-export interface SlotOptions<TProperties extends PropertyMap, TSlots extends NodeMap> {
-  property?: keyof TProperties;
+export interface SlotOptions<TSchema, TSlots extends NodeMap> {
+  property?: keyof TSchema;
 
   name?: keyof TSlots;
 }
 
-export interface ComponentRenderFunctionProps<T extends PropertyMap, TSlots extends NodeMap> {
-  properties: PropertyTypes<T>;
+export interface ComponentRenderFunctionProps<T extends ComponentType<any>> {
+  properties: T["schema"];
 
-  Slot: React.FunctionComponent<SlotOptions<T, TSlots>>;
+  Slot: React.FunctionComponent<SlotOptions<T["schema"], T["slots"]>>;
 }
 
-export type ComponentRenderFunction<T extends ComponentType> =
-  React.FunctionComponent<ComponentRenderFunctionProps<T["properties"], T["slots"]>>;
+export type ComponentRenderFunction<T extends ComponentType<any>> =
+  React.FunctionComponent<ComponentRenderFunctionProps<T>>;
 
-export interface ImagoComponentOptions<T extends ComponentType> {
-  components?: ComponentFactory[],
-  class?: string | ((properties: PropertyTypes<T["properties"]>) => string),
-  properties?: Partial<NamedChildOptions<PropertyNodes<T["properties"]>>>,
+export type ComponentMiddleware = Partial<{[ P in NodeType]: ImagoMiddleware<Element<P>> }>
+
+//let m: ComponentMiddleware = {
+  //grid: next => props => {
+    //let className = 'grid grid-cols-12';
+
+    //const columns = () => {
+      //switch (props.columns) {
+        //case 1: return 'lg:grid-cols-1';
+        //case 2: return 'lg:grid-cols-2';
+      //}
+    //}
+
+    //if (props.columns) {
+
+    //}
+
+    //return next(props);
+  //}
+//}
+
+export interface ImagoComponentOptions<T extends ComponentType<any>> {
+  components?: ComponentFactory<any>[],
+  class?: string | ((properties: T["schema"]) => string),
+  properties?: Partial<NamedChildOptions<T["properties"]>>,
   slots?: Partial<NamedChildOptions<T["slots"]>>,
   tags?: Partial<TagMap>,
-  children?: React.FunctionComponent<TagProps<T["tag"]> & ComponentRenderFunctionProps<T["properties"], T["slots"]>>,
+  children?: React.FunctionComponent<TagProps<T["tag"]> & ComponentRenderFunctionProps<T>>,
+  childAfter?: ReactNode;
+  childBefore?: ReactNode;
   render?: ComponentRenderFunction<T>,
+  use?: ComponentMiddleware[],
 }
 
 export const TemplateContext = createContext<AbstractTemplate | undefined>(undefined);
@@ -214,57 +247,58 @@ export interface Element<T extends NodeType = NodeType> {
   props: TagProps<T>;
 }
 
-export class TypeSelector<T extends ComponentType> {
+export class TypeSelector<T extends ComponentType<any>> {
   constructor(public readonly tag: T["tag"], public readonly type: string) {}
 }
 
-export interface SequencePaginationProperties extends PropertyMap {
-  nextPage: Property<'link', string>;
-  previousPage: Property<'link', string>;
-}
+//export interface SequencePaginationProperties extends PropertyMap {
+  //nextPage: Property<'link', string>;
+  //previousPage: Property<'link', string>;
+//}
 
-export interface DocPageProperties extends PropertyMap {
-  topic: Property<'heading', string>;
-  name: Property<'heading', string>;
-  description: Property<'paragraph', string>;
+//export interface DocPageProperties extends PropertyMap {
+  //topic: Property<'heading', string>;
+  //name: Property<'heading', string>;
+  //description: Property<'paragraph', string>;
 
-  summary: Property<'section', any>;
-  headings: Property<'section', any>;
-  pagination: Property<'section', SequencePagination["properties"]>;
-}
+  //summary: Property<'section', any>;
+  //headings: Property<'section', any>;
+  //pagination: Property<'section', SequencePagination["properties"]>;
+//}
 
-export interface DocPageSlots extends NodeMap {
-  body: 'section';
-}
+//export interface DocPageSlots extends NodeMap {
+  //body: 'section';
+//}
 
-export interface HintProperties extends PropertyMap {
-  hintType: Property<'value', 'caution' | 'check' | 'note' | 'warning'>;
-  message: Property<'section', any>;
-}
+//export interface HintProperties extends PropertyMap {
+  //hintType: Property<'value', 'caution' | 'check' | 'note' | 'warning'>;
+  //message: Property<'section', any>;
+//}
 
-type SequencePagination = ComponentType<'section', SequencePaginationProperties, {}>;
-type DocPage = ComponentType<'document', DocPageProperties, DocPageSlots>;
-type Hint = ComponentType<'section', HintProperties>;
+//type SequencePagination = ComponentType<'section', SequencePaginationProperties, {}>;
+//type DocPage = ComponentType<'document', DocPageProperties, DocPageSlots>;
+//type Hint = ComponentType<'section', HintProperties>;
 
-export const schema2 = {
-  SequentionalPagination: new TypeSelector<SequencePagination>('section', 'SequentialPagination'),
-  DocPage: new TypeSelector<DocPage>('document', 'DocPage'),
-  TableOfContents: new TypeSelector<any>('section', 'TableOfContents'),
-  Footer: new TypeSelector<any>('section', 'Footer'),
-  Menu: new TypeSelector<any>('section', 'Menu'),
-  Tabs: new TypeSelector<any>('section', 'TabGroup'),
-  TabList: new TypeSelector<any>('list', 'TabList'),
-  TabPanels: new TypeSelector<any>('list', 'TabPanels'),
-  Tab: new TypeSelector<any>('item', 'Tab'),
-  TabPanel: new TypeSelector<any>('item', 'TabPanel'),
-  Headings: new TypeSelector<any>('section', 'Headings'),
-  Steps: new TypeSelector<any>('list', 'Steps'),
-  Step: new TypeSelector<any>('item', 'Step'),
-  Hint: new TypeSelector<Hint>('section', 'Hint'),
-}
+//export const schema2 = {
+  //SequentionalPagination: new TypeSelector<SequencePagination>('section', 'SequentialPagination'),
+  //DocPage: new TypeSelector<DocPage>('document', 'DocPage'),
+  //TableOfContents: new TypeSelector<any>('section', 'TableOfContents'),
+  //Footer: new TypeSelector<any>('section', 'Footer'),
+  //Menu: new TypeSelector<any>('section', 'Menu'),
+  //Tabs: new TypeSelector<any>('section', 'TabGroup'),
+  //TabList: new TypeSelector<any>('list', 'TabList'),
+  //TabPanels: new TypeSelector<any>('list', 'TabPanels'),
+  //Tab: new TypeSelector<any>('item', 'Tab'),
+  //TabPanel: new TypeSelector<any>('item', 'TabPanel'),
+  //Headings: new TypeSelector<any>('section', 'Headings'),
+  //Steps: new TypeSelector<any>('list', 'Steps'),
+  //Step: new TypeSelector<any>('item', 'Step'),
+  //Hint: new TypeSelector<Hint>('section', 'Hint'),
+//}
 
 export type TagHandler<T extends NodeType> =
   TOptions<T> |
+  ComponentFactory<T> |
   React.FunctionComponent<HandlerProps<TagProps<T>>> |
   string;
 
@@ -275,4 +309,14 @@ export interface HeadingTemplateOptions {
   h4: TagHandler<'heading'>;
   h5: TagHandler<'heading'>;
   h6: TagHandler<'heading'>;
+}
+
+export interface ItemTemplateOptions {
+  first: TagHandler<'item'>;
+  last: TagHandler<'item'>;
+  default: TagHandler<'item'>;
+}
+
+export interface Newable<T> {
+  new (...args: any[]): T;
 }

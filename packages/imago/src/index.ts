@@ -7,8 +7,7 @@ export { Imago, Ordering, OrderingContext } from './Imago.js';
 export { Selector } from './selector.js';
 export { schema } from './schema.js';
 export { slot, hasProperty } from './Imago.js';
-export { schema2 } from './interfaces.js';
-export { createComponent, heading } from './Component.js';
+export { createComponent, heading, item } from './Component.js';
 
 export interface NavLinkConfig {
   end: boolean;
