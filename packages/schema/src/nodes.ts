@@ -2,7 +2,7 @@ import pb from 'path-browserify';
 import Markdoc, { Schema } from '@markdoc/markdoc';
 import { TargetFile } from '@birdwing/core';
 
-const { dirname, join, extname, isAbsolute } = pb;
+const { dirname, join, isAbsolute } = pb;
 const { Tag, nodes } = Markdoc;
 
 export const heading: Schema = {
@@ -12,7 +12,8 @@ export const heading: Schema = {
       type: 'Number',
       required: true,
       render: true,
-    }
+    },
+    property: { type: String, required: false },
   },
   transform(node, config) {
     const attributes = node.transformAttributes(config);
@@ -37,15 +38,50 @@ export const heading: Schema = {
 }
 
 export const paragraph: Schema = {
-  ...nodes.paragraph,
+  children: ['inline'],
+  attributes: {
+    property: { type: String, required: false },
+  },
   render: 'paragraph',
 }
 
 export const fence: Schema = {
   render: 'fence',
-  attributes: nodes.fence.attributes,
-  transform(node) {
-    return new Tag(this.render, node.attributes, []);
+  attributes: {
+    content: {
+      type: String,
+      render: false,
+    },
+    language: {
+      type: String,
+    },
+    height: {
+      type: String,
+      default: 'full',
+      matches: [
+        'full',
+        'xs',
+        'sm',
+        'md',
+        'lg',
+        'xl'
+      ],
+      required: false,
+    },
+    render: {
+      type: String,
+      matches: ['codeblock', 'html'],
+      default: 'codeblock',
+      required: false,
+    }
+  },
+  transform(node, config) {
+    const attr = node.transformAttributes(config);
+
+    if (attr.render === 'html' && ['html', 'svg'].includes(attr.language)) {
+      return new Tag('html', attr, [node.attributes.content]);
+    }
+    return new Tag(this.render, node.transformAttributes(config), [node.attributes.content]);
   }
 }
 
@@ -58,9 +94,15 @@ export const list: Schema = {
     marker: { type: String },
   },
   transform(node, config) {
-    return new Tag(this.render, node.transformAttributes(config), node.children.map((item, index) =>
-      new Tag('item', { index }, item.transformChildren(config))
-    ));
+    node.children.forEach((item, index) => {
+      item.attributes.index = index;
+    });
+
+    return new Tag(this.render, node.transformAttributes(config), node.transformChildren(config));
+    //return node.transform(config);
+    //return new Tag(this.render, node.transformAttributes(config), node.children.map((item, index) =>
+      //new Tag('item', { index }, item.transformChildren(config))
+    //));
   },
 }
 
@@ -78,6 +120,11 @@ export const item: Schema = {
     'list',
     'hr',
   ],
+  attributes: {
+    index: { type: Number, required: false },
+    property: { type: String, required: false },
+    typeof: { type: String, required: false },
+  }
 };
 
 export const em: Schema = {
@@ -93,6 +140,21 @@ export const strong: Schema = {
   children: ['em', 's', 'link', 'code', 'text', 'tag'],
   attributes: {
     marker: { type: String, render: true },
+  },
+};
+
+export const text: Schema = {
+  attributes: {
+    content: { type: String, required: true },
+    property: { type: String, required: false },
+  },
+  transform(node, config) {
+    const attr = node.transformAttributes(config);
+
+    if (attr.property) {
+      return new Tag('value', { property: attr.property }, [node.attributes.content] );
+    }
+    return node.attributes.content;
   },
 };
 
@@ -114,7 +176,6 @@ export const link: Schema = {
   }
 }
 
-//export { hardbreak } from '@markdoc/markdoc';
 export const hardbreak = Markdoc.nodes.hardbreak;
 
 export const image: Schema = {
@@ -123,9 +184,11 @@ export const image: Schema = {
     src: { type: String, required: true },
     alt: { type: String },
     title: { type: String },
+    property: { type: String },
     // width/height attributes will need to be to be implemented as an extension to markdown-it
   },
   transform(node, config) {
+    const attr = node.transformAttributes(config);
     const svgFiles: TargetFile[] = config.variables?.svg || [];
 
     let src = node.attributes.src;
@@ -136,9 +199,9 @@ export const image: Schema = {
     const svg = svgFiles.find(file => file._id === src);
 
     if (svg) {
-      return new Tag('svg', { content: svg.content }, []);
+      return new Tag('html', { property: attr.property }, [svg.content]);
     }
 
-    return new Tag(this.render, node.transformAttributes(config), node.transformChildren(config));
+    return new Tag(this.render, attr, node.transformChildren(config));
   },
 };

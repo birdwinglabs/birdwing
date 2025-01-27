@@ -7,7 +7,6 @@ const { Tag } = Markdoc;
 
 
 export const editor: Schema = {
-  render: 'Editor',
   children: ['heading', 'fence', 'hr'],
   attributes: {
     'layout': {
@@ -44,14 +43,14 @@ export const editor: Schema = {
     const fact = new TabFactory(config);
     const tabGroups = new NodeList(node.children)
       .splitByHr()
-      .map(s => fact.createTabGroup(s.body));
+      .map(s => fact.createTabGroup(attr['id'], 'tabs', s.body));
 
-    const layout = createLayout('container', attr);
+    const layout = createLayout({...attr, items: attr.tiles });
 
     for (const tabGroup of tabGroups) {
-      layout.pushContent('area', [tabGroup]);
+      layout.pushContent([tabGroup], { name: 'area' });
     }
 
-    return new Tag(this.render, {}, [layout.container]);
+    return new Tag('section', { typeof: 'Editor' }, [layout.container]);
   }
 }

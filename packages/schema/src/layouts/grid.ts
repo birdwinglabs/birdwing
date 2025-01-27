@@ -1,12 +1,14 @@
 import { RenderableTreeNode, Tag } from "@markdoc/markdoc";
-import { Layout } from "../interfaces";
+import { ContentOptions, Layout } from "../interfaces";
 
 export interface GridLayoutConfig {
   name?: string;
+  property?: string;
+  typeof?: string;
   columns?: number;
   rows?: number;
   flow?: 'row' | 'column' | 'dense' | 'row dense' | 'column dense';
-  tiles: string;
+  items: string;
 }
 
 export interface GridTileConfig {
@@ -17,9 +19,9 @@ export interface GridTileConfig {
 export class GridLayout extends Layout {
   private tiles: GridTileConfig[];
 
-  constructor({ name, columns, rows, flow, tiles }: GridLayoutConfig) {
-    super(new Tag('grid', { name, columns, rows, flow }));
-    this.tiles = tiles.split(' ').map(e => {
+  constructor({ items, ...attr }: GridLayoutConfig) {
+    super(new Tag('grid', attr));
+    this.tiles = items.split(' ').map(e => {
       const [c, r] = e.split(':');
       return {
         colspan: parseInt(c),
@@ -28,10 +30,10 @@ export class GridLayout extends Layout {
     })
   }
 
-  pushContent(name: string, nodes: RenderableTreeNode[]) {
+  pushContent(nodes: RenderableTreeNode[], options: ContentOptions) {
     const children = this.container.children;
 
-    children.push(new Tag('tile', { name, ...this.tiles[children.length] }, nodes));
+    children.push(new Tag('tile', { ...options, ...this.tiles[children.length] }, nodes));
     return this;
   }
 }

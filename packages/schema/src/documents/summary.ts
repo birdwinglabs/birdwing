@@ -1,5 +1,7 @@
-import { Schema } from '@markdoc/markdoc';
+import { Schema, Tag } from '@markdoc/markdoc';
 
 export const summary: Schema = {
-  render: 'DocumentationSummary',
+  transform(node, config) {
+    return new Tag('section', { property: 'summary', typeof: 'TableOfContents' }, node.transformChildren(config));
+  },
 }

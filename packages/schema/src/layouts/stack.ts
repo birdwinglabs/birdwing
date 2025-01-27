@@ -1,13 +1,13 @@
 import { RenderableTreeNode, Tag } from "@markdoc/markdoc";
-import { Layout } from "../interfaces";
+import { ContentOptions, Layout } from "../interfaces";
 
 export class StackLayout extends Layout {
-  constructor(name?: string) {
-    super(new Tag('section', { name }, []));
+  constructor(attr: Record<string, any>) {
+    super(new Tag('section', attr, []));
   }
 
-  pushContent(name: string, nodes: RenderableTreeNode[]) {
-    this.container.children.push(new Tag('section', { name }, nodes));
+  pushContent(nodes: RenderableTreeNode[], options: ContentOptions) {
+    this.container.children.push(new Tag('section', options, nodes));
     return this;
   }
 }

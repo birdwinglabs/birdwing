@@ -1,32 +1,48 @@
 import Markdoc, { Schema, Tag } from '@markdoc/markdoc';
 import { NodeList } from '../util';
+import { createLayout } from '../layouts';
 
 const { Tag: TagCtr } = Markdoc;
 
-export const bentoGrid: Schema = {
-  render: 'BentoGrid',
+export const grid: Schema = {
+  //render: 'Grid',
   attributes: {
-    rows: {
+    'columns': {
       type: Number,
-      required: true,
+      default: undefined,
+      required: false,
     },
-    cols: {
+    'rows': {
       type: Number,
-      required: true,
+      default: undefined,
+      required: false,
     },
-    layout: {
-      type: Object,
-      required: true,
+    'flow': {
+      type: String,
+      default: undefined,
+      required: false,
+      matches: ['row', 'column', 'dense', 'row dense', 'column dense'],
+    },
+    'items': {
+      type: String,
+      default: '1',
+      required: false,
     }
   },
   transform(node, config) {
-    const sections = new NodeList(node.children).commentSections();
-    const layout = node.attributes.layout;
+    try {
+      const attr = node.transformAttributes(config);
+      const layout = createLayout({ layout: 'grid', ...attr });
 
-    const items = Object.entries(sections).map(([name, children]) => {
-      return new Tag('GridItem', layout[name], children.transformFlat(config));
-    });
+      new NodeList(node.children)
+        .splitByHr()
+        .map(s => s.body)
+        .forEach(nodes => layout.pushContent(nodes.transformFlat(config), { name: 'item' }));
 
-    return new TagCtr(this.render, { items, ...node.transformAttributes(config) }, [] );
+      return layout.container;
+    } catch (err) {
+      console.log(err);
+      throw err;
+    }
   },
 }

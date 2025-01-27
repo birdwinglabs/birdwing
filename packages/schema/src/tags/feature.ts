@@ -1,11 +1,9 @@
-import markdoc, { Schema } from '@markdoc/markdoc';
+import Markdoc, { Schema } from '@markdoc/markdoc';
 import { NodeList } from '../util';
 import { createLayout } from '../layouts';
-
-const { Tag } = markdoc;
+import { TabFactory } from './tabs';
 
 export const feature: Schema = {
-  render: 'Feature',
   attributes: {
     'layout': {
       type: String,
@@ -22,16 +20,48 @@ export const feature: Schema = {
       default: '1 1',
       required: false,
     },
+    'showcase': {
+      type: String,
+      default: 'auto',
+      matches: ['auto', 'tabs'],
+      required: false,
+    }
   },
   transform(node, config) {
     const children = new NodeList(node.children);
-    const attr = node.transformAttributes(config);
-    const { body, showcase } = children.commentSections(['body', 'showcase', 'bottom'], 'body');
-    const layout = createLayout('container', attr);
+    const { showcase, ...attr } = node.transformAttributes(config);
+    const [ body, showcaseSection ] = children.splitByHr();
+    const layout = createLayout({ property: 'contentSection', typeof: 'Feature', ...attr });
 
-    layout.pushContent('body', body.transformFlat(config));
-    layout.pushContent('showcase', showcase.transformFlat(config));
+    const bodyNodes = body.body.all();
 
-    return new Tag(this.render, { id: attr['id'], class: attr['class'] }, [layout.container]);
+    bodyNodes.forEach((n, i) => {
+      if (i === 0 && n.type === 'heading') {
+        n.attributes.property = 'name';
+      }
+      if (i === 1 && n.type === 'heading') {
+        n.attributes.property = 'headline';
+      }
+      if (n.type === 'paragraph') {
+        n.attributes.property = 'description';
+      }
+    });
+
+    layout.pushContent(bodyNodes.map(n => Markdoc.transform(n, config)), { name: 'body' });
+
+    if (showcaseSection) {
+      switch (showcase) {
+        case 'auto':
+          layout.pushContent(showcaseSection.body.transformFlat(config), { name: 'showcase' });
+          break;
+        case 'tabs':
+          const fact = new TabFactory(config);
+          const tabGroup = fact.createTabGroup(attr.id, 'tabs', showcaseSection.body);
+          layout.pushContent(tabGroup.children, { ...tabGroup.attributes, name: 'showcase' });
+          break;
+      }
+    }
+
+    return layout.container;
   }
 }

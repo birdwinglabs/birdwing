@@ -1,6 +1,8 @@
-import { Schema } from '@markdoc/markdoc';
+import { Schema, Tag } from '@markdoc/markdoc';
 
 export const menu: Schema = {
-  render: 'Menu',
   children: ['heading', 'link', 'list'],
+  transform(node, config) {
+    return new Tag('section', { property: 'menu', typeof: 'Menu' }, node.transformChildren(config));
+  },
 }

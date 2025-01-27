@@ -3,16 +3,17 @@ import { ColumnLayout } from "./column";
 import { GridLayout, GridLayoutConfig } from "./grid";
 import { StackLayout } from "./stack";
 
-export function createLayout(name: string, attr: Record<string, any>): Layout {
-  switch (attr['layout']) {
+export function createLayout(attr: Record<string, any>): Layout {
+  const { fractions, layout, ...restAttr } = attr;
+  switch (layout) {
     case 'grid':
-      return new GridLayout({ name, ...attr as GridLayoutConfig });
+      return new GridLayout({ ...restAttr as GridLayoutConfig });
     case '2-column':
-      return new ColumnLayout({ name, columns: 2, fractions: attr['fractions'], mirror: false });
+      return new ColumnLayout({ columns: 2, fractions, mirror: false, ...restAttr });
     case '2-column-mirror':
-      return new ColumnLayout({ name, columns: 2, fractions: attr['fractions'], mirror: true });
+      return new ColumnLayout({ columns: 2, fractions, mirror: true, ...restAttr });
     case 'stack':
     default:
-      return new StackLayout(name);
+      return new StackLayout(restAttr);
   }
 }

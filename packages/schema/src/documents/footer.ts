@@ -1,6 +1,8 @@
-import { Schema } from '@markdoc/markdoc';
+import { Schema, Tag } from '@markdoc/markdoc';
 
 export const footer: Schema = {
-  render: 'Footer',
   children: ['heading', 'link', 'list', 'paragraph'],
+  transform(node, config) {
+    return new Tag('section', { property: 'footer', typeof: 'Footer' }, node.transformChildren(config));
+  },
 }

@@ -1,24 +1,44 @@
-import Markdoc, { Schema, Node, Config } from '@markdoc/markdoc';
+import Markdoc, { Schema, Config } from '@markdoc/markdoc';
 import { generateIdIfMissing, NodeList } from '../util';
 
 const { Tag } = Markdoc;
 
-const isIcon = (tag: any) => tag instanceof Tag && tag.name === 'svg' || tag.name === 'image';
-
 export class TabFactory {
-  constructor(private tabName: string, private panelName: string, private config: Config) {}
+  constructor(private config: Config) {}
 
   createTabs(section: NodeList, headingLevel?: number) {
     const tabSections = section.headingSections(headingLevel);
     const tabs = tabSections.map(({ heading }) => {
-      const tags = heading.transformChildren(this.config);
+      const tab = new Tag('item', { property: 'tab', typeof: 'Tab' });
 
-      return new Tag(this.tabName, { icon: tags.find(isIcon) }, tags.filter(t => !isIcon(t)));
+      for (const c of heading.children[0].children) {
+        console.log(c);
+        if (c.type === 'text') {
+          tab.children.push(new Tag('heading', { level: 1, property: 'name' }, [Markdoc.transform(c, this.config)]));
+        } else if (c.type === 'image') {
+          c.attributes.property = 'image';
+          const tag = Markdoc.transform(c, this.config);
+          tab.children.push(tag );
+        }
+      }
+      return tab;
+
+      //return new Tag('item', { property: 'tab', typeof: 'Tab' }, [
+        //new Tag('heading', { level: 1, property: 'name' }, heading.transformChildren(this.config))
+      //]);
     });
     const panels = tabSections.map(({ body }) => {
-      return new Tag(this.panelName, {}, body.transformFlat(this.config));
+      return new Tag('item', { property: 'panel', typeof: 'TabPanel' }, body.transformFlat(this.config));
     });
-    return { tabs, panels };
+    return {
+      tabs: new Tag('list', { name: 'tabs' }, tabs),
+      panels: new Tag('list', { name: 'panels' }, panels),
+    };
+  }
+
+  createTabGroup(id: string, property: string, section: NodeList, headingLevel?: number) {
+    const { tabs, panels } = this.createTabs(section, headingLevel);
+    return new Tag('section', { id, property, typeof: 'TabGroup' }, [tabs, panels]);
   }
 }
 
@@ -40,14 +60,12 @@ export class TabFactory {
  * ```
  */
 export const tabs: Schema = {
-  render: 'Tabs',
   transform(node, config) {
     generateIdIfMissing(node, config);
-    const fact = new TabFactory('Tab', 'TabPanel', config);
+    const attr = node.transformAttributes(config);
+    const fact = new TabFactory(config);
 
-    return new Tag(this.render, {
-      ...node.transformAttributes(config),
-      ...fact.createTabs(new NodeList(node.children)),
-    });
+    //return new Tag(this.render, {}, [fact.createTabGroup(attr['id'], new NodeList(node.children))]);
+    return fact.createTabGroup(attr['id'], 'contentSection', new NodeList(node.children));
   }
 }
