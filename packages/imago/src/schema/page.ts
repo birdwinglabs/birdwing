@@ -18,7 +18,7 @@ export interface PageComponent extends ComponentType<Page> {
     menu: 'nav',
     footer: 'footer',
   },
-  slots: {
+  refs: {
     body: 'main',
   }
 }

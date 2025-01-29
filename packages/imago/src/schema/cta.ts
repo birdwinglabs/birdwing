@@ -15,7 +15,7 @@ export interface ActionComponent extends ComponentType<Action> {
     name: 'span',
     url: 'a',
   },
-  slots: {},
+  refs: {},
 }
 
 export interface CallToActionComponent extends ComponentType<CallToAction> {
@@ -23,7 +23,7 @@ export interface CallToActionComponent extends ComponentType<CallToAction> {
   properties: {
     action: 'li',
   },
-  slots: {
+  refs: {
     layout: 'div',
     body: 'section',
     actions: 'section',

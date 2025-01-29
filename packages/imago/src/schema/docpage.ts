@@ -22,7 +22,7 @@ export interface DocPageComponent extends ComponentType<DocPage> {
     summary: 'nav',
     footer: 'footer',
   },
-  slots: {
+  refs: {
     body: 'article',
   }
 }
@@ -39,5 +39,5 @@ export class TableOfContents {}
 export interface TableOfContentsComponent extends ComponentType<TableOfContents> {
   tag: 'nav',
   properties: {},
-  slots: {},
+  refs: {},
 }

@@ -16,7 +16,7 @@ export interface FeatureComponent extends ComponentType<Feature> {
     description: 'p',
     tabs: 'section',
   },
-  slots: {
+  refs: {
     body: 'section',
     showcase: 'section',
   },

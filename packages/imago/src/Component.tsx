@@ -162,19 +162,19 @@ export class ImagoComponentFactory<T extends ComponentType<any>> extends Compone
       }
     }
 
-    // Slots
-    const slots = options.slots;
+    // References
+    const refs = options.refs;
 
-    if (slots) {
-      for (const slotName of Object.keys(slots)) {
-        const s = slots[slotName];
-        handlers[`slot:${slotName}`] = s
-          ? this.createPropertyHandler(s as any)
+    if (refs) {
+      for (const refName of Object.keys(refs)) {
+        const ref = refs[refName];
+        handlers[`ref:${refName}`] = ref
+          ? this.createPropertyHandler(ref as any)
           : createDefaultHandler()
 
-        const next = handlers[`slot:${slotName}`];
+        const next = handlers[`ref:${refName}`];
 
-        handlers[`slot:${slotName}`] = elem => {
+        handlers[`ref:${refName}`] = elem => {
           if (elem.name in middleware) {
             return (middleware[elem.name] as ImagoMiddleware)(next, next)(elem);
           }
@@ -287,8 +287,8 @@ export class ImagoComponent extends AbstractTemplate {
         if (props.property && this.handlers[`property:${props.property}`]) {
           return `property:${props.property}`
         }
-        if (props['data-name'] && this.handlers[`slot:${props['data-name']}`]) {
-          return `slot:${props['data-name']}`
+        if (props['data-name'] && this.handlers[`ref:${props['data-name']}`]) {
+          return `ref:${props['data-name']}`
         }
         return name;
       }

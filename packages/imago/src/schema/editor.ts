@@ -10,7 +10,7 @@ export interface EditorComponent extends ComponentType<Editor> {
   properties: {
     tabs: 'section',
   },
-  slots: {
+  refs: {
     area: 'div',
   },
 }

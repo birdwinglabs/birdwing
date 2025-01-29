@@ -9,7 +9,7 @@ export interface HintComponent extends ComponentType<Hint> {
   properties: {
     hintType: 'meta',
   },
-  slots: {
+  refs: {
     body: 'section',
   }
 }

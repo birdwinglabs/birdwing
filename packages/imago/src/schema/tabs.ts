@@ -11,7 +11,7 @@ export interface TabGroupComponent extends ComponentType<TabGroup> {
     tab: 'li',
     panel: 'li',
   },
-  slots: {
+  refs: {
     tabs: 'ul',
     panels: 'ul',
   }
@@ -22,7 +22,6 @@ export class TabPanel {}
 export interface TabPanelComponent extends ComponentType<TabPanel> {
   tag: 'li',
   properties: {},
-  slots: {}
 }
 
 export class Tab {

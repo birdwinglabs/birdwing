@@ -5,7 +5,7 @@ export class Grid {}
 export interface GridComponent extends ComponentType<Grid> {
   tag: 'section',
   properties: {},
-  slots: {
+  refs: {
     item: 'div',
   },
 }

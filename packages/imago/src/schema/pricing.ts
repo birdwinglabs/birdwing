@@ -13,7 +13,7 @@ export interface TierComponent extends ComponentType<Tier> {
     description: 'p',
     price: 'p',
   },
-  slots: {}
+  refs: {}
 }
 
 export class Pricing {
@@ -31,5 +31,5 @@ export interface PricingComponent extends ComponentType<Pricing> {
     description: 'p',
     tier: 'li',
   },
-  slots: {}
+  refs: {}
 }

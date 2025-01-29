@@ -26,7 +26,7 @@ export interface MusicPlaylistComponent extends ComponentType<MusicPlaylist> {
   properties: {
     track: 'li',
   },
-  slots: {
+  refs: {
     tracks: 'ol',
   }
 }

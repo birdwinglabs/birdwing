@@ -13,7 +13,7 @@ export interface StepsComponent extends ComponentType<Steps> {
   properties: {
     step: 'li',
   },
-  slots: {}
+  refs: {}
 }
 
 export interface StepComponent extends ComponentType<Step> {
@@ -21,5 +21,5 @@ export interface StepComponent extends ComponentType<Step> {
   properties: {
     name: 'h1',
   },
-  slots: {}
+  refs: {}
 }

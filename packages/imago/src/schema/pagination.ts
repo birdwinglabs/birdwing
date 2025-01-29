@@ -11,5 +11,5 @@ export interface SequentialPaginationComponent extends ComponentType<SequentialP
     nextPage: 'a',
     previousPage: 'a',
   },
-  slots: {}
+  refs: {}
 }

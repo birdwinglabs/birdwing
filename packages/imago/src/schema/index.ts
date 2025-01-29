@@ -14,6 +14,8 @@ import { Pricing, PricingComponent, Tier, TierComponent } from './pricing.js';
 import { Step, StepComponent, Steps, StepsComponent } from './steps.js';
 import { Tab, TabComponent, TabGroup, TabGroupComponent, TabPanel, TabPanelComponent } from './tabs.js';
 
+export { DocPage };
+
 export class Type<T extends ComponentType<any>> {
   constructor(
     public readonly name: string,

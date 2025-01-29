@@ -148,7 +148,7 @@ export abstract class AbstractSelector<T extends NodeType> {
 }
 
 export interface TemplateOptions {
-  slots?: Template[],
+  refs?: Template[],
   elements?: Record<string, ImagoHandler>;
   selector?: AbstractSelector<any>;
 }
@@ -199,7 +199,7 @@ export interface ComponentType<TSchema> {
 
   properties: {[P in keyof TSchema]: NodeType};
 
-  slots: Record<string, NodeType>
+  refs: Record<string, NodeType>
 }
 
 export interface TOptions<T extends NodeType = NodeType> {
@@ -224,7 +224,7 @@ export interface SlotOptions<TSchema, TSlots extends NodeMap> {
 export interface ComponentRenderFunctionProps<T extends ComponentType<any>> {
   properties: T["schema"];
 
-  Slot: React.FunctionComponent<SlotOptions<T["schema"], T["slots"]>>;
+  Slot: React.FunctionComponent<SlotOptions<T["schema"], T["refs"]>>;
 }
 
 export type ComponentRenderFunction<T extends ComponentType<any>> =
@@ -236,7 +236,7 @@ export interface ImagoComponentOptions<T extends ComponentType<any>> {
   components?: ComponentFactory<any>[],
   class?: string | ((properties: T["schema"]) => string),
   properties?: Partial<NamedChildOptions<T["properties"]>>,
-  slots?: Partial<NamedChildOptions<T["slots"]>>,
+  refs?: Partial<NamedChildOptions<T["refs"]>>,
   tags?: Partial<TagMap>,
   children?: React.FunctionComponent<TagProps<T["tag"]> & ComponentRenderFunctionProps<T>>,
   childAfter?: ReactNode;
