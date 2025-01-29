@@ -247,12 +247,13 @@ export interface ImagoComponentOptions<T extends ComponentType<any>> {
   use?: ComponentMiddleware[],
 }
 
-export interface NodeInfo {
+export interface NodeInfo<T = any> {
   name: string;
   children: number[];
   parent: number | undefined;
   property: string | undefined;
   typeof: string | undefined;
+  meta: T;
 }
 
 export class NodeContext {

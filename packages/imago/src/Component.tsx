@@ -19,14 +19,14 @@ import {
   NodeInfo,
 } from "./interfaces";
 import { defaultElements } from "./Elements";
-import { NodeTree, TypeContext, TypeMap } from "./types";
+import { NodeTree } from "./types";
 import { schema, Type } from "./schema";
 
-function makeRenderProps(props: NodeProps, typeMap: TypeMap, nodes: Record<number, NodeInfo>) {
+function makeRenderProps(props: NodeProps, nodes: Record<number, NodeInfo>) {
   return {
     ...props,
     Slot: makeSlot(props.children),
-    properties: typeMap.get(props.k),
+    properties: nodes[props.k].meta,
     node: new NodeContext(nodes, props.k),
   };
 }
@@ -219,13 +219,9 @@ export class ImagoComponentFactory<T extends ComponentType<any>> extends Compone
     if (render) {
       handlers[this.handlerId] = ({ props }) => {
         return (
-          <TypeContext.Consumer>
-            { typeMap => 
-              <NodeTreeContext.Consumer>
-                { nodes => render(makeRenderProps(props, typeMap, nodes)) }
-              </NodeTreeContext.Consumer>
-            }
-          </TypeContext.Consumer>
+          <NodeTreeContext.Consumer>
+            { nodes => render(makeRenderProps(props, nodes)) }
+          </NodeTreeContext.Consumer>
         );
       }
     } else {
@@ -238,13 +234,9 @@ export class ImagoComponentFactory<T extends ComponentType<any>> extends Compone
       const next = handlers[this.handlerId];
       handlers[this.handlerId] = ({ name, props }) => {
         return (
-          <TypeContext.Consumer>
-            { typeMap => 
-              <NodeTreeContext.Consumer>
-                { nodes => next({ name, props: { ...props, children: children(makeRenderProps(props, typeMap, nodes) as any)}})}
-              </NodeTreeContext.Consumer>
-            }
-          </TypeContext.Consumer>
+          <NodeTreeContext.Consumer>
+            { nodes => next({ name, props: { ...props, children: children(makeRenderProps(props, nodes) as any)}})}
+          </NodeTreeContext.Consumer>
         );
       }
     }
@@ -271,9 +263,9 @@ export class ImagoComponentFactory<T extends ComponentType<any>> extends Compone
           return next({ name, props: { ...props, className: options.class }});
         } else if (typeof cls === 'function') {
           return (
-            <TypeContext.Consumer>
-              { value => next({ name, props: { ...props, className: cls(value.types.get(props.k)) }}) }
-            </TypeContext.Consumer>
+            <NodeTreeContext.Consumer>
+              { nodes => next({ name, props: { ...props, className: cls(nodes[props.k].meta) }}) }
+            </NodeTreeContext.Consumer>
           )
         }
       }
@@ -310,17 +302,13 @@ export class ImagoComponent extends AbstractTemplate {
       }
 
       if (name === 'document') {
-        const tm = new TypeMap(schema);
-        const nt = new NodeTree();
+        const nt = new NodeTree(schema);
         nt.process('document', props);
-        //console.log(nt.nodes);
-        tm.parse(props);
+        console.log(nt.nodes);
         return (
-          <TypeContext.Provider value={tm}>
-            <NodeTreeContext.Provider value={nt.nodes}>
-              { this.handlers[handlerName()]({ name, props: { ...props } }) }
-            </NodeTreeContext.Provider>
-          </TypeContext.Provider>
+          <NodeTreeContext.Provider value={nt.nodes}>
+            { this.handlers[handlerName()]({ name, props: { ...props } }) }
+          </NodeTreeContext.Provider>
         )
       }
       if (!this.handlers[handlerName()]) {
@@ -353,27 +341,6 @@ export function tagHandlerToMiddleware<T extends NodeType>(handler: TagHandler<T
       return transform(handler)(next, next)(elem);
     }
     return next(elem);
-  }
-}
-
-export function item(options: Partial<ItemTemplateOptions>): TOptions<'li'> {
-  return {
-    middleware: (next, final) => (elem) => {
-      let handler = options.default;
-
-      if (elem.props.index === 0 && options.first) {
-        handler = options.first;
-      } else if (elem.props.isLast && options.last) {
-        handler = options.last;
-      }
-
-      if (handler) {
-        const mw = tagHandlerToMiddleware(handler);
-        return mw(next, final)(elem);
-      } else {
-        return next(elem);
-      }
-    }
   }
 }
 
