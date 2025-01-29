@@ -41,9 +41,9 @@ export interface LinkProps extends NodeProps {
   href: string;
 }
 
-export interface ListProps extends NodeProps {
-  ordered: boolean;
-}
+//export interface ListProps extends NodeProps {
+  //ordered: boolean;
+//}
 
 export interface ItemProps extends NodeProps {}
 
@@ -53,16 +53,10 @@ export interface ValueProps extends NodeProps {
 
 export interface FenceProps extends NodeProps {
   children: string;
-  language: string;
+  'data-language': string;
   html?: boolean;
   height?: string;
 }
-
-export interface HeadingProps extends NodeProps {
-  level: 1 | 2 | 3 | 4 | 5 | 6;
-}
-
-export interface ParagraphProps extends NodeProps {}
 
 export type ImagoHandler<T = any> = React.FunctionComponent<T>;
 export type ImagoMiddleware<T = any> = (next: ImagoHandler<T> | (() => React.ReactElement | null), final: ImagoHandler<T>) => ImagoHandler<T>;
@@ -74,35 +68,77 @@ export interface MiddlewareComponent {
 
 export type NodeType = 
   'document' |
-  'value' |
+
+  // Document metadata
+  'meta' |
+
+  //Content sectioning
+  'address' |
+  'article' |
+  'aside' |
+  'footer' |
+  'header' |
+  'h1' | 'h2' | 'h3' | 'h4' | 'h5' | 'h6' |
+  'hgroup' |
+  'main' |
+  'nav' |
   'section' |
-  'grid' |
-  'tile' |
-  'heading' |
-  'paragraph' |
-  'hr' |
-  'image' |
-  'fence' |
-  'html' |
+  'search' |
+
+  // Text content
   'blockquote' |
-  'list' |
-  'item' |
+  'dd' |
+  'div' |
+  'dl' |
+  'dt' |
+  'figcaption' |
+  'figure' |
+  'hr' |
+  'li' |
+  'menu' |
+  'ol' |
+  'p' |
+  'pre' |
+  'ul' |
+
+  // Inline text semantics
+  'a' |
+  'abbr' |
+  'b' |
+  'bdi' |
+  'bdo' |
+  'br' |
+  'cite' |
+  'code' |
+  'data' |
+  'dfn' |
+  'em' |
+  'i' |
+  'kbd' |
+  'span' |
   'strong' |
-  'link' |
-  'code';
+  'time' |
+
+  // Image and multimedia
+  'area' |
+  'audio' |
+  'img' |
+  'map' |
+  'track' |
+  'video' |
+
+  // SVG and MathML
+  'svg' |
+  'path' |
+  'math';
 
 export type HandlerProps<T extends NodeProps> = T & { Slot: any };
 
 export type TagProps<T extends NodeType> = 
-  T extends 'grid' ? GridProps :
-  T extends 'tile' ? TileProps :
-  T extends 'heading' ? HeadingProps :
-  T extends 'paragraph' ? ParagraphProps :
-  T extends 'fence' ? FenceProps :
-  T extends 'list' ? ListProps :
-  T extends 'item' ? ItemProps :
-  T extends 'link' ? LinkProps :
-  T extends 'value' ? ValueProps :
+  T extends 'pre' ? FenceProps :
+  T extends 'li' ? ItemProps :
+  T extends 'a' ? LinkProps :
+  T extends 'meta' ? ValueProps :
   NodeProps;
 
 export abstract class AbstractSelector<T extends NodeType> {
@@ -119,9 +155,6 @@ export interface TemplateOptions {
 
 export type Matcher<T extends NodeProps> = (props: T) => boolean;
 
-
-
-///////////////////////////////////// NEW //////////////////////////////////////
 
 export type NodeMap = Record<string, NodeType>;
 export type PropertyMap = Record<string, Property<NodeType, any>>;
@@ -157,17 +190,8 @@ export abstract class ComponentFactory<T extends NodeType> extends AbstractTempl
   tag: T;
 
   type: string;
-
-  //template(): AbstractTemplate;
 }
 
-//export interface ComponentType<TNode extends NodeType = NodeType, TProperties extends NodeMap = NodeMap, TSlots extends NodeMap = NodeMap> {
-  //tag: TNode;
-
-  //properties: TProperties;
-
-  //slots: TSlots;
-//}
 export interface ComponentType<TSchema> {
   tag: NodeType;
 
@@ -184,6 +208,7 @@ export interface TOptions<T extends NodeType = NodeType> {
   children?: React.FunctionComponent<HandlerProps<TagProps<T>>>,
   childAfter?: ReactNode;
   childBefore?: ReactNode;
+  parent?: React.FunctionComponent<{ children: ReactNode }>;
   middleware?: ImagoMiddleware<Element<T>>
 }
 
@@ -206,25 +231,6 @@ export type ComponentRenderFunction<T extends ComponentType<any>> =
   React.FunctionComponent<ComponentRenderFunctionProps<T>>;
 
 export type ComponentMiddleware = Partial<{[ P in NodeType]: ImagoMiddleware<Element<P>> }>
-
-//let m: ComponentMiddleware = {
-  //grid: next => props => {
-    //let className = 'grid grid-cols-12';
-
-    //const columns = () => {
-      //switch (props.columns) {
-        //case 1: return 'lg:grid-cols-1';
-        //case 2: return 'lg:grid-cols-2';
-      //}
-    //}
-
-    //if (props.columns) {
-
-    //}
-
-    //return next(props);
-  //}
-//}
 
 export interface ImagoComponentOptions<T extends ComponentType<any>> {
   components?: ComponentFactory<any>[],
@@ -251,70 +257,16 @@ export class TypeSelector<T extends ComponentType<any>> {
   constructor(public readonly tag: T["tag"], public readonly type: string) {}
 }
 
-//export interface SequencePaginationProperties extends PropertyMap {
-  //nextPage: Property<'link', string>;
-  //previousPage: Property<'link', string>;
-//}
-
-//export interface DocPageProperties extends PropertyMap {
-  //topic: Property<'heading', string>;
-  //name: Property<'heading', string>;
-  //description: Property<'paragraph', string>;
-
-  //summary: Property<'section', any>;
-  //headings: Property<'section', any>;
-  //pagination: Property<'section', SequencePagination["properties"]>;
-//}
-
-//export interface DocPageSlots extends NodeMap {
-  //body: 'section';
-//}
-
-//export interface HintProperties extends PropertyMap {
-  //hintType: Property<'value', 'caution' | 'check' | 'note' | 'warning'>;
-  //message: Property<'section', any>;
-//}
-
-//type SequencePagination = ComponentType<'section', SequencePaginationProperties, {}>;
-//type DocPage = ComponentType<'document', DocPageProperties, DocPageSlots>;
-//type Hint = ComponentType<'section', HintProperties>;
-
-//export const schema2 = {
-  //SequentionalPagination: new TypeSelector<SequencePagination>('section', 'SequentialPagination'),
-  //DocPage: new TypeSelector<DocPage>('document', 'DocPage'),
-  //TableOfContents: new TypeSelector<any>('section', 'TableOfContents'),
-  //Footer: new TypeSelector<any>('section', 'Footer'),
-  //Menu: new TypeSelector<any>('section', 'Menu'),
-  //Tabs: new TypeSelector<any>('section', 'TabGroup'),
-  //TabList: new TypeSelector<any>('list', 'TabList'),
-  //TabPanels: new TypeSelector<any>('list', 'TabPanels'),
-  //Tab: new TypeSelector<any>('item', 'Tab'),
-  //TabPanel: new TypeSelector<any>('item', 'TabPanel'),
-  //Headings: new TypeSelector<any>('section', 'Headings'),
-  //Steps: new TypeSelector<any>('list', 'Steps'),
-  //Step: new TypeSelector<any>('item', 'Step'),
-  //Hint: new TypeSelector<Hint>('section', 'Hint'),
-//}
-
 export type TagHandler<T extends NodeType> =
   TOptions<T> |
   ComponentFactory<T> |
   React.FunctionComponent<HandlerProps<TagProps<T>>> |
   string;
 
-export interface HeadingTemplateOptions {
-  h1: TagHandler<'heading'>;
-  h2: TagHandler<'heading'>;
-  h3: TagHandler<'heading'>;
-  h4: TagHandler<'heading'>;
-  h5: TagHandler<'heading'>;
-  h6: TagHandler<'heading'>;
-}
-
 export interface ItemTemplateOptions {
-  first: TagHandler<'item'>;
-  last: TagHandler<'item'>;
-  default: TagHandler<'item'>;
+  first: TagHandler<'li'>;
+  last: TagHandler<'li'>;
+  default: TagHandler<'li'>;
 }
 
 export interface Newable<T> {

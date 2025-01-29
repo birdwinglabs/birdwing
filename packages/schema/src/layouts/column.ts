@@ -16,19 +16,25 @@ export class ColumnLayout extends Layout {
   private mirror: boolean;
 
   constructor({ columns, fractions, mirror, ...attr }: ColumnLayoutConfig) {
-    super(new Tag('grid', attr, []));
+    super(new Tag('div', { 'data-name': attr.name, 'data-layout': 'grid' }, []));
     this.fractions = fractions.split(' ').map(v => parseInt(v)).slice(0, columns);
     this.mirror = mirror;
-    this.container.attributes.columns = this.fractions.reduce((acc, c) => acc + c);
+    this.container.attributes['data-columns'] = this.fractions.reduce((acc, c) => acc + c);
   }
 
-  pushContent(nodes: RenderableTreeNode[], options:ContentOptions) {
+  pushContent(nodes: RenderableTreeNode[], {name, ...options}:ContentOptions) {
     const children = this.container.children;
     const i = children.length;
     const n = this.fractions.length;
 
     if (i < n) {
-      children.push(new Tag('tile', { ...options, colspan: this.fractions[i], order: this.mirror ? n - i : i + 1 }, nodes));
+      children.push(new Tag('div', {
+        ...options,
+        'data-name': name,
+        'data-colspan': this.fractions[i],
+        'data-order': this.mirror ? n - i : i + 1 },
+        nodes
+      ));
     }
     return this;
   }

@@ -9,12 +9,11 @@ export class TabFactory {
   createTabs(section: NodeList, headingLevel?: number) {
     const tabSections = section.headingSections(headingLevel);
     const tabs = tabSections.map(({ heading }) => {
-      const tab = new Tag('item', { property: 'tab', typeof: 'Tab' });
+      const tab = new Tag('li', { property: 'tab', typeof: 'Tab' });
 
       for (const c of heading.children[0].children) {
-        console.log(c);
         if (c.type === 'text') {
-          tab.children.push(new Tag('heading', { level: 1, property: 'name' }, [Markdoc.transform(c, this.config)]));
+          tab.children.push(new Tag('h1', { property: 'name' }, [Markdoc.transform(c, this.config)]));
         } else if (c.type === 'image') {
           c.attributes.property = 'image';
           const tag = Markdoc.transform(c, this.config);
@@ -28,11 +27,11 @@ export class TabFactory {
       //]);
     });
     const panels = tabSections.map(({ body }) => {
-      return new Tag('item', { property: 'panel', typeof: 'TabPanel' }, body.transformFlat(this.config));
+      return new Tag('li', { property: 'panel', typeof: 'TabPanel' }, body.transformFlat(this.config));
     });
     return {
-      tabs: new Tag('list', { name: 'tabs' }, tabs),
-      panels: new Tag('list', { name: 'panels' }, panels),
+      tabs: new Tag('ul', { 'data-name': 'tabs' }, tabs),
+      panels: new Tag('ul', { 'data-name': 'panels' }, panels),
     };
   }
 

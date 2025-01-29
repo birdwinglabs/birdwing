@@ -30,18 +30,18 @@ export interface DocPage extends RouteData {
 }
 
 function createHeader(title: string, topic?: string, description?: string) {
-  const header = new Tag('section', { name: 'header' });
+  const header = new Tag('header');
 
   if (topic) {
     header.children.push(
-      new Tag('heading', { level: 2, class: 'topic' }, [topic])
+      new Tag('h2', { property: 'topic' }, [topic])
     );
   }
 
-  header.children.push(new Tag('heading', { level: 1, class: 'title' }, [title]));
+  header.children.push(new Tag('h1', { property: 'name' }, [title]));
 
   if (description) {
-    header.children.push(new Tag('paragraph', {}, [description]));
+    header.children.push(new Tag('p', { property: 'description' }, [description]));
   }
 
   return header;
@@ -57,7 +57,18 @@ const docs = createPlugin<DocPage>('docs', (transformer) => {
 
       const headings = frontmatter.disableNav
         ? undefined
-        : new Tag('section', { name: 'headings' }, content.children.filter(c => c instanceof Tag && c.name === 'heading'));
+        : new Tag('aside', { property: 'headings', typeof: 'Headings' }, 
+            content.children
+              .filter(c => c instanceof Tag && ['h1', 'h2'].includes(c.name))
+              .map((c => {
+                if (c instanceof Tag) {
+                  const { attr, id } = c.attributes;
+                  return new Tag(c.name, attr, [ new Tag('a', { href: `#${id}` }, c.children)]);
+                } else {
+                  return c;
+                }
+              }))
+          );
 
       return {
         source: id,
@@ -80,13 +91,13 @@ const docs = createPlugin<DocPage>('docs', (transformer) => {
             const next = data[route.url].next;
             const topic = data[route.url].topic;
 
-            route.pagination = new Tag('section', { name: 'pagination', class: !prev ? 'first' : !next ? 'last' : undefined }, []);
+            route.pagination = new Tag('nav', { typeof: 'SequentialPagination', property: 'pagination' }, []);
 
             if (prev) {
-              route.pagination.children.push(new Tag('link', { href: prev.href, class: 'prev' }, [prev.title]));
+              route.pagination.children.push(new Tag('a', { href: prev.href, property: 'previousPage' }, [prev.title]));
             }
             if (next) {
-              route.pagination.children.push(new Tag('link', { href: next.href, class: 'next' }, [next.title]));
+              route.pagination.children.push(new Tag('a', { href: next.href, property: 'nextPage' }, [next.title]));
             }
           }
 
@@ -101,12 +112,14 @@ const docs = createPlugin<DocPage>('docs', (transformer) => {
         }
       }
     },
-    compile: ({ title, description, disableNav, url, source, content, menu, footer, summary, pagination, headings, summaryPageData }) => {
-      const root = new Tag('DocPage', { title, description, disableNav }, []);
+    compile: ({ title, description, url, source, content, menu, footer, summary, pagination, headings, summaryPageData }) => {
+      const root = new Tag('document', { typeof: 'DocPage', vocab: 'http://birdwing.io/terms/' }, []);
 
       const header = createHeader(title, summaryPageData?.topic, description);
 
-      root.children = [menu, summary, headings, header, content, pagination, footer]
+      content.children = [header, ...content.children];
+
+      root.children = [menu, summary, headings, content, pagination, footer]
         .filter(s => s !== undefined);
 
       return { title, url, source, tag: root };

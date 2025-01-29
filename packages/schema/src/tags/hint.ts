@@ -13,8 +13,8 @@ export const hint: Schema = {
     const attr = node.transformAttributes(config);
 
     return new Tag('section', { property: 'contentSection', typeof: 'Hint' }, [
-      new Tag('value', { property: 'hintType', content: attr['type']}),
-      new Tag('section', { name: 'body' }, node.transformChildren(config))
+      new Tag('meta', { property: 'hintType', content: attr['type']}),
+      new Tag('section', { 'data-name': 'body' }, node.transformChildren(config))
     ]);
   },
 }

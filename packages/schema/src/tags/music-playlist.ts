@@ -22,11 +22,11 @@ export const musicPlaylist: Schema = {
       throw Error('No tracks');
     }
 
-    const tracks = new Tag('list', { ordered: true }, trackList.children.map(t => {
+    const tracks = new Tag('ol', {}, trackList.children.map(t => {
       const name = t.children.find(c => c.type === 'heading');
       const data = t.children.find(c => c.type === 'inline');
 
-      const tag = new Tag('item', { property: 'track', typeof: 'MusicRecording' });
+      const tag = new Tag('li', { property: 'track', typeof: 'MusicRecording' });
 
       if (name) {
         const nameTag = Markdoc.transform(name, config) as Tag;
@@ -40,7 +40,7 @@ export const musicPlaylist: Schema = {
         const fields = content?.toString().split('|').map(f => f.trim()) || [];
 
         fields.forEach((f, i) => {
-          tag.children.push(new Tag('value', { property: trackFields[i] }, [f]));
+          tag.children.push(new Tag('span', { property: trackFields[i] }, [f]));
         });
       }
 

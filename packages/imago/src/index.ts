@@ -5,9 +5,9 @@ export { HeadlessUI } from './headlessui';
 
 export { Imago, Ordering, OrderingContext } from './Imago.js';
 export { Selector } from './selector.js';
-export { schema } from './schema.js';
+export { schema } from './schema/index.js';
 export { slot, hasProperty } from './Imago.js';
-export { createComponent, heading, item } from './Component.js';
+export { createComponent, item } from './Component.js';
 
 export interface NavLinkConfig {
   end: boolean;

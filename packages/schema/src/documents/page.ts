@@ -31,6 +31,6 @@ export class Page implements Schema {
         yield new Tag('section', { property: 'contentSection' }, section);
       }
     }
-    return new Tag('section', { name: 'body' }, Array.from(sections()));
+    return new Tag('main', { 'data-name': 'body' }, Array.from(sections()));
   }
 }

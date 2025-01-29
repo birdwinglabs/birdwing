@@ -1,5 +1,5 @@
 import { Imago } from "../Imago";
-import { schema } from "../schema.js";
+import { schema } from "../schema/index.js";
 import { PageContext } from '@birdwing/react';
 import { useContext } from 'react';
 import { Tab, TabGroup, TabList, TabPanels, TabPanel } from '@headlessui/react';

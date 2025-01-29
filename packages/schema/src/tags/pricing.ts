@@ -24,8 +24,8 @@ export const pricing: Schema = {
       .transformFlat(config);
 
     return new Tag('section', { property: 'contentSection', typeof: 'Pricing' }, [
-      new Tag('section', { name: 'description' }, bodyNodes.map(n => Markdoc.transform(n, config))),
-      new Tag('grid', { name: 'tiers', columns: tiers.length }, tiers),
+      new Tag('header', {}, bodyNodes.map(n => Markdoc.transform(n, config))),
+      new Tag('ul', { 'data-layout': 'grid', 'data-columns': tiers.length }, tiers),
     ] );
   },
 }
@@ -49,9 +49,9 @@ export const tier: Schema = {
   transform(node, config) {
     const { name, priceMonthly, featured } = node.transformAttributes(config);
 
-    return new Tag('tile', { property: 'tier', typeof: featured ? 'FeaturedTier' : 'Tier' }, [
-      new Tag('heading', { level: 3, property: 'name' }, [name]),
-      new Tag('paragraph', { property: 'price', typeof: 'BillingMonthly' }, [priceMonthly]),
+    return new Tag('li', { property: 'tier', typeof: featured ? 'FeaturedTier' : 'Tier' }, [
+      new Tag('h3', { property: 'name' }, [name]),
+      new Tag('p', { property: 'price', typeof: 'BillingMonthly' }, [priceMonthly]),
       ...node.transformChildren(config)
     ]);
   },

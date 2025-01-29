@@ -1,36 +1,57 @@
-import { createPlugin } from '@birdwing/core';
+import { createPlugin, Route, RouteData } from '@birdwing/core';
 import { Tag } from '@markdoc/markdoc';
 
-export interface PageAttributes {
+export interface PageData extends RouteData {
   title: string;
 
-  description: string;
+  //description: string;
+
+  content: Tag;
 
   menu?: Tag;
 
   footer?: Tag;
 }
 
-const pages = createPlugin<PageAttributes>('pages', (transformer, path) => {
+const pages = createPlugin<PageData>('pages', (transformer, path) => {
   return {
     page: ({ id, url, ast, frontmatter }) => {
-      const tag = transformer.transform(ast, {
+      const content = transformer.transform(ast, {
         node: 'page',
         variables: { frontmatter, path },
       });
-      tag.attributes = frontmatter;
+      //content.attributes = frontmatter;
 
-      return { source: id, url, title: frontmatter.title, tag };
+      return { source: id, url, title: frontmatter.title, content };
     },
     fragments: {
       menu: ({ ast }) => {
         const tag = transformer.transform(ast, { node: 'menu', variables: { path} });
-        return route => Object.assign(route.tag.attributes, { menu: tag });
+        return data => {
+          data.menu = tag;
+        }
       },
       footer: ({ ast }) => {
         const tag = transformer.transform(ast, { node: 'footer', variables: { path } });
-        return route => Object.assign(route.tag.attributes, { footer: tag });
+        return route => {
+          route.footer = tag;
+        }
       }
+    },
+    compile: ({ title, url, source, content, menu, footer }) => {
+      const tag = new Tag('document', { typeof: 'Page' }, []);
+      const route: Route = { title, url, source, tag };
+      
+      if (menu) {
+        tag.children.push(menu);
+      }
+      tag.children.push(content);
+
+      if (footer) {
+        tag.children.push(footer);
+      }
+
+      return route;
     }
   }
 });

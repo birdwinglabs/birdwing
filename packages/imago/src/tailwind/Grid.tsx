@@ -1,4 +1,4 @@
-import { ComponentMiddleware } from "../interfaces";
+import { ComponentMiddleware, Element, ImagoMiddleware } from "../interfaces";
 
 const columns: Record<number, string> = {
   1: 'lg:grid-cols-1',
@@ -60,7 +60,7 @@ const rowspan: Record<number, string> = {
   12: 'lg:row-span-12',
 }
 
-const flow = {
+const flow: Record<string, string> = {
   'column': 'lg:grid-flow-col',
   'row': 'lg:grid-flow-row',
   'dense': 'lg:grid-flow-dense',
@@ -83,39 +83,38 @@ const order: Record<number, string> = {
   12: 'lg:order-12',
 }
 
-export const grid: ComponentMiddleware = {
-  grid: next => ({ name, props }) => {
-    const className = ['grid'];
+const gridElement: ImagoMiddleware<Element<any>> = next => ({ name, props }) => {
+  let className = [];
 
-    if (props.columns) {
-      className.push(columns[props.columns]);
-    }
-    if (props.rows) {
-      className.push(rows[props.rows]);
-    }
-    if (props.flow) {
-      className.push(flow[props.flow]);
-    }
-
-    const newClass = [props.className, ...className].join(' ');
-
-    return next({ name, props: { ...props, className: newClass }});
-  },
-  tile: next => ({ name, props }) => {
-    const className = [];
-
-    if (props.colspan) {
-      className.push(colspan[props.colspan]);
-    }
-    if (props.rowspan) {
-      className.push(rowspan[props.rowspan]);
-    }
-    if (props.order) {
-      className.push(order[props.order]);
-    }
-
-    const newClass = [props.className, ...className].join(' ');
-
-    return next({ name, props: { ...props, className: newClass }});
+  if (props['data-layout'] === 'grid') {
+    className.push('grid');
   }
+  if (props['data-columns']) {
+    className.push(columns[props['data-columns']]);
+  }
+  if (props['data-rows']) {
+    className.push(rows[props['data-rows']]);
+  }
+  if (props['data-flow']) {
+    className.push(flow[props['data-flow']]);
+  }
+  if (props['data-colspan']) {
+    className.push(colspan[props['data-colspan']]);
+  }
+  if (props['data-rowspan']) {
+    className.push(rowspan[props['data-rowspan']]);
+  }
+  if (props['data-order']) {
+    className.push(order[props['data-order']]);
+  }
+
+  const newClass = [props.className, ...className].join(' ');
+
+  return next({ name, props: { ...props, className: newClass }});
+}
+
+export const grid: ComponentMiddleware = {
+  div: gridElement,
+  ul: gridElement,
+  li: gridElement,
 }

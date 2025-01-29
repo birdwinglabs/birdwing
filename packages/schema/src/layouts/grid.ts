@@ -19,8 +19,16 @@ export interface GridTileConfig {
 export class GridLayout extends Layout {
   private tiles: GridTileConfig[];
 
-  constructor({ items, ...attr }: GridLayoutConfig) {
-    super(new Tag('grid', attr));
+  constructor({ items, name, property, columns, rows, flow, ...attr  }: GridLayoutConfig) {
+    super(new Tag('div', {
+      'data-layout': 'grid',
+      'data-name': name,
+      property,
+      typeof: attr.typeof,
+      'data-columns': columns,
+      'data-rows': rows,
+      'data-flow': flow,
+    }));
     this.tiles = items.split(' ').map(e => {
       const [c, r] = e.split(':');
       return {
@@ -30,10 +38,16 @@ export class GridLayout extends Layout {
     })
   }
 
-  pushContent(nodes: RenderableTreeNode[], options: ContentOptions) {
+  pushContent(nodes: RenderableTreeNode[], {name, ...options}: ContentOptions) {
     const children = this.container.children;
+    const tile = this.tiles[children.length];
 
-    children.push(new Tag('tile', { ...options, ...this.tiles[children.length] }, nodes));
+    children.push(new Tag('div', {
+      ...options,
+      'data-name': name,
+      'data-colspan': tile.colspan,
+      'data-rowspan': tile.rowspan,
+    }, nodes));
     return this;
   }
 }

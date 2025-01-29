@@ -39,7 +39,7 @@ export const grid: Schema = {
         .map(s => s.body)
         .forEach(nodes => layout.pushContent(nodes.transformFlat(config), { name: 'item' }));
 
-      return layout.container;
+      return new Tag('section', { typeof: 'Grid' }, [layout.container]);
     } catch (err) {
       console.log(err);
       throw err;

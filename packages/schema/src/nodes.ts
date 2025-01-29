@@ -1,18 +1,15 @@
 import pb from 'path-browserify';
 import Markdoc, { Schema } from '@markdoc/markdoc';
 import { TargetFile } from '@birdwing/core';
+import * as xml from 'fast-xml-parser';
 
 const { dirname, join, isAbsolute } = pb;
 const { Tag, nodes } = Markdoc;
 
 export const heading: Schema = {
-  render: 'heading',
+  children: ['inline'],
   attributes: {
-    level: {
-      type: 'Number',
-      required: true,
-      render: true,
-    },
+    level: { type: 'Number', required: true, render: false },
     property: { type: String, required: false },
   },
   transform(node, config) {
@@ -33,7 +30,11 @@ export const heading: Schema = {
 
     attributes.id = generateID();
 
-    return new Tag(this.render, attributes, children);
+    return new Tag(
+      `h${node.attributes['level']}`,
+      attributes,
+      node.transformChildren(config)
+    );
   }
 }
 
@@ -42,7 +43,7 @@ export const paragraph: Schema = {
   attributes: {
     property: { type: String, required: false },
   },
-  render: 'paragraph',
+  render: 'p',
 }
 
 export const fence: Schema = {
@@ -52,9 +53,8 @@ export const fence: Schema = {
       type: String,
       render: false,
     },
-    language: {
-      type: String,
-    },
+    process: { type: Boolean, render: false, default: false },
+    language: { type: String, render: 'data-language', default: 'shell' },
     height: {
       type: String,
       default: 'full',
@@ -76,38 +76,43 @@ export const fence: Schema = {
     }
   },
   transform(node, config) {
-    const attr = node.transformAttributes(config);
+    const attributes = node.transformAttributes(config);
+    const children = node.children.length
+      ? node.transformChildren(config)
+      : [node.attributes.content];
 
-    if (attr.render === 'html' && ['html', 'svg'].includes(attr.language)) {
-      return new Tag('html', attr, [node.attributes.content]);
-    }
-    return new Tag(this.render, node.transformAttributes(config), [node.attributes.content]);
+    return new Tag('pre', attributes, [node.attributes.content]);
+    //const attr = node.transformAttributes(config);
+
+    //if (attr.render === 'html' && ['html', 'svg'].includes(attr.language)) {
+      //return new Tag('html', attr, [node.attributes.content]);
+    //}
+    //return new Tag(this.render, node.transformAttributes(config), [node.attributes.content]);
   }
 }
 
 export const list: Schema = {
-  render: 'list',
   children: ['item'],
   attributes: {
-    ordered: { type: Boolean, required: true },
+    ordered: { type: Boolean, render: false, required: true },
     start: { type: Number },
-    marker: { type: String },
+    marker: { type: String, render: false },
   },
   transform(node, config) {
     node.children.forEach((item, index) => {
       item.attributes.index = index;
     });
 
-    return new Tag(this.render, node.transformAttributes(config), node.transformChildren(config));
-    //return node.transform(config);
-    //return new Tag(this.render, node.transformAttributes(config), node.children.map((item, index) =>
-      //new Tag('item', { index }, item.transformChildren(config))
-    //));
+    return new Tag(
+      node.attributes.ordered ? 'ol' : 'ul',
+      node.transformAttributes(config),
+      node.transformChildren(config)
+    );
   },
 }
 
 export const item: Schema = {
-  render: 'item',
+  render: 'li',
   children: [
     'inline',
     'heading',
@@ -152,14 +157,14 @@ export const text: Schema = {
     const attr = node.transformAttributes(config);
 
     if (attr.property) {
-      return new Tag('value', { property: attr.property }, [node.attributes.content] );
+      return new Tag('span', { property: attr.property }, [node.attributes.content] );
     }
     return node.attributes.content;
   },
 };
 
 export const link: Schema = {
-  render: 'link',
+  render: 'a',
   transform(node, config) {
     const { urls, path } = config.variables || {};
     const dirName = dirname(path);
@@ -179,7 +184,7 @@ export const link: Schema = {
 export const hardbreak = Markdoc.nodes.hardbreak;
 
 export const image: Schema = {
-  render: 'image',
+  render: 'img',
   attributes: {
     src: { type: String, required: true },
     alt: { type: String },
@@ -199,9 +204,32 @@ export const image: Schema = {
     const svg = svgFiles.find(file => file._id === src);
 
     if (svg) {
-      return new Tag('html', { property: attr.property }, [svg.content]);
+      const parser = new xml.XMLParser({ ignoreAttributes: false });
+      let jObj = parser.parse(svg.content);
+      const tag = jObjToTag('svg', jObj.svg);
+
+      if (attr.property) {
+        tag.attributes.property = attr.property;
+        tag.attributes.xmlns = undefined;
+      }
+
+      return tag;
     }
 
     return new Tag(this.render, attr, node.transformChildren(config));
   },
 };
+
+function jObjToTag(tagName: string, content: Record<string, any>) {
+  let children: any[] = [];
+  let attr: Record<string, string | undefined> = {};
+
+  for (const [k, v] of Object.entries(content)) {
+    if (k.startsWith('@_')) {
+      attr[k.slice(2)] = v;
+    } else {
+      children.push(jObjToTag(k, v));
+    }
+  }
+  return new Tag(tagName, attr, children);
+}

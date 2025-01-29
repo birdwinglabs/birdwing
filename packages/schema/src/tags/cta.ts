@@ -54,13 +54,13 @@ export const cta: Schema = {
         //actionIndex++;
       } 
     }
-    const layout = createLayout(attr);
+    const layout = createLayout({...attr, name: 'layout' });
 
     layout.pushContent([
-      new Tag('section', { name: 'head' }, head.transformFlat(config)),
-      new Tag('section', { name: 'body' }, body.transformFlat(config)),
-      new Tag('section', { name: 'actions' }, actions.transformFlat(config)),
-      new Tag('section', { name: 'footer' }, footer.transformFlat(config)),
+      new Tag('header', {}, head.transformFlat(config)),
+      new Tag('section', { 'data-name': 'body' }, body.transformFlat(config)),
+      new Tag('section', { 'data-name': 'actions' }, actions.transformFlat(config)),
+      new Tag('footer', {}, footer.transformFlat(config)),
     ], { name: 'main' });
     layout.pushContent(showcase.transformFlat(config), { name: 'showcase' });
 
