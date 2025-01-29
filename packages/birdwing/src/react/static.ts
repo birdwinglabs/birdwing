@@ -4,6 +4,8 @@ import Markdoc, { RenderableTreeNode, RenderableTreeNodes } from '@markdoc/markd
 const { Tag } = Markdoc;
 
 export class StaticRenderer {
+  private key: number = 0;
+
   constructor(private theme: Template) {}
 
   render(node: RenderableTreeNodes): string {
@@ -41,7 +43,7 @@ export class StaticRenderer {
     return `{${object}}`;
   }
 
-  private renderNodes(node: RenderableTreeNodes, index: number = 0, isLast: boolean = false): string {
+  private renderNodes(node: RenderableTreeNodes): string {
     if (Array.isArray(node))
       return `React.createElement(React.Fragment, null, ${this.renderArray(node)})`;
 
@@ -54,12 +56,9 @@ export class StaticRenderer {
       children = [],
     } = node;
 
+    attrs.k = this.key++;
+
     if (className) attrs.className = className;
-
-    attrs.index = index;
-    attrs.isLast = isLast;
-
-    const childCount = children.length;
 
     const elem = `c(${JSON.stringify(name)},
       ${Object.keys(attrs).length == 0 ? 'null' : this.deepRender(attrs)},

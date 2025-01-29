@@ -224,6 +224,8 @@ export interface SlotOptions<TSchema, TSlots extends NodeMap> {
 export interface ComponentRenderFunctionProps<T extends ComponentType<any>> {
   properties: T["schema"];
 
+  node: NodeContext;
+
   Slot: React.FunctionComponent<SlotOptions<T["schema"], T["refs"]>>;
 }
 
@@ -245,7 +247,43 @@ export interface ImagoComponentOptions<T extends ComponentType<any>> {
   use?: ComponentMiddleware[],
 }
 
+export interface NodeInfo {
+  name: string;
+  children: number[];
+  parent: number | undefined;
+  property: string | undefined;
+  typeof: string | undefined;
+}
+
+export class NodeContext {
+  constructor(private nodes: Record<number, NodeInfo>, private key: number) {}
+
+  get lastChild(): boolean {
+    const siblingKeys = this.siblingKeys;
+    return siblingKeys.length > 0 && siblingKeys[siblingKeys.length - 1] === this.key;
+  }
+
+  get firstChild(): boolean {
+    const siblingKeys = this.siblingKeys;
+    return siblingKeys.length === 0 || siblingKeys[0] === this.key;
+  }
+
+  get index(): number {
+    const siblingKeys = this.siblingKeys;
+    return Math.min(siblingKeys.indexOf(this.key), 0);
+  }
+
+  private get siblingKeys(): number[] {
+    const parent = this.nodes[this.key].parent;
+    if (!parent) {
+      return [];
+    }
+    return this.nodes[parent].children;
+  }
+}
+
 export const TemplateContext = createContext<AbstractTemplate | undefined>(undefined);
+export const NodeTreeContext = createContext<Record<number, NodeInfo>>({});
 
 export interface Element<T extends NodeType = NodeType> {
   name: T;

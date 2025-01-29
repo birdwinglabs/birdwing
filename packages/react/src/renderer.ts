@@ -8,7 +8,7 @@ export class Renderer {
 
   constructor(private template: Template) {}
 
-  render(node: RenderableTreeNodes, index: number = 0, isLast: boolean = false): ReactNode {
+  render(node: RenderableTreeNodes): ReactNode {
     if (Array.isArray(node))
       return React.createElement(React.Fragment, null, ...node.map(n => this.render(n)));
 
@@ -23,16 +23,12 @@ export class Renderer {
     
     if (className) attrs.className = className;
 
-    attrs.index = index;
-    attrs.isLast = isLast;
     attrs.k = this.key++;
-
-    const childCount = children.length;
 
     const elem = React.createElement(
       this.template.resolve(name),
       Object.keys(attrs).length == 0 ? null : this.deepRender(attrs),
-      ...children.map((c, i) => this.render(c, i, i === childCount - 1))
+      ...children.map((c, i) => this.render(c))
     );
 
     return elem;

@@ -1,5 +1,5 @@
 import React, { createContext } from "react";
-import { NodeProps, NodeType, TagProps, Newable } from "./interfaces";
+import { NodeProps, NodeType, TagProps, Newable, NodeInfo } from "./interfaces";
 import { schema, Type } from './schema';
 
 interface Property {
@@ -8,8 +8,31 @@ interface Property {
   key: number;
 }
 
+
+export class NodeTree {
+  public nodes: Record<number, NodeInfo> = {};
+
+  process(tagName: string, props: NodeProps, parent: number | undefined = undefined) {
+    this.nodes[props.k] = {
+      name: tagName,
+      children: [],
+      parent,
+      property: props.property,
+      typeof: props.typeof,
+    };
+
+    for (const c of React.Children.toArray(props.children)) {
+      if (React.isValidElement(c)) {
+        this.nodes[props.k].children.push(c.props.k);
+        this.process((c.type as any).displayName, c.props, props.k);
+      }
+    }
+  }
+}
+
 export class TypeMap {
   public types: Map<number, any> = new Map();
+  public children: Record<number, number[]> = {};
 
   constructor(private schema: Record<string, Type<any>>) {}
 
@@ -17,7 +40,7 @@ export class TypeMap {
     return this.types.has(key) ? this.types.get(key) : {};
   }
 
-  parse(tag: NodeType, props: NodeProps): Property {
+  parse(props: NodeProps): Property {
     const childProps: Property[] = [...this.parseProperties(props)];
 
     if (props.typeof) {
@@ -45,14 +68,14 @@ export class TypeMap {
       }
     }
 
-    return { name: props.property as string, key: props.k, value: this.parseValue(tag, props) };
+    return { name: props.property as string, key: props.k, value: this.parseValue(props) };
   }
 
   private * parseProperties(props: NodeProps): Generator<Property> {
     for (const c of React.Children.toArray(props.children)) {
       if (React.isValidElement(c)) {
         if (c.props.property) {
-          const p = this.parse((c.type as any).displayName, c.props);
+          const p = this.parse(c.props);
           yield p;
         }
         if (!c.props.typeof) {
@@ -64,7 +87,7 @@ export class TypeMap {
     }
   }
 
-  private parseValue<T extends NodeType>(tag: NodeType, props: TagProps<T>) {
+  private parseValue<T extends NodeType>(props: TagProps<T>) {
     if (props.href) {
       return props.href;
     }
@@ -75,17 +98,6 @@ export class TypeMap {
       return props.content;
     }
     return props.children?.toString();
-    //switch (tag) {
-      //case 'link': return props.href;
-      //case 'item':
-      //case 'paragraph':
-      //case 'heading':
-        //return props.children?.toString();
-      //case 'value':
-        //return props.content ? props.content : props.children?.toString();
-      //default:
-        //return undefined;
-    //}
   }
 }
 

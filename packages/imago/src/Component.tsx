@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useContext } from "react";
 import {
   AbstractTemplate,
   ImagoComponentOptions,
@@ -14,13 +14,21 @@ import {
   TagHandler,
   ComponentMiddleware,
   ItemTemplateOptions,
+  NodeTreeContext,
+  NodeContext,
+  NodeInfo,
 } from "./interfaces";
 import { defaultElements } from "./Elements";
-import { TypeContext, TypeMap } from "./types";
+import { NodeTree, TypeContext, TypeMap } from "./types";
 import { schema, Type } from "./schema";
 
-function makeRenderProps(props: NodeProps, typeMap: TypeMap) {
-  return { ...props, Slot: makeSlot(props.children), properties: typeMap.get(props.k) };
+function makeRenderProps(props: NodeProps, typeMap: TypeMap, nodes: Record<number, NodeInfo>) {
+  return {
+    ...props,
+    Slot: makeSlot(props.children),
+    properties: typeMap.get(props.k),
+    node: new NodeContext(nodes, props.k),
+  };
 }
 
 
@@ -212,7 +220,11 @@ export class ImagoComponentFactory<T extends ComponentType<any>> extends Compone
       handlers[this.handlerId] = ({ props }) => {
         return (
           <TypeContext.Consumer>
-            { typeMap => render(makeRenderProps(props, typeMap)) }
+            { typeMap => 
+              <NodeTreeContext.Consumer>
+                { nodes => render(makeRenderProps(props, typeMap, nodes)) }
+              </NodeTreeContext.Consumer>
+            }
           </TypeContext.Consumer>
         );
       }
@@ -227,7 +239,11 @@ export class ImagoComponentFactory<T extends ComponentType<any>> extends Compone
       handlers[this.handlerId] = ({ name, props }) => {
         return (
           <TypeContext.Consumer>
-            { typeMap => next({ name, props: { ...props, children: children(makeRenderProps(props, typeMap) as any)}})}
+            { typeMap => 
+              <NodeTreeContext.Consumer>
+                { nodes => next({ name, props: { ...props, children: children(makeRenderProps(props, typeMap, nodes) as any)}})}
+              </NodeTreeContext.Consumer>
+            }
           </TypeContext.Consumer>
         );
       }
@@ -295,11 +311,15 @@ export class ImagoComponent extends AbstractTemplate {
 
       if (name === 'document') {
         const tm = new TypeMap(schema);
-        tm.parse(name, props);
-        console.log(tm.get(0));
+        const nt = new NodeTree();
+        nt.process('document', props);
+        //console.log(nt.nodes);
+        tm.parse(props);
         return (
           <TypeContext.Provider value={tm}>
-            { this.handlers[handlerName()]({ name, props: { ...props } }) }
+            <NodeTreeContext.Provider value={nt.nodes}>
+              { this.handlers[handlerName()]({ name, props: { ...props } }) }
+            </NodeTreeContext.Provider>
           </TypeContext.Provider>
         )
       }
@@ -346,6 +366,24 @@ export function item(options: Partial<ItemTemplateOptions>): TOptions<'li'> {
       } else if (elem.props.isLast && options.last) {
         handler = options.last;
       }
+
+      if (handler) {
+        const mw = tagHandlerToMiddleware(handler);
+        return mw(next, final)(elem);
+      } else {
+        return next(elem);
+      }
+    }
+  }
+}
+
+export function select<T extends NodeType>(fn: (node: NodeContext) => TagHandler<T>): TOptions<T> {
+  return {
+    middleware: (next, final) => (elem) => {
+      const nodes = useContext(NodeTreeContext);
+      const node = new NodeContext(nodes, elem.props.k);
+
+      const handler = fn(node);
 
       if (handler) {
         const mw = tagHandlerToMiddleware(handler);

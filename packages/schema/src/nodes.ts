@@ -92,10 +92,6 @@ export const list: Schema = {
     marker: { type: String, render: false },
   },
   transform(node, config) {
-    node.children.forEach((item, index) => {
-      item.attributes.index = index;
-    });
-
     return new Tag(
       node.attributes.ordered ? 'ol' : 'ul',
       node.transformAttributes(config),
