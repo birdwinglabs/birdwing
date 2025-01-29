@@ -62,6 +62,14 @@ export class FragmentDocument extends AbstractDocument {
   }
 }
 
+export interface RouteData {
+  source: string;
+
+  url: string;
+
+  title: string;
+}
+
 export interface Route<T extends Record<string, any> = Record<string, any>> {
   source: string;
 

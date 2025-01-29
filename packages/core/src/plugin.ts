@@ -1,20 +1,22 @@
-import { FragmentDocument, PageDocument, Route, Transformer } from "./interfaces.js";
+import { FragmentDocument, PageDocument, Route, RouteData, Transformer } from "./interfaces.js";
 
 export type Attributes = Record<string, any>;
 
-export type RouteCallback<T extends Attributes> = (route: Route<T>) => void;
+export type RouteCallback<T extends RouteData> = (data: T) => void;
 
-type FragmentTransform<T extends Attributes> = (fragment: FragmentDocument) => RouteCallback<T>;
+type FragmentTransform<T extends RouteData> = (fragment: FragmentDocument) => RouteCallback<T>;
 
-export interface PluginConfig<T extends Attributes> {
-  page(page: PageDocument): Route<Partial<T>>;
+export interface PluginConfig<T extends RouteData> {
+  page(page: PageDocument): T;
 
   fragments: Record<string, FragmentTransform<T>>;
+
+  compile(data: T): Route;
 } 
 
-export type PluginMounter<T extends Attributes> = (transformer: Transformer, path: string) => PluginConfig<T>;
+export type PluginMounter<T extends RouteData> = (transformer: Transformer, path: string) => PluginConfig<T>;
 
-export function createPlugin<T extends Attributes>(
+export function createPlugin<T extends RouteData>(
   name: string,
   mount: PluginMounter<T>
 ) {

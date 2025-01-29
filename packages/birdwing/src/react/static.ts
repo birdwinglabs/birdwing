@@ -1,126 +1,70 @@
+import { Template } from '@birdwing/react';
 import Markdoc, { RenderableTreeNode, RenderableTreeNodes } from '@markdoc/markdoc';
-
-import type { ComponentType } from 'react';
-import React from 'react';
-import ReactDOMServer from "react-dom/server";
 
 const { Tag } = Markdoc;
 
-type Component = ComponentType<unknown>;
-
-function tagName(
-  name: string,
-  components: Record<string, Component> | ((string: string) => Component)
-): string | Component {
-  return typeof name !== 'string'
-    ? 'Fragment'
-    : name[0] !== name[0].toUpperCase()
-    ? name
-    : components instanceof Function
-    ? components(name)
-    : components[name];
-}
-
-function renderArray(children: RenderableTreeNode[], component: (name: string) => any): string {
-  return children.map(c => render(c, component)).join(', ');
-}
-
-function deepRender(value: any, component: (name: string) => any): any {
-  if (value === undefined) {
-    return 'undefined';
-  }
-
-  if (value == null || typeof value !== 'object') return JSON.stringify(value);
-
-  if (Array.isArray(value))
-    return `[${value.map((item) => deepRender(item, component)).join(', ')}]`;
-
-  if (value.$$mdtype === 'Tag') return render(value, component);
-
-  if (typeof value !== 'object') return JSON.stringify(value);
-
-  const object = Object.entries(value)
-    .map(([k, v]) => [JSON.stringify(k), deepRender(v, component)].join(': '))
-    .join(', ');
-
-  return `{${object}}`;
-}
-
-function render(node: RenderableTreeNodes, component: (name: string) => any): string {
-  if (Array.isArray(node))
-    return `React.createElement(React.Fragment, null, ${renderArray(node, component)})`;
-
-  if (node === null || typeof node !== 'object' || !Tag.isTag(node))
-    return JSON.stringify(node);
-
-  const {
-    name,
-    attributes: { class: className, ...attrs } = {},
-    children = [],
-  } = node;
-
-  if (className) attrs.className = className;
-
-  // Experimental idea of prerendering certain components
-  const staticNodes: string[] = []
-
-  if (staticNodes.indexOf(node.name) !== -1) {
-    const cmp = Markdoc.renderers.react(node, React, { components: component })
-    return ReactDOMServer.renderToString(cmp).replace(/<!--/g, '').replace(/-->/g, '');
-  }
-
-  return `React.createElement(
-    tagName(${JSON.stringify(name)}, components),
-    ${Object.keys(attrs).length == 0 ? 'null' : deepRender(attrs, component)},
-    ${renderArray(children, component)})`;
-}
-
-export default function reactStatic(
-  node: RenderableTreeNodes,
-  component: (name: string) => any,
-  { resolveTagName = tagName }: { resolveTagName?: typeof tagName } = {}
-): string {
-  // the resolveTagName function *must* be called tagName
-  // throw an error if it does not
-  if (resolveTagName.name !== 'tagName') {
-    throw new Error('resolveTagName must be named tagName');
-  }
-  return `
-  (({ React, components = {}} = {}) => {
-    ${resolveTagName}
-    return ${render(node, component)};
-  })
-`;
-}
-
 export class StaticRenderer {
-  constructor(private components: any) {}
+  constructor(private theme: Template) {}
 
-  render(renderable: any) {
-    const namespace = (name: string) => {
-      if (name.includes('.')) {
-        const ns = name.split('.');
-        if (ns.length === 2) {
-          return { component: ns[0], node: ns[1] };
-        } else {
-          return { component: ns[0], section: ns[1], node: ns[2] };
-        }
-      } else {
-        return { component: name, node: 'layout' };
-      }
+  render(node: RenderableTreeNodes): string {
+    return `
+    (({ React, theme = {}} = {}) => {
+      const c = (name, attr, ...children) => React.createElement(theme.resolve(name), attr, ...children);
+
+      return ${this.renderNodes(node)};
+    })
+  `;
+  }
+
+  private renderArray(children: RenderableTreeNode[]): string {
+    return children.map(c => this.renderNodes(c)).join(', ');
+  }
+
+  private deepRender(value: any): any {
+    if (value === undefined) {
+      return 'undefined';
     }
 
-    const components = (name: string) => {
-      const ns = namespace(name);
+    if (value == null || typeof value !== 'object') return JSON.stringify(value);
 
-      const template = this.components[ns.component];
+    if (Array.isArray(value))
+      return `[${value.map((item) => this.deepRender(item)).join(', ')}]`;
 
-      if (!template) {
-        throw Error(`Missing component '${ns.component}'`);
-      }
-      return (props: any) => template.resolve(ns.node, ns.section)(props)
-    }
+    if (value.$$mdtype === 'Tag') return this.renderNodes(value);
 
-    return reactStatic(renderable, components);
+    if (typeof value !== 'object') return JSON.stringify(value);
+
+    const object = Object.entries(value)
+      .map(([k, v]) => [JSON.stringify(k), this.deepRender(v)].join(': '))
+      .join(', ');
+
+    return `{${object}}`;
+  }
+
+  private renderNodes(node: RenderableTreeNodes, index: number = 0, isLast: boolean = false): string {
+    if (Array.isArray(node))
+      return `React.createElement(React.Fragment, null, ${this.renderArray(node)})`;
+
+    if (node === null || typeof node !== 'object' || !Tag.isTag(node))
+      return JSON.stringify(node);
+
+    const {
+      name,
+      attributes: { class: className, ...attrs } = {},
+      children = [],
+    } = node;
+
+    if (className) attrs.className = className;
+
+    attrs.index = index;
+    attrs.isLast = isLast;
+
+    const childCount = children.length;
+
+    const elem = `c(${JSON.stringify(name)},
+      ${Object.keys(attrs).length == 0 ? 'null' : this.deepRender(attrs)},
+      ${this.renderArray(children)})`;
+    
+    return elem;
   }
 }

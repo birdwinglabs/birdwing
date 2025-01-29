@@ -2,12 +2,10 @@ import * as esbuild from 'esbuild'
 import { Theme } from '../theme.js';
 import { CodeSnippet } from '../interfaces.js';
 import { ThemeSnippet } from '../snippets/theme.js';
-import { HighlightJsSnippet } from '../snippets/highlightjs.js';
 
 export function configureSsr(theme: Theme): esbuild.BuildOptions {
   const snippets: CodeSnippet[] = [
     new ThemeSnippet(theme),
-    new HighlightJsSnippet(),
   ];
 
   const code = `
@@ -21,7 +19,6 @@ export function configureSsr(theme: Theme): esbuild.BuildOptions {
     ${snippets.map(s => s.body).join('\n')}
 
     app = (routes, path) => {
-      return 'Hello';
       return ReactDOMServer.renderToString(
         <StaticRouter location={path}>
           <Routes>
@@ -29,7 +26,7 @@ export function configureSsr(theme: Theme): esbuild.BuildOptions {
               <Route
                 key={ r.url }
                 path={ r.url }
-                element={ <PageWrapper highlight={highlight}><Content components={components} tag={r.tag} /></PageWrapper> }
+                element={ <PageWrapper><Content theme={theme} tag={r.tag} /></PageWrapper> }
               />
             )}
           </Routes>

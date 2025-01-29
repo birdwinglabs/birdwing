@@ -25,11 +25,14 @@ export function configureTheme(
   }
 
   return {
-    stdin: {
-      contents: code,
-      loader: 'jsx',
-      resolveDir: path.join(root, 'theme'),
-    },
+    entryPoints: [path.join(root, 'theme/tags/index.ts')],
+    //loader: 'jsx',
+    //stdin: {
+      //contents: code,
+      //loader: 'jsx',
+      //resolveDir: path.join(root, 'theme'),
+    //},
+    format: 'cjs',
     minify: options.minify === true,
     bundle: true,
     outfile: options.outfile || path.join(root, 'out/theme.js'),

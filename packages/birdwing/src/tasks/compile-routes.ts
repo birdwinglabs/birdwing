@@ -12,10 +12,10 @@ export class CompileRoutesTask extends Task<Route[]> {
   }
 
   async *execute() {
-    try {
+    //try {
       return await this.compiler.transform();
-    } catch (err) {
-      throw new Error('Compiling routes failed');
-    }
+    //} catch (err) {
+      //throw new Error('Compiling routes failed');
+    //}
   }
 }

@@ -19,6 +19,8 @@ import { Logger } from '../logger.js';
 import { configureSsr } from '../buildconfigs/ssr.js';
 import { RenderStaticRoutesTask } from '../tasks/render-static-routes.js';
 import { ImagesTask } from '../tasks/images.js';
+import { configureTheme } from '../buildconfigs/theme.js';
+import { LoadThemeTemplateTask } from '../tasks/load-theme-template.js';
 
 export class BuildCommand extends Command {
   async execute() {
@@ -46,6 +48,15 @@ export class BuildCommand extends Command {
     const routes = await this.executeTask(
       new CompileRoutesTask(compiler)
     );
+    const themeBuild = await this.executeTask(new BuildTask(configureTheme(this.root, theme, {}), {
+      start: 'Building theme',
+      success: 'Built theme',
+    }));
+
+    //console.log(themeBuild);
+
+    const themeTemplate = await this.executeTask(new LoadThemeTemplateTask(themeBuild[0].content));
+
     const ssrOutput = await this.executeTask(new BuildTask(configureSsr(theme), {
       start: 'Building SSR application',
       success: 'Built SSR application'
@@ -55,7 +66,7 @@ export class BuildCommand extends Command {
       new ExtractFenceLanguagesTask(compiler.cache.documents)
     );
 
-    const staticRoutes = await this.executeTask(new RenderStaticRoutesTask(routes, {
+    const staticRoutes = await this.executeTask(new RenderStaticRoutesTask(routes, themeTemplate, {
       start: 'Rendering static routes...',
       success: 'Rendered static routes',
     }));

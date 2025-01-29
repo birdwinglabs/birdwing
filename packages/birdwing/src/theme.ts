@@ -23,11 +23,11 @@ export class Theme {
   }
 
   get componentGlob(): string {
-    return path.join(this.path, 'tags', '**/*.{jsx,tsx}');
+    return path.join(this.path, 'tags', '**/*.{jsx,tsx,js,ts}');
   }
 
   get jsxGlob(): string {
-    return path.join(this.path, '**/*.{jsx,tsx}');
+    return path.join(this.path, '**/*.{jsx,tsx,js,ts}');
   }
 
   get componentNames() {

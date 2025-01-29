@@ -5,7 +5,6 @@ import { TargetFile } from '@birdwing/core';
 import { Theme } from '../theme.js';
 import { CodeSnippet } from '../interfaces.js';
 import { ThemeSnippet } from '../snippets/theme.js';
-import { HighlightJsSnippet } from '../snippets/highlightjs.js';
 
 export function configureProducationClient(
   root: string, theme: Theme, staticRoutes: TargetFile[], languages: string[]
@@ -13,7 +12,6 @@ export function configureProducationClient(
 {
   const snippets: CodeSnippet[] = [
     new ThemeSnippet(theme),
-    new HighlightJsSnippet(languages),
   ];
 
   const code = `
@@ -27,24 +25,6 @@ export function configureProducationClient(
 
     const container = document.getElementById('app');
 
-    const namespace = (name) => {
-      if (name.includes('.')) {
-        const ns = name.split('.');
-        if (ns.length === 2) {
-          return { component: ns[0], node: ns[1] };
-        } else {
-          return { component: ns[0], section: ns[1], node: ns[2] };
-        }
-      } else {
-        return { component: name, node: 'layout' };
-      }
-    }
-
-    const component = (name) => {
-      const ns = namespace(name);
-      return (props) => components[ns.component].resolve(ns.node, ns.section)(props);
-    };
-
     const router = createBrowserRouter([\n${staticRoutes.map(r => {
       return `{
         path: '${r._id}',
@@ -52,7 +32,7 @@ export function configureProducationClient(
           const mod = await import('${r._id + '/route.js'}');
           return {
             Component: () => {
-              return <PageWrapper highlight={highlight}>{mod.default({ React, components: component })}</PageWrapper>
+              return <PageWrapper>{mod.default({ React, theme })}</PageWrapper>
             }
           }
         }

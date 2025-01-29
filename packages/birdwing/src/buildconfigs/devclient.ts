@@ -4,12 +4,11 @@ import * as esbuild from 'esbuild'
 import { Theme } from '../theme.js';
 import { CodeSnippet } from '../interfaces.js';
 import { ThemeSnippet } from '../snippets/theme.js';
-import { HighlightJsSnippet } from '../snippets/highlightjs.js';
 
 export function configureDevClient(root: string, theme: Theme): esbuild.BuildOptions {
   const snippets: CodeSnippet[] = [
-    new ThemeSnippet(theme),
-    new HighlightJsSnippet(),
+    //new ThemeSnippet(theme),
+    //new HighlightJsSnippet(),
   ];
 
   const code = `
@@ -17,6 +16,7 @@ export function configureDevClient(root: string, theme: Theme): esbuild.BuildOpt
     import React from 'react';
     import ReactDOM from 'react-dom/client';
     import { createBrowserRouter, RouterProvider } from "react-router-dom";
+    import theme from './tags';
 
     ${snippets.map(s => s.head).join('\n')}
     ${snippets.map(s => s.body).join('\n')}
@@ -25,7 +25,7 @@ export function configureDevClient(root: string, theme: Theme): esbuild.BuildOpt
 
     const router = createBrowserRouter([{
       path: '*',
-      element: <App components={components} highlight={highlight}/>
+      element: <App theme={theme}/>
     }]);
 
     ReactDOM.createRoot(container).render(<RouterProvider router={router} />);

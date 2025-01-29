@@ -5,10 +5,12 @@ export class ThemeSnippet implements CodeSnippet {
   constructor(private theme: Theme) {}
 
   get head() {
-    return this.theme.componentNames.map(c => `import ${c} from './tags/${c}.jsx';`).join('\n');
+    return  `import theme from "./tags/index.ts"`;
+    //return this.theme.componentNames.map(c => `import ${c} from './tags/${c}.jsx';`).join('\n');
   }
 
   get body() {
-    return `const components = { ${this.theme.componentNames.map(c => `'${c}': ${c}`).join(', ')} };`
+    //return `const components = { ${this.theme.componentNames.map(c => `'${c}': ${c}`).join(', ')} };`
+    return '';
   }
 }

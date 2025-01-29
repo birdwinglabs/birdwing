@@ -4,6 +4,8 @@ import type { ReactNode } from 'react';
 import { Template } from './interfaces.js';
 
 export class Renderer {
+  private key: number = 0;
+
   constructor(private template: Template) {}
 
   render(node: RenderableTreeNodes, index: number = 0, isLast: boolean = false): ReactNode {
@@ -23,6 +25,7 @@ export class Renderer {
 
     attrs.index = index;
     attrs.isLast = isLast;
+    attrs.k = this.key++;
 
     const childCount = children.length;
 

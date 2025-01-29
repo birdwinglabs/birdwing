@@ -1,7 +1,7 @@
 import pb from 'path-browserify';
 import ev from "eventemitter3";
 
-import { AppConfig, FragmentDocument, PageDocument, Route, SourceDocument, ThemeConfig } from "@birdwing/core";
+import { AppConfig, FragmentDocument, PageDocument, Route, RouteData, SourceDocument, ThemeConfig } from "@birdwing/core";
 import { Transformer, PluginConfig, RouteCallback } from "@birdwing/core";
 import { isSubPath } from "@birdwing/core";
 import { ContentCache } from "./cache.js";
@@ -39,11 +39,11 @@ export class CompileContext {
 }
 
 export class Compiler {
-  private routes: Record<string, Route<any>> = {};
+  private routes: Record<string, RouteData> = {};
   private injectors: Record<string, RouteCallback<any>> = {};
 
   constructor(
-    private pluginMap: Record<string, PluginConfig<Route<any>>>,
+    private pluginMap: Record<string, PluginConfig<RouteData>>,
     private transformer: Transformer,
     public readonly cache: ContentCache,
   ) {
@@ -83,8 +83,10 @@ export class Compiler {
 
     const updatePage = (page: PageDocument) => {
       this.transformer.linkPath(page.path, page.url);
-      const route = this.transformPage(page);
-      this.routes[page.path] = route;
+      const plugin = this.getPlugin(page.path);
+      const data = plugin.page(page);
+      //const route = this.transformPage(page);
+      this.routes[page.path] = data;
 
       const fragments = this.cache
         .dependencies(page)
@@ -92,15 +94,21 @@ export class Compiler {
 
       for (const f of fragments) {
         const injector = this.injectors[f.path];
-        injector(route);
+        injector(data);
       }
+
+      const route = plugin.compile(data);
+
+      console.log(route);
 
       watcher.emit('route-compiled', route);
       return [route];
     }
 
     const updateFragment = (fragment: FragmentDocument, affected: PageDocument[]) => {
-      const injector = this.transformFragment(fragment);
+      const plugin = this.getPlugin(fragment.path);
+      //const injector = this.transformFragment(fragment);
+      const injector = plugin.fragments[fragment.name](fragment);
       if (injector) {
         this.injectors[fragment.path] = injector;
 
@@ -111,7 +119,7 @@ export class Compiler {
           injector(route);
           watcher.emit('route-compiled', route);
         }
-        return routes;
+        return routes.map(r => plugin.compile(r));
       }
       return [];
     }
@@ -142,12 +150,14 @@ export class Compiler {
 
   transform() {
     for (const doc of this.pages) {
-      const route = this.transformPage(doc);
+      const plugin = this.getPlugin(doc.path);
+      const route = plugin.page(doc);
       this.routes[doc.path] = route;
     }
 
     for (const doc of this.fragments) {
-      const injector = this.transformFragment(doc);
+      const plugin = this.getPluginForFragment(doc);
+      const injector = plugin.fragments[doc.name](doc);
       if (injector) {
         this.injectors[doc.path] = injector;
       }
@@ -163,7 +173,10 @@ export class Compiler {
       }
     }
 
-    return Object.values(this.routes);
+    return Object.entries(this.routes).map(([path, data]) => {
+      const plugin = this.getPlugin(path);
+      return plugin.compile(data);
+    });
   }
 
   get pages(): PageDocument[] {
@@ -192,5 +205,24 @@ export class Compiler {
         return plugin.fragments[doc.name](doc);
       }
     }
+  }
+
+  private getPlugin(docPath: string) {
+    for (const [path, plugin] of Object.entries(this.pluginMap)) {
+      if (isSubPath(docPath, path)) {
+        return plugin;
+      }
+    }
+    //console.log(this.pluginMap);
+    throw Error(`No plugin for path: ${docPath}`);
+  }
+
+  private getPluginForFragment(doc: FragmentDocument) {
+    for (const [path, plugin] of Object.entries(this.pluginMap)) {
+      if (isSubPath(doc.path, path) && doc.name in plugin.fragments) {
+        return plugin;
+      }
+    }
+    throw Error('No plugin');
   }
 }

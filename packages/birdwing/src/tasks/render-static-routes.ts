@@ -1,12 +1,14 @@
 import { Route, TargetFile } from '@birdwing/core';
 import { Task, TaskConfig } from '../command.js';
 import { StaticRenderer } from '../react/static.js';
+import { Template } from '@birdwing/react';
 
 export class RenderStaticRoutesTask extends Task<TargetFile[]> {
-  private renderer = new StaticRenderer({});
+  private renderer: StaticRenderer;
 
-  constructor(private routes: Route[], taskConfig: TaskConfig<TargetFile[]>) {
+  constructor(private routes: Route[], themeTemplate: Template, taskConfig: TaskConfig<TargetFile[]>) {
     super(taskConfig);
+    this.renderer = new StaticRenderer(themeTemplate);
   }
 
   async *execute() {

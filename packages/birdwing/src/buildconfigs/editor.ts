@@ -3,13 +3,13 @@ import path from 'path';
 import * as esbuild from 'esbuild'
 import { CodeSnippet } from '../interfaces.js';
 import { ThemeSnippet } from '../snippets/theme.js';
-import { HighlightJsSnippet } from '../snippets/highlightjs.js';
+//import { HighlightJsSnippet } from '../snippets/highlightjs.js';
 import { Theme } from '../theme.js';
 
 export function configureEditor(root: string, theme: Theme): esbuild.BuildOptions {
   const snippets: CodeSnippet[] = [
     new ThemeSnippet(theme),
-    new HighlightJsSnippet(),
+    //new HighlightJsSnippet(),
   ];
 
   const code = `
@@ -27,7 +27,7 @@ export function configureEditor(root: string, theme: Theme): esbuild.BuildOption
 
     const router = createBrowserRouter([{
       path: '*',
-      element: <App components={components} themeConfig={theme} highlight={highlight}/>
+      element: <App components={components} themeConfig={theme}/>
     }]);
 
     ReactDOM.createRoot(container).render(<RouterProvider router={router} />);

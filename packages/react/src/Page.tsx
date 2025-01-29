@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { HighlightContext } from './CodeBlock';
 import { createContext } from 'react';
 
 export interface PageContextValue {
@@ -12,11 +11,9 @@ export const PageContext = createContext<PageContextValue>({ setState: () => {},
 
 export interface PageProps {
   children: any;
-
-  highlight?: (content: string, language: string) => string;
 }
 
-export function Page({ children, highlight }: PageProps) {
+export function Page({ children }: PageProps) {
   const [pageState, setPageState] = useState<Record<string, any>>({});
 
   function setState(id: string, state: any) {
@@ -29,9 +26,7 @@ export function Page({ children, highlight }: PageProps) {
 
   return (
     <PageContext.Provider value={{ state, setState }}>
-      <HighlightContext.Provider value={highlight}>
-        { children }
-      </HighlightContext.Provider>
+      { children }
     </PageContext.Provider>
   );
 }

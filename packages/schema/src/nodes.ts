@@ -2,6 +2,7 @@ import pb from 'path-browserify';
 import Markdoc, { Schema } from '@markdoc/markdoc';
 import { TargetFile } from '@birdwing/core';
 import * as xml from 'fast-xml-parser';
+import hljs from 'highlight.js';
 
 const { dirname, join, isAbsolute } = pb;
 const { Tag, nodes } = Markdoc;
@@ -77,17 +78,9 @@ export const fence: Schema = {
   },
   transform(node, config) {
     const attributes = node.transformAttributes(config);
-    const children = node.children.length
-      ? node.transformChildren(config)
-      : [node.attributes.content];
+    const content = hljs.highlight(node.attributes.content, { language: attributes['data-language'] });
 
-    return new Tag('pre', attributes, [node.attributes.content]);
-    //const attr = node.transformAttributes(config);
-
-    //if (attr.render === 'html' && ['html', 'svg'].includes(attr.language)) {
-      //return new Tag('html', attr, [node.attributes.content]);
-    //}
-    //return new Tag(this.render, node.transformAttributes(config), [node.attributes.content]);
+    return new Tag('pre', attributes, [content.value]);
   }
 }
 
@@ -220,13 +213,19 @@ export const image: Schema = {
   },
 };
 
-function jObjToTag(tagName: string, content: Record<string, any>) {
+function jObjToTag(tagName: string, content: Record<string, any> | Record<string, any>[]): any {
+  if (Array.isArray(content)) {
+    return content.map(c => jObjToTag(tagName, c));
+  }
+
   let children: any[] = [];
   let attr: Record<string, string | undefined> = {};
 
   for (const [k, v] of Object.entries(content)) {
     if (k.startsWith('@_')) {
       attr[k.slice(2)] = v;
+    } else if (k === '#text') {
+      children.push(v);
     } else {
       children.push(jObjToTag(k, v));
     }
