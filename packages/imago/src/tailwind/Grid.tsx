@@ -117,4 +117,5 @@ export const grid: ComponentMiddleware = {
   div: gridElement,
   ul: gridElement,
   li: gridElement,
+  dl: gridElement,
 }

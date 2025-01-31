@@ -3,7 +3,7 @@ import { MusicPlaylist, MusicPlaylistComponent, MusicRecording, MusicRecordingCo
 import { Action, ActionComponent, CallToAction, CallToActionComponent } from './cta.js';
 import { DocPage, DocPageComponent, Headings, HeadingsComponent, TableOfContents, TableOfContentsComponent } from './docpage.js';
 import { Editor, EditorComponent } from './editor.js';
-import { Feature, FeatureComponent, FeatureTabs, FeatureTabsComponent } from './feature.js';
+import { Feature, FeatureComponent, FeatureDefinition, FeatureDefinitionComponent, FeatureTabs, FeatureTabsComponent } from './feature.js';
 import { Footer, FooterComponent } from './footer.js';
 import { Grid, GridComponent } from './grid.js';
 import { Hint, HintComponent } from './hint.js';
@@ -51,6 +51,8 @@ export const schema = {
   CallToAction: defineType<CallToActionComponent>('CallToAction', 'section', CallToAction),
   Action: defineType<ActionComponent>('Action', 'li', Action),
   Feature: defineType<FeatureComponent>('Feature', 'section', Feature),
+  FeatureSplit: defineType<FeatureComponent>('FeatureSplit', 'section', Feature),
+  FeatureDefinition: defineType<FeatureDefinitionComponent>('FeatureDefinition', 'div', FeatureDefinition),
   FeatureTabs: defineType<FeatureTabsComponent>('FeatureTabs', 'section', FeatureTabs),
   Editor: defineType<EditorComponent>('Editor', 'section', Editor),
   Pricing: defineType<PricingComponent>('Pricing', 'section', Pricing),
