@@ -13,7 +13,6 @@ import {
   TOptions,
   TagHandler,
   ComponentMiddleware,
-  ItemTemplateOptions,
   NodeTreeContext,
   NodeContext,
   NodeInfo,
@@ -22,28 +21,46 @@ import { defaultElements } from "./Elements";
 import { NodeTree } from "./types";
 import { schema, Type } from "./schema";
 
+export function isObject(item: any) {
+  return (item && typeof item === 'object' && !Array.isArray(item));
+}
+
+export function mergeDeep(target: any, ...sources: any[]) {
+  if (!sources.length) return target;
+  const source = sources.shift();
+
+  if (isObject(target) && isObject(source)) {
+    for (const key in source) {
+      if (isObject(source[key])) {
+        if (!target[key]) Object.assign(target, { [key]: {} });
+        mergeDeep(target[key], source[key]);
+      } else {
+        Object.assign(target, { [key]: source[key] });
+      }
+    }
+  }
+
+  return mergeDeep(target, ...sources);
+}
+
 function makeRenderProps(props: NodeProps, nodes: Record<number, NodeInfo>) {
   return {
     ...props,
-    Slot: makeSlot(props.children),
+    Slot: makeSlot(props.children, nodes, props.k),
     properties: nodes[props.k].meta,
     node: new NodeContext(nodes, props.k),
   };
 }
 
 
-export function makeSlot(children: React.ReactNode) {
+export function makeSlot(children: React.ReactNode, nodes: Record<number, NodeInfo>, key: number) {
   return ({ name, property }: any) => {
     if (name) {
-      return React.Children.toArray(children).filter(c => {
-        return React.isValidElement(c) && c.props['data-name'] === name;
-      });
+      const refKey = nodes[key].refs[name];
+      return refKey ? nodes[refKey].element: '';
     } else if (property) {
-      // TODO: Deep properties;
-      const res = React.Children.toArray(children).filter(c => {
-        return React.isValidElement(c) && c.props.property === property;
-      });
-      return res;
+      const refKey = nodes[key].properties[property];
+      return refKey ? nodes[refKey].element: '';
     } else {
       return children;
     }
@@ -62,7 +79,7 @@ export function transform<T extends NodeType>(options: TOptions<T>): ImagoMiddle
         pNext = { ...pNext, className: [elem.props.className, addClass].join(' ') };
       }
       if (options.children) {
-        pNext = { ...pNext, children: <>{ options.children({ ...pNext, Slot: makeSlot(pNext.children) })}</>}
+        pNext = { ...pNext, children: <>{ options.children({ ...pNext, Slot: makeSlot(pNext.children, {}, 0) })}</>}
       }
       if (options.childBefore) {
         pNext = { ...pNext, children: <>{ options.childBefore } { pNext.children }</> }
@@ -76,7 +93,7 @@ export function transform<T extends NodeType>(options: TOptions<T>): ImagoMiddle
       }
 
       if (options.render) {
-        return options.render({ ...pNext, Slot: makeSlot(pNext.children) });
+        return options.render({ ...pNext, Slot: makeSlot(pNext.children, {}, 0) });
       }
 
       return next({ name, props: pNext });
@@ -109,6 +126,10 @@ export class ImagoComponentFactory<T extends ComponentType<any>> extends Compone
     private options: ImagoComponentOptions<T>
   ) {
     super();
+  }
+
+  extend<U extends ComponentType<any>>(type: Type<U>, options: ImagoComponentOptions<T & U>): ImagoComponentFactory<U> {
+    return createComponent(type, mergeDeep({}, this.options, options));
   }
 
   applyMiddleware(parent: AbstractTemplateFactory): void {
@@ -329,7 +350,11 @@ export function tagHandlerToMiddleware<T extends NodeType>(handler: TagHandler<T
     if (typeof handler === 'string') {
       return transform<T>({ class: handler })(next, final)(elem);
     } else if (typeof handler === 'function') {
-      return handler({...elem.props as any, Slot: makeSlot(elem.props.children)});
+      return (
+        <NodeTreeContext.Consumer>
+          { nodes => handler({...elem.props as any, Slot: makeSlot(elem.props.children, nodes, 0)}) }
+        </NodeTreeContext.Consumer>
+      );
     } else if (handler instanceof ComponentFactory) {
       const template = handler.template();
       return (

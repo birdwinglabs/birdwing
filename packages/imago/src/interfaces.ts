@@ -249,7 +249,10 @@ export interface ImagoComponentOptions<T extends ComponentType<any>> {
 
 export interface NodeInfo<T = any> {
   name: string;
+  element: React.ReactNode | undefined;
   children: number[];
+  refs: Record<string, number>;
+  properties: Record<string, number>;
   parent: number | undefined;
   property: string | undefined;
   typeof: string | undefined;
@@ -271,7 +274,7 @@ export class NodeContext {
 
   get index(): number {
     const siblingKeys = this.siblingKeys;
-    return Math.min(siblingKeys.indexOf(this.key), 0);
+    return Math.max(siblingKeys.indexOf(this.key), 0);
   }
 
   private get siblingKeys(): number[] {

@@ -7,7 +7,7 @@ export class NodeTree {
 
   constructor(private schema: Record<string, Type<any>>) {}
 
-  process(tagName: string, props: NodeProps, parent: number | undefined = undefined, parentMeta: any = undefined) {
+  process(tagName: string, props: NodeProps, parentKey: number | undefined = undefined, instanceKey: number | undefined = undefined) {
     let meta: any = undefined;
 
     if (props.typeof) {
@@ -16,28 +16,40 @@ export class NodeTree {
       }
     }
 
+    const instance = instanceKey !== undefined ? this.nodes[instanceKey].meta : undefined;
     const property = props.property;
 
-    if (property && parentMeta !== undefined) {
-      if (property in parentMeta) {
+    if (property && instance) {
+      if (property in instance) {
         const value = meta ? meta : this.parseValue(props);
 
-        if (Array.isArray(parentMeta[property])) {
-          parentMeta[property].push(value);
+        if (Array.isArray(instance[property])) {
+          instance[property].push(value);
         } else {
-          parentMeta[property] = value;
+          instance[property] = value;
         }
       }
     }
+
+    if (property && instanceKey !== undefined) {
+      this.nodes[instanceKey].properties[property] = props.k;
+    }
+
+    if (props['data-name'] && instanceKey !== undefined) {
+      this.nodes[instanceKey].refs[props['data-name']] = props.k;
+    }
     
-    if (parent !== undefined) {
-      this.nodes[parent].children.push(props.k);
+    if (parentKey !== undefined) {
+      this.nodes[parentKey].children.push(props.k);
     }
 
     this.nodes[props.k] = {
       name: tagName,
+      element: undefined,
       children: [],
-      parent,
+      refs: {},
+      properties: {},
+      parent: parentKey,
       property: props.property,
       typeof: props.typeof,
       meta,
@@ -45,7 +57,8 @@ export class NodeTree {
 
     for (const c of React.Children.toArray(props.children)) {
       if (React.isValidElement(c)) {
-        this.process((c.type as any).displayName, c.props, props.k, meta ? meta : parentMeta);
+        this.process((c.type as any).displayName, c.props, props.k, meta ? props.k : instanceKey);
+        this.nodes[c.props.k].element = c;
       }
     }
   }
