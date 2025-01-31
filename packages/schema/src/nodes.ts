@@ -1,5 +1,5 @@
 import pb from 'path-browserify';
-import Markdoc, { Schema } from '@markdoc/markdoc';
+import Markdoc, { RenderableTreeNode, Schema } from '@markdoc/markdoc';
 import { TargetFile } from '@birdwing/core';
 import * as xml from 'fast-xml-parser';
 import hljs from 'highlight.js';
@@ -115,7 +115,6 @@ export const item: Schema = {
     'hr',
   ],
   attributes: {
-    index: { type: Number, required: false },
     property: { type: String, required: false },
     typeof: { type: String, required: false },
   }

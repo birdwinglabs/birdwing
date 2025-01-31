@@ -26,28 +26,27 @@ const { Tag } = Markdoc;
  * {% /steps %}
  * ```
  * @output
- *  <list ordered="true" typeof="Steps">
- *    <item property="step" typeof="Step">
- *      <grid columns="10">
- *        <tile name="main" colspan="3">
- *          <heading level="1" property="name">Step 1</heading>
- *          <paragraph>Content for step</paragraph>
- *        </tile>
- *        <tile name="side" colspan="7">
- *          <fence content="code"/>
- *        </tile>
- *      </grid>
- *    </item>
- *    <item property="step" typeof="Step">
- *      <section name="main">
- *        <heading level="1" property="name">Step 2</heading>
- *        <paragraph>Content for step 2</paragraph>
- *      </section>
- *    </item>
- *  </list>
+ *  <ol typeof="Steps">
+ *    <li property="step" typeof="Step">
+ *      <div data-layout="grid" data-columns="10">
+ *        <div data-name="main" data-colspan="3">
+ *          <h1 property="name">Step 1</h1>
+ *          <p>Content for step</p>
+ *        </div>
+ *        <div data-name="side" data-colspan="7">
+ *          <pre>code</pre>
+ *        </div>
+ *      </div>
+ *    </li>
+ *    <li property="step" typeof="Step">
+ *      <div data-name="main">
+ *        <h1 property="name">Step 2</h1>
+ *        <p>Content for step 2</p>
+ *      </div>
+ *    </li>
+ *  </ol>
  */
 export const steps: Schema = {
-  //render: 'Steps',
   attributes: {
     'layout': {
       type: String,
@@ -68,7 +67,7 @@ export const steps: Schema = {
     const steps = new NodeList(node.children).headingSections();
     const attr = node.transformAttributes(config);
 
-    const children = steps.map((s, i) => {
+    const children = steps.map(s => {
       const [main, side] = s.body.splitByHr();
       const heading = Markdoc.transform(s.heading, config);
       if (heading instanceof Tag) {
@@ -82,14 +81,9 @@ export const steps: Schema = {
         layout.pushContent(side.body.transformFlat(config), { name: 'side' });
       }
 
-      const item = new Tag('item', { property: 'step', typeof: 'Step' } as any, [layout.container]);
-
-      if (i == steps.length - 1) {
-        item.attributes.last = true;
-      }
-      return item;
+      return new Tag('li', { property: 'step', typeof: 'Step' }, [layout.container]);
     });
 
-    return new Tag('list', { ordered: true, property: 'contentSection', typeof: 'Steps' }, children);
+    return new Tag('ol', { property: 'contentSection', typeof: 'Steps' }, children);
   }
 }

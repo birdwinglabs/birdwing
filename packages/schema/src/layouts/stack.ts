@@ -3,11 +3,11 @@ import { ContentOptions, Layout } from "../interfaces";
 
 export class StackLayout extends Layout {
   constructor(attr: Record<string, any>) {
-    super(new Tag('section', attr, []));
+    super(new Tag('div', { 'data-name': attr.name }, []));
   }
 
-  pushContent(nodes: RenderableTreeNode[], options: ContentOptions) {
-    this.container.children.push(new Tag('section', options, nodes));
+  pushContent(nodes: RenderableTreeNode[], { name, ...rest }: ContentOptions) {
+    this.container.children.push(new Tag('div', { 'data-name': name, ...rest }, nodes));
     return this;
   }
 }
