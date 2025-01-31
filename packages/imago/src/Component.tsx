@@ -120,6 +120,8 @@ function createDefaultHandler(): React.FunctionComponent<Element> {
 }
 
 export class ImagoComponentFactory<T extends ComponentType<any>> extends ComponentFactory<T["tag"]> {
+  private variants: Record<string, ImagoComponentOptions<T>> = {};
+
   constructor(
     public readonly tag: T["tag"],
     public readonly type: string,
@@ -130,6 +132,11 @@ export class ImagoComponentFactory<T extends ComponentType<any>> extends Compone
 
   extend<U extends ComponentType<any>>(type: Type<U>, options: ImagoComponentOptions<T & U>): ImagoComponentFactory<U> {
     return createComponent(type, mergeDeep({}, this.options, options));
+  }
+
+  variant(name: string, options: ImagoComponentOptions<T>): this {
+    this.variants[name] = options;
+    return this;
   }
 
   applyMiddleware(parent: AbstractTemplateFactory): void {
@@ -157,14 +164,15 @@ export class ImagoComponentFactory<T extends ComponentType<any>> extends Compone
     return (elem) => mw(next, next)(elem);
   }
 
-  template(): AbstractTemplate {
-    const options = this.options;
+  private createHandlers(options: ImagoComponentOptions<T>) {
     const handlers: Record<string, React.FunctionComponent<Element>> = {};
 
     // Components
     for (const c of options.components || []) {
-      const t = c.template();
-      handlers[`typeof:${c.type}`] = ({ name, props }) => this.resolveInOther(c.tag, t, props);
+      handlers[`typeof:${c.type}`] = ({ name, props }) => {
+        const t = c.createTemplate(props['data-variant'] ? props['data-variant'].split(' ') : undefined);
+        return this.resolveInOther(c.tag, t, props);
+      }
     }
 
     // Middleware
@@ -292,7 +300,23 @@ export class ImagoComponentFactory<T extends ComponentType<any>> extends Compone
       }
     }
 
-    return new ImagoComponent(handlers);
+    return handlers;
+  }
+
+  template(): AbstractTemplate {
+    return new ImagoComponent(this.createHandlers(this.options));
+  }
+
+  createTemplate(variants: string[] = []) {
+    const vOpts = variants
+      .map(v => this.variants[v])
+      .filter(opts => opts !== undefined);
+
+    if (vOpts.length > 0) {
+      return new ImagoComponent(this.createHandlers(mergeDeep({}, this.options, ...vOpts)));
+    } else {
+      return new ImagoComponent(this.createHandlers(this.options));
+    }
   }
 
   private get handlerId() {
@@ -332,6 +356,7 @@ export class ImagoComponent extends AbstractTemplate {
           </NodeTreeContext.Provider>
         )
       }
+
       if (!this.handlers[handlerName()]) {
         return createDefaultHandler()({ name, props });
       }

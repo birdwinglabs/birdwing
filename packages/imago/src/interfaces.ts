@@ -190,6 +190,8 @@ export abstract class ComponentFactory<T extends NodeType> extends AbstractTempl
   tag: T;
 
   type: string;
+
+  abstract createTemplate(variants?: string[]): AbstractTemplate;
 }
 
 export interface ComponentType<TSchema> {
