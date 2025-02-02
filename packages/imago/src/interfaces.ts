@@ -242,6 +242,7 @@ export interface ImagoComponentOptions<T extends ComponentType<any>> {
   properties?: Partial<NamedChildOptions<T["properties"]>>,
   refs?: Partial<NamedChildOptions<T["refs"]>>,
   tags?: Partial<TagMap>,
+  parent?: React.FunctionComponent<{ children: ReactNode }>;
   children?: React.FunctionComponent<TagProps<T["tag"]> & ComponentRenderFunctionProps<T>>,
   childAfter?: ReactNode;
   childBefore?: ReactNode;

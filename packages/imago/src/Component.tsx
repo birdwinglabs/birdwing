@@ -270,6 +270,15 @@ export class ImagoComponentFactory<T extends ComponentType<any>> extends Compone
       }
     }
 
+    const parent = options.parent;
+
+    if (parent) {
+      const next = handlers[this.handlerId];
+      handlers[this.handlerId] = ({ name, props }) => {
+        return React.createElement(parent, {} as any, next({ name, props }));
+      }
+    }
+
     if (options.childBefore) {
       const next = handlers[this.handlerId];
       handlers[this.handlerId] = ({ name, props }) => {
