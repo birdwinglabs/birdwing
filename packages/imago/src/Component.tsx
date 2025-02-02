@@ -355,16 +355,6 @@ export class ImagoComponent extends AbstractTemplate {
         return name;
       }
 
-      if (name === 'document') {
-        const nt = new NodeTree(schema);
-        nt.process('document', props);
-        console.log(nt.nodes);
-        return (
-          <NodeTreeContext.Provider value={nt.nodes}>
-            { this.handlers[handlerName()]({ name, props: { ...props } }) }
-          </NodeTreeContext.Provider>
-        )
-      }
 
       if (!this.handlers[handlerName()]) {
         return createDefaultHandler()({ name, props });
@@ -419,4 +409,45 @@ export function select<T extends NodeType>(fn: (node: NodeContext) => TagHandler
       }
     }
   }
+}
+
+export class Theme extends AbstractTemplate {
+  private templates: Record<string, ComponentFactory<any>> = {};
+
+  constructor(templates: ComponentFactory<any>[]) {
+    super();
+    for (const t of templates) {
+      this.templates[t.type] = t;
+    }
+  }
+
+  resolve(node: string): React.FunctionComponent<any> {
+    const Component: React.FunctionComponent = (props: NodeProps) => {
+      const template = useContext(TemplateContext)
+
+      if (template && template !== this) {
+        return template.resolve(node)(props);
+      } else if (props.typeof && this.templates[props.typeof]) {
+        const nt = new NodeTree(schema);
+        nt.process('document', props);
+        console.log(nt.nodes[0]);
+        const t = this.templates[props.typeof].createTemplate();
+        return (
+          <TemplateContext.Provider value={t}>
+            <NodeTreeContext.Provider value={nt.nodes}>
+              { t.resolve(node)(props) }
+            </NodeTreeContext.Provider>
+          </TemplateContext.Provider>
+        )
+      }
+      return null;
+    }
+
+    Component.displayName = node;
+    return Component;
+  }
+}
+
+export function createTheme(components: ComponentFactory<any>[]): AbstractTemplate {
+  return new Theme(components);
 }
