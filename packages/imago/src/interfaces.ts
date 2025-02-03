@@ -1,16 +1,13 @@
 import { Template } from "@birdwing/react";
 import React, { createContext, ReactNode } from "react";
-import { defaultElements } from "./Elements";
 
 export interface NodeProps extends Record<string, any>{
   id?: string;
   className?: string | any;
   children?: React.ReactNode;
-  name?: string;
   typeof?: string;
   property?: string;
-  index: number;
-  isLast: boolean;
+  'data-name'?: string;
 }
 
 export interface MetaProps extends NodeProps {
@@ -175,45 +172,12 @@ export abstract class AbstractTemplate {
   abstract resolve(node: string): React.FunctionComponent<any>;
 }
 
-export abstract class AbstractTemplateFactory {
-  abstract template(): AbstractTemplate;
-
-  use<T extends NodeType>(type: T, middleware: ImagoMiddleware<TagProps<T>>): AbstractTemplateFactory {
-    return this;
-  }
-
-  applyMiddleware(fact: AbstractTemplateFactory) {
-  }
-}
-
-export class ComponentClass {
-  private classes: Set<string>;
-
-  constructor(className: string | undefined) {
-    this.classes = new Set(className ? className.split(' ') : []);
-  }
-
-  has(className: string): boolean {
-    return this.classes.has(className);
-  }
-
-  toString(): string {
-    return Array.from(this.classes).join(' ');
-  }
-}
-
-export interface ComponentArgs<T> {
-  data: T;
-
-  $class: ComponentClass;
-};
-
-export abstract class ComponentFactory<T extends NodeType> extends AbstractTemplateFactory {
+export abstract class ComponentFactory<T extends NodeType> {
   tag: T;
 
   type: string;
 
-  abstract createTemplate(args: ComponentArgs<T>): AbstractTemplate;
+  abstract createTemplate(args: NodeContext<any>): AbstractTemplate;
 }
 
 export interface ComponentType<TSchema> {
@@ -246,10 +210,6 @@ export interface SlotOptions<TSchema, TSlots extends NodeMap> {
 }
 
 export interface ComponentRenderFunctionProps<T extends ComponentType<any>> {
-  properties: T["schema"];
-
-  node: NodeContext;
-
   Slot: React.FunctionComponent<SlotOptions<T["schema"], T["refs"]>>;
 }
 
@@ -260,7 +220,7 @@ export type ComponentMiddleware = Partial<{[ P in NodeType]: ImagoMiddleware<Ele
 
 export interface ImagoComponentOptions<T extends ComponentType<any>> {
   components?: ComponentFactory<any>[],
-  class?: string | ((properties: T["schema"]) => string),
+  class?: string;
   properties?: Partial<NamedChildOptions<T["properties"]>>,
   refs?: Partial<NamedChildOptions<T["refs"]>>,
   tags?: Partial<TagMap>,
@@ -284,8 +244,27 @@ export interface NodeInfo<T = any> {
   meta: T;
 }
 
-export class NodeContext {
-  constructor(private nodes: Record<number, NodeInfo>, private key: number) {}
+export class NodeContext<T extends ComponentType<any>> {
+  private classes: Set<string>;
+
+  constructor(
+    private nodes: Record<number, NodeInfo>,
+    private props: NodeProps
+  ) {
+    this.classes = new Set(props.className ? props.className.split(' ') : []);
+  }
+
+  get className(): string | undefined {
+    return this.props.className;
+  }
+
+  hasClass(name: string): boolean {
+    return this.classes.has(name);
+  }
+
+  get data(): T["schema"] {
+    return this.nodes[this.key].meta;
+  }
 
   get lastChild(): boolean {
     const siblingKeys = this.siblingKeys;
@@ -300,6 +279,10 @@ export class NodeContext {
   get index(): number {
     const siblingKeys = this.siblingKeys;
     return Math.max(siblingKeys.indexOf(this.key), 0);
+  }
+
+  private get key() {
+    return this.props.k;
   }
 
   private get siblingKeys(): number[] {
@@ -329,12 +312,6 @@ export type TagHandler<T extends NodeType> =
   ComponentFactory<T> |
   React.FunctionComponent<HandlerProps<TagProps<T>>> |
   string;
-
-export interface ItemTemplateOptions {
-  first: TagHandler<'li'>;
-  last: TagHandler<'li'>;
-  default: TagHandler<'li'>;
-}
 
 export interface Newable<T> {
   new (...args: any[]): T;

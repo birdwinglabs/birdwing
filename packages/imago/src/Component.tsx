@@ -8,66 +8,16 @@ import {
   ComponentType,
   Element,
   TemplateContext,
-  AbstractTemplateFactory,
   ComponentFactory,
   TOptions,
   TagHandler,
   ComponentMiddleware,
   NodeTreeContext,
   NodeContext,
-  NodeInfo,
-  ComponentArgs,
-  ComponentClass,
 } from "./interfaces";
 import { defaultElements } from "./Elements";
-import { NodeTree } from "./types";
-import { schema, Type } from "./schema";
-
-export function isObject(item: any) {
-  return (item && typeof item === 'object' && !Array.isArray(item));
-}
-
-export function mergeDeep(target: any, ...sources: any[]) {
-  if (!sources.length) return target;
-  const source = sources.shift();
-
-  if (isObject(target) && isObject(source)) {
-    for (const key in source) {
-      if (isObject(source[key])) {
-        if (!target[key]) Object.assign(target, { [key]: {} });
-        mergeDeep(target[key], source[key]);
-      } else {
-        Object.assign(target, { [key]: source[key] });
-      }
-    }
-  }
-
-  return mergeDeep(target, ...sources);
-}
-
-function makeRenderProps(props: NodeProps, nodes: Record<number, NodeInfo>) {
-  return {
-    ...props,
-    Slot: makeSlot(props.children, nodes, props.k),
-    properties: nodes[props.k].meta,
-    node: new NodeContext(nodes, props.k),
-  };
-}
-
-
-export function makeSlot(children: React.ReactNode, nodes: Record<number, NodeInfo>, key: number) {
-  return ({ name, property }: any) => {
-    if (name) {
-      const refKey = nodes[key].refs[name];
-      return refKey ? nodes[refKey].element: '';
-    } else if (property) {
-      const refKey = nodes[key].properties[property];
-      return refKey ? nodes[refKey].element: '';
-    } else {
-      return children;
-    }
-  }
-}
+import { makeRenderProps, makeSlot, mergeDeep } from "./utils";
+import { Type } from "./schema";
 
 export function transform<T extends NodeType>(options: TOptions<T>): ImagoMiddleware<Element<T>> {
   const middleware = options.middleware;
@@ -136,21 +86,16 @@ export class ImagoComponentFactory<T extends ComponentType<any>> extends Compone
     return createComponent(type, mergeDeep({}, this.options, options));
   }
 
-  variant(name: string, options: ImagoComponentOptions<T>): this {
-    this.variants[name] = options;
-    return this;
-  }
-
-  applyMiddleware(parent: AbstractTemplateFactory): void {
-    const template = this.template();
-    parent.use(this.tag, next => props => {
-      if (props.typeof === this.type) {
-        return this.resolveInOther(this.tag, template, props);
-      } else {
-        return next(props);
-      }
-    }) 
-  }
+  //applyMiddleware(parent: AbstractTemplateFactory): void {
+    //const template = this.template();
+    //parent.use(this.tag, next => props => {
+      //if (props.typeof === this.type) {
+        //return this.resolveInOther(this.tag, template, props);
+      //} else {
+        //return next(props);
+      //}
+    //}) 
+  //}
 
   private resolveInOther(tag: NodeType, template: AbstractTemplate, props: NodeProps) {
     return (
@@ -172,8 +117,8 @@ export class ImagoComponentFactory<T extends ComponentType<any>> extends Compone
     // Components
     for (const c of options.components || []) {
       handlers[`typeof:${c.type}`] = ({ name, props }) => {
-        const nt = useContext(NodeTreeContext);
-        const t = c.createTemplate({ data: nt[props.k].meta, $class: new ComponentClass(props.className)});
+        const nodes = useContext(NodeTreeContext);
+        const t = c.createTemplate(new NodeContext(nodes, props));
         return this.resolveInOther(c.tag, t, props);
       }
     }
@@ -300,15 +245,7 @@ export class ImagoComponentFactory<T extends ComponentType<any>> extends Compone
     if (cls) {
       const next = handlers[this.handlerId];
       handlers[this.handlerId] = ({ name, props }) => {
-        if (typeof cls === 'string') {
-          return next({ name, props: { ...props, className: options.class }});
-        } else if (typeof cls === 'function') {
-          return (
-            <NodeTreeContext.Consumer>
-              { nodes => next({ name, props: { ...props, className: cls(nodes[props.k].meta) }}) }
-            </NodeTreeContext.Consumer>
-          )
-        }
+        return next({ name, props: { ...props, className: options.class }});
       }
     }
 
@@ -320,7 +257,7 @@ export class ImagoComponentFactory<T extends ComponentType<any>> extends Compone
     throw Error('Not implemented');
   }
 
-  createTemplate(args: ComponentArgs<any>) {
+  createTemplate(args: NodeContext<any>) {
     if (typeof this.options === 'function') {
       const options = this.options(args);
       return new ImagoComponent(this.createHandlers(options));
@@ -368,7 +305,7 @@ export class ImagoComponent extends AbstractTemplate {
 
 export function createComponent<T extends ComponentType<any>>(
   type: Type<T>,
-  options: ImagoComponentOptions<T> | ((meta: ComponentArgs<T["schema"]>) => ImagoComponentOptions<T>)
+  options: ImagoComponentOptions<T> | ((args: NodeContext<T>) => ImagoComponentOptions<T>)
 ) {
   return new ImagoComponentFactory(type.tag, type.name, options);
 }
@@ -377,19 +314,19 @@ export function tagHandlerToMiddleware<T extends NodeType>(handler: TagHandler<T
   return (next, final) => elem => {
     if (typeof handler === 'string') {
       return transform<T>({ class: handler })(next, final)(elem);
+    } else if (handler instanceof ComponentFactory) {
+      const nodes = useContext(NodeTreeContext);
+      const template = handler.createTemplate(new NodeContext(nodes, elem.props));
+      return (
+        <TemplateContext.Provider value={template}>
+          { template.resolve(elem.name)(elem.props) }
+        </TemplateContext.Provider>
+      );
     } else if (typeof handler === 'function') {
       return (
         <NodeTreeContext.Consumer>
           { nodes => handler({...elem.props as any, Slot: makeSlot(elem.props.children, nodes, 0)}) }
         </NodeTreeContext.Consumer>
-      );
-    } else if (handler instanceof ComponentFactory) {
-      const nodes = useContext(NodeTreeContext);
-      const template = handler.createTemplate({ data: nodes[elem.props.k].meta, $class: new ComponentClass(elem.props.className) });
-      return (
-        <TemplateContext.Provider value={template}>
-          { template.resolve(elem.name)(elem.props) }
-        </TemplateContext.Provider>
       );
     } else if (typeof handler === 'object') {
       return transform(handler)(next, next)(elem);
@@ -398,11 +335,11 @@ export function tagHandlerToMiddleware<T extends NodeType>(handler: TagHandler<T
   }
 }
 
-export function select<T extends NodeType>(fn: (node: NodeContext) => TagHandler<T>): TOptions<T> {
+export function select<T extends NodeType>(fn: (node: NodeContext<any>) => TagHandler<T>): TOptions<T> {
   return {
     middleware: (next, final) => (elem) => {
       const nodes = useContext(NodeTreeContext);
-      const node = new NodeContext(nodes, elem.props.k);
+      const node = new NodeContext(nodes, elem.props);
 
       const handler = fn(node);
 

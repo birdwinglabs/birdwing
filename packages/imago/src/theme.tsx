@@ -5,7 +5,7 @@ import {
   TemplateContext,
   ComponentFactory,
   NodeTreeContext,
-  ComponentClass,
+  NodeContext,
 } from "./interfaces";
 import { NodeTree } from "./types";
 import { schema } from "./schema";
@@ -29,7 +29,7 @@ export class Theme extends AbstractTemplate {
       } else if (props.typeof && this.templates[props.typeof]) {
         const nt = new NodeTree(schema);
         nt.process('document', props);
-        const t = this.templates[props.typeof].createTemplate({ data: nt.nodes[0].meta, $class: new ComponentClass(props.className) });
+        const t = this.templates[props.typeof].createTemplate(new NodeContext(nt.nodes, props));
         return (
           <TemplateContext.Provider value={t}>
             <NodeTreeContext.Provider value={nt.nodes}>
