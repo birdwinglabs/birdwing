@@ -186,12 +186,34 @@ export abstract class AbstractTemplateFactory {
   }
 }
 
+export class ComponentClass {
+  private classes: Set<string>;
+
+  constructor(className: string | undefined) {
+    this.classes = new Set(className ? className.split(' ') : []);
+  }
+
+  has(className: string): boolean {
+    return this.classes.has(className);
+  }
+
+  toString(): string {
+    return Array.from(this.classes).join(' ');
+  }
+}
+
+export interface ComponentArgs<T> {
+  data: T;
+
+  $class: ComponentClass;
+};
+
 export abstract class ComponentFactory<T extends NodeType> extends AbstractTemplateFactory {
   tag: T;
 
   type: string;
 
-  abstract createTemplate(variants?: string[]): AbstractTemplate;
+  abstract createTemplate(args: ComponentArgs<T>): AbstractTemplate;
 }
 
 export interface ComponentType<TSchema> {

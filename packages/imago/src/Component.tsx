@@ -16,6 +16,8 @@ import {
   NodeTreeContext,
   NodeContext,
   NodeInfo,
+  ComponentArgs,
+  ComponentClass,
 } from "./interfaces";
 import { defaultElements } from "./Elements";
 import { NodeTree } from "./types";
@@ -125,7 +127,7 @@ export class ImagoComponentFactory<T extends ComponentType<any>> extends Compone
   constructor(
     public readonly tag: T["tag"],
     public readonly type: string,
-    private options: ImagoComponentOptions<T>
+    private options: ImagoComponentOptions<T> | ((meta: T["schema"]) => ImagoComponentOptions<T>)
   ) {
     super();
   }
@@ -170,7 +172,8 @@ export class ImagoComponentFactory<T extends ComponentType<any>> extends Compone
     // Components
     for (const c of options.components || []) {
       handlers[`typeof:${c.type}`] = ({ name, props }) => {
-        const t = c.createTemplate(props['data-variant'] ? props['data-variant'].split(' ') : undefined);
+        const nt = useContext(NodeTreeContext);
+        const t = c.createTemplate({ data: nt[props.k].meta, $class: new ComponentClass(props.className)});
         return this.resolveInOther(c.tag, t, props);
       }
     }
@@ -313,16 +316,14 @@ export class ImagoComponentFactory<T extends ComponentType<any>> extends Compone
   }
 
   template(): AbstractTemplate {
-    return new ImagoComponent(this.createHandlers(this.options));
+    //return new ImagoComponent(this.createHandlers(this.options));
+    throw Error('Not implemented');
   }
 
-  createTemplate(variants: string[] = []) {
-    const vOpts = variants
-      .map(v => this.variants[v])
-      .filter(opts => opts !== undefined);
-
-    if (vOpts.length > 0) {
-      return new ImagoComponent(this.createHandlers(mergeDeep({}, this.options, ...vOpts)));
+  createTemplate(args: ComponentArgs<any>) {
+    if (typeof this.options === 'function') {
+      const options = this.options(args);
+      return new ImagoComponent(this.createHandlers(options));
     } else {
       return new ImagoComponent(this.createHandlers(this.options));
     }
@@ -365,7 +366,10 @@ export class ImagoComponent extends AbstractTemplate {
   }
 }
 
-export function createComponent<T extends ComponentType<any>>(type: Type<T>, options: ImagoComponentOptions<T>) {
+export function createComponent<T extends ComponentType<any>>(
+  type: Type<T>,
+  options: ImagoComponentOptions<T> | ((meta: ComponentArgs<T["schema"]>) => ImagoComponentOptions<T>)
+) {
   return new ImagoComponentFactory(type.tag, type.name, options);
 }
 
@@ -380,7 +384,8 @@ export function tagHandlerToMiddleware<T extends NodeType>(handler: TagHandler<T
         </NodeTreeContext.Consumer>
       );
     } else if (handler instanceof ComponentFactory) {
-      const template = handler.template();
+      const nodes = useContext(NodeTreeContext);
+      const template = handler.createTemplate({ data: nodes[elem.props.k].meta, $class: new ComponentClass(elem.props.className) });
       return (
         <TemplateContext.Provider value={template}>
           { template.resolve(elem.name)(elem.props) }
@@ -430,8 +435,7 @@ export class Theme extends AbstractTemplate {
       } else if (props.typeof && this.templates[props.typeof]) {
         const nt = new NodeTree(schema);
         nt.process('document', props);
-        console.log(nt.nodes[0]);
-        const t = this.templates[props.typeof].createTemplate();
+        const t = this.templates[props.typeof].createTemplate({ data: nt.nodes[0].meta, $class: new ComponentClass(props.className) });
         return (
           <TemplateContext.Provider value={t}>
             <NodeTreeContext.Provider value={nt.nodes}>
