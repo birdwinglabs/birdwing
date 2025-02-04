@@ -22,14 +22,20 @@ export function mergeDeep(target: any, ...sources: any[]) {
   return mergeDeep(target, ...sources);
 }
 
-export function makeRenderProps(props: NodeProps, nodes: Record<number, NodeInfo>) {
-  return {
-    ...props,
-    Slot: makeSlot(props.children, nodes, props.k),
-  };
+//export function makeRenderProps(props: NodeProps, nodes: Record<number, NodeInfo>) {
+  //return {
+    //...props,
+    //Slot: makeSlot(props.children, nodes, props.k),
+  //};
+//}
+
+export function makeNodeSlot(children: React.ReactNode) {
+  return () => {
+    return children;
+  }
 }
 
-export function makeSlot(children: React.ReactNode, nodes: Record<number, NodeInfo>, key: number) {
+export function makeComponentSlot(children: React.ReactNode, nodes: Record<number, NodeInfo>, key: number) {
   return ({ name, property }: any) => {
     if (name) {
       const refKey = nodes[key].refs[name];

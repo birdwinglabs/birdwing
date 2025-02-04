@@ -38,13 +38,7 @@ export interface LinkProps extends NodeProps {
   href: string;
 }
 
-//export interface ListProps extends NodeProps {
-  //ordered: boolean;
-//}
-
-export interface ItemProps extends NodeProps {}
-
-export interface ValueProps extends NodeProps {
+export interface MetaProps extends NodeProps {
   content: string;
 }
 
@@ -129,13 +123,12 @@ export type NodeType =
   'path' |
   'math';
 
-export type HandlerProps<T extends NodeProps> = T & { Slot: any };
+export type HandlerProps<T extends NodeProps, TSlot extends React.FunctionComponent<any> = React.FunctionComponent<{}>> = T & { Slot: TSlot };
 
 export type TagProps<T extends NodeType> = 
   T extends 'pre' ? FenceProps :
-  T extends 'li' ? ItemProps :
   T extends 'a' ? LinkProps :
-  T extends 'meta' ? ValueProps :
+  T extends 'meta' ? MetaProps :
   NodeProps;
 
 export abstract class AbstractSelector<T extends NodeType> {
@@ -177,7 +170,7 @@ export abstract class ComponentFactory<T extends NodeType> {
 
   type: string;
 
-  abstract createTemplate(args: NodeContext<any>): AbstractTemplate;
+  abstract createTemplate(nodes: Record<number, NodeInfo>, props: TagProps<T>): AbstractTemplate;
 }
 
 export interface ComponentType<TSchema> {
@@ -190,13 +183,16 @@ export interface ComponentType<TSchema> {
   refs: Record<string, NodeType>
 }
 
-export interface TOptions<T extends NodeType = NodeType> {
-  render?: React.FunctionComponent<HandlerProps<TagProps<T>>>;
+export interface TransformOptions<T extends NodeType, TSlot extends React.FunctionComponent<any> = React.FunctionComponent<{}>> {
+  render?: React.FunctionComponent<HandlerProps<TagProps<T>, TSlot>>;
   class?: string;
-  children?: React.FunctionComponent<HandlerProps<TagProps<T>>>,
+  children?: React.FunctionComponent<HandlerProps<TagProps<T>, TSlot>>,
   childAfter?: ReactNode;
   childBefore?: ReactNode;
   parent?: React.FunctionComponent<{ children: ReactNode }>;
+}
+
+export interface TOptions<T extends NodeType = NodeType> extends TransformOptions<T> {
   middleware?: ImagoMiddleware<Element<T>>
 }
 
@@ -218,17 +214,11 @@ export type ComponentRenderFunction<T extends ComponentType<any>> =
 
 export type ComponentMiddleware = Partial<{[ P in NodeType]: ImagoMiddleware<Element<P>> }>
 
-export interface ImagoComponentOptions<T extends ComponentType<any>> {
+export interface ImagoComponentOptions<T extends ComponentType<any>> extends TransformOptions<T["tag"], React.FunctionComponent<SlotOptions<T["schema"], T["refs"]>>> {
   components?: ComponentFactory<any>[],
-  class?: string;
   properties?: Partial<NamedChildOptions<T["properties"]>>,
   refs?: Partial<NamedChildOptions<T["refs"]>>,
   tags?: Partial<TagMap>,
-  parent?: React.FunctionComponent<{ children: ReactNode }>;
-  children?: React.FunctionComponent<TagProps<T["tag"]> & ComponentRenderFunctionProps<T>>,
-  childAfter?: ReactNode;
-  childBefore?: ReactNode;
-  render?: ComponentRenderFunction<T>,
   use?: ComponentMiddleware[],
 }
 

@@ -29,7 +29,7 @@ export class Theme extends AbstractTemplate {
       } else if (props.typeof && this.templates[props.typeof]) {
         const nt = new NodeTree(schema);
         nt.process('document', props);
-        const t = this.templates[props.typeof].createTemplate(new NodeContext(nt.nodes, props));
+        const t = this.templates[props.typeof].createTemplate(nt.nodes, props);
         return (
           <TemplateContext.Provider value={t}>
             <NodeTreeContext.Provider value={nt.nodes}>
