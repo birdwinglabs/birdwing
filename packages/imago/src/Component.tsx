@@ -1,72 +1,24 @@
-import React, { useContext } from "react";
+import React from "react";
 import {
   AbstractTemplate,
   ImagoComponentOptions,
   ImagoMiddleware,
-  NodeProps,
   NodeType,
   ComponentType,
   Element,
-  TemplateContext,
   ComponentFactory,
-  TOptions,
-  TagHandler,
   ComponentMiddleware,
-  NodeTreeContext,
   NodeContext,
   NodeInfo,
   TagProps,
-  TransformOptions,
+  TagHandler,
 } from "./interfaces";
 import { defaultElements } from "./Elements";
-import { makeComponentSlot, makeNodeSlot, mergeDeep } from "./utils";
+import { makeComponentSlot, mergeDeep } from "./utils";
 import { Type } from "./schema";
+import { ComponentMiddlewareFactory, createMiddlewareFactory } from "./middeware";
+import { TransformMiddlewareFactory } from "./middeware/transform";
 
-export function transformMiddleware<T extends NodeType, TSlot extends React.FunctionComponent<any>>(
-  options: TransformOptions<T, TSlot>,
-  slot: (props: TagProps<T>) => TSlot
-) {
-    const renderProps = (props: TagProps<T>) => {
-      return { ...props, Slot: slot(props) };
-    }
-
-    const t: ImagoMiddleware<Element<T>> = next => ({ name, props }) => {
-      let pNext = props;
-
-      if (options.class) {
-        const addClass = Array.isArray(options.class) ? options.class.join(' ') : options.class;
-        pNext = { ...pNext, className: [props.className, addClass].join(' ') };
-      }
-      if (options.childBefore) {
-        pNext = { ...pNext, children: <>{ options.childBefore } { pNext.children }</> }
-      }
-      if (options.childAfter) {
-        pNext = { ...pNext, children: <>{ pNext.children } { options.childAfter }</> }
-      }
-      if (options.parent) {
-        return React.createElement(options.parent, {} as any, next({ name, props: pNext }));
-      }
-      if (options.children) {
-        pNext = { ...pNext, children: <>{ options.children(renderProps(pNext))}</>}
-      }
-      if (options.render) {
-        return options.render(renderProps(pNext));
-      }
-
-      return next({ name, props: pNext });
-    }
-
-    return t;
-}
-
-export function transform<T extends NodeType>(options: TOptions<T>): ImagoMiddleware<Element<T>> {
-  const middleware = options.middleware;
-  const t = transformMiddleware(options, props => makeNodeSlot(props.children));
-
-  return middleware
-    ? (next, final) => elem => middleware(t(next, final), final)(elem)
-    : t;
-}
 
 function createDefaultHandler(): React.FunctionComponent<Element> {
   return ({ name, props }) => {
@@ -76,6 +28,10 @@ function createDefaultHandler(): React.FunctionComponent<Element> {
       ? defaultElements[name]({...restProps, children})
       : React.createElement(name, restProps, children);
   }
+}
+
+function chain<T extends NodeType>(mw1: ImagoMiddleware<Element<T>>, mw2: ImagoMiddleware<Element<T>>): ImagoMiddleware<Element<T>> {
+  return (next, final) => mw1(mw2(next, final), final);
 }
 
 export class ImagoComponentFactory<T extends ComponentType<any>> extends ComponentFactory<T["tag"]> {
@@ -91,12 +47,12 @@ export class ImagoComponentFactory<T extends ComponentType<any>> extends Compone
     return createComponent(type, mergeDeep({}, this.options, options));
   }
 
-  private resolveInOther(tag: NodeType, template: AbstractTemplate, props: NodeProps) {
-    return (
-      <TemplateContext.Provider value={template}>
-        { template.resolve(tag)(props) }
-      </TemplateContext.Provider>
-    )
+  createTemplate(nodes: Record<number, NodeInfo>, props: TagProps<T["tag"]>) {
+    const options = typeof this.options === 'function'
+      ? this.options(new NodeContext(nodes, props))
+      : this.options;
+
+    return new ImagoComponent(this.createMiddleware(nodes, options));
   }
 
   private createMiddleware(nodes: Record<number, NodeInfo>, options: ImagoComponentOptions<T>) {
@@ -104,17 +60,16 @@ export class ImagoComponentFactory<T extends ComponentType<any>> extends Compone
 
     // Components
     for (const c of options.components || []) {
-      middleware[`typeof:${c.type}`] = next => ({ name, props }) => {
-        return this.resolveInOther(c.tag, c.createTemplate(nodes, props), props);
-      }
+      const fact = new ComponentMiddlewareFactory(c);
+      middleware[`typeof:${c.type}`] = fact.createMiddleware(nodes);
     }
 
     // Middleware
     let componentMiddleware: ComponentMiddleware = {};
     for (const cmw of options.use || []) {
       for (const [t,mw] of Object.entries(cmw)) {
-        if (middleware[t as NodeType]) {
-          componentMiddleware[t as NodeType] = next => (mw as ImagoMiddleware<any>)(next as any, next)
+        if (componentMiddleware[t as NodeType]) {
+          componentMiddleware[t as NodeType] = chain<any>(componentMiddleware[t as NodeType] as ImagoMiddleware<Element>, mw)//next => (mw as ImagoMiddleware<any>)(next as any, next)
         } else {
           componentMiddleware[t as NodeType] = mw as ImagoMiddleware<any>;
         }
@@ -122,23 +77,13 @@ export class ImagoComponentFactory<T extends ComponentType<any>> extends Compone
     }
 
     // Properties
-    const properties = options.properties;
-
-    if (properties) {
-      for (const propName of Object.keys(properties)) {
-        const p = properties[propName];
-        middleware[`property:${propName}`] = this.combineMiddleware(componentMiddleware, tagHandlerToMiddleware(p as any));
-      }
+    for (const [propName, prop] of Object.entries(options.properties || {})) {
+      middleware[`property:${propName}`] = this.createNodeMiddleware(prop, componentMiddleware, nodes);
     }
 
     // References
-    const refs = options.refs;
-
-    if (refs) {
-      for (const refName of Object.keys(refs)) {
-        const ref = refs[refName];
-        middleware[`ref:${refName}`] = this.combineMiddleware(componentMiddleware, tagHandlerToMiddleware(ref as any));
-      }
+    for (const [refName, ref] of Object.entries(options.refs || {})) {
+      middleware[`ref:${refName}`] = this.createNodeMiddleware(ref, componentMiddleware, nodes);
     }
 
     // Unspecified tags
@@ -147,37 +92,31 @@ export class ImagoComponentFactory<T extends ComponentType<any>> extends Compone
     }
 
     // Tags
-    const tags = options.tags;
-    if (tags) {
-      for (const [t, handler] of Object.entries(tags)) {
-        middleware[t] = this.combineMiddleware(componentMiddleware, tagHandlerToMiddleware<any>(handler));
-      }
+    for (const [tagName, tag] of Object.entries(options.tags || {})) {
+      middleware[tagName] = this.createNodeMiddleware(tag, componentMiddleware, nodes);
     }
 
-    middleware[`typeof:${this.type}`] = transformMiddleware(options, props =>
-      makeComponentSlot(props.children, nodes, props.k)
-    );
+    const fact = new TransformMiddlewareFactory(options, props => makeComponentSlot(props.children, nodes, props.k));
+
+    middleware[`typeof:${this.type}`] = fact.createMiddleware(nodes);
 
     return middleware;
+  }
+
+  private createNodeMiddleware(handler: TagHandler<any>, cmwm: ComponentMiddleware, nodes: Record<number, NodeInfo>) {
+    const mw = createMiddlewareFactory(handler).createMiddleware(nodes);
+    return this.combineMiddleware(cmwm, mw);
   }
 
   private combineMiddleware(cmwm: ComponentMiddleware, mw: ImagoMiddleware<Element>): ImagoMiddleware<Element> {
     return (next, final) => elem => {
       if (elem.name in cmwm) {
         const cmw = cmwm[elem.name] as ImagoMiddleware<Element>;
-        return mw(cmw(next, final), final)(elem);
+        return chain(mw, cmw)(next, final)(elem);
       } else {
         return mw(next, final)(elem);
       }
     }
-  }
-
-  createTemplate(nodes: Record<number, NodeInfo>, props: TagProps<T["tag"]>) {
-    const options = typeof this.options === 'function'
-      ? this.options(new NodeContext(nodes, props))
-      : this.options;
-
-    return new ImagoComponent(this.createMiddleware(nodes, options));
   }
 }
 
@@ -207,7 +146,6 @@ export class ImagoComponent extends AbstractTemplate {
 
       const hName = handlerName();
 
-
       if (!this.middleware[hName]) {
         return fallback({ name, props });
       }
@@ -222,45 +160,4 @@ export function createComponent<T extends ComponentType<any>>(
   options: ImagoComponentOptions<T> | ((args: NodeContext<T>) => ImagoComponentOptions<T>)
 ) {
   return new ImagoComponentFactory(type.tag, type.name, options);
-}
-
-export function tagHandlerToMiddleware<T extends NodeType>(
-  handler: TagHandler<T>,
-): ImagoMiddleware<Element<T>> {
-  return (next, final) => elem => {
-    if (typeof handler === 'string') {
-      return transform<T>({ class: handler })(next, final)(elem);
-    } else if (handler instanceof ComponentFactory) {
-      const nodes = useContext(NodeTreeContext);
-      const template = handler.createTemplate(nodes, elem.props);
-      return (
-        <TemplateContext.Provider value={template}>
-          { template.resolve(elem.name)(elem.props) }
-        </TemplateContext.Provider>
-      );
-    } else if (typeof handler === 'function') {
-      return handler({...elem.props as any, Slot: makeNodeSlot(elem.props.children)});
-    } else if (typeof handler === 'object') {
-      return transform(handler)(next, next)(elem);
-    }
-    return next(elem);
-  }
-}
-
-export function select<T extends NodeType>(fn: (node: NodeContext<any>) => TagHandler<T>): TOptions<T> {
-  return {
-    middleware: (next, final) => (elem) => {
-      const nodes = useContext(NodeTreeContext);
-      const node = new NodeContext(nodes, elem.props);
-
-      const handler = fn(node);
-
-      if (handler) {
-        const mw = tagHandlerToMiddleware(handler);
-        return mw(next, final)(elem);
-      } else {
-        return next(elem);
-      }
-    }
-  }
 }

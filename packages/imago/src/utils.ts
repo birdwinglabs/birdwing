@@ -1,4 +1,13 @@
-import { NodeInfo, NodeProps } from "./interfaces";
+import {
+  ComponentFactory,
+  Element,
+  ImagoMiddleware,
+  MiddlewareFactory,
+  NodeInfo,
+  NodeType,
+  TagHandler,
+} from "./interfaces";
+//import { ComponentMiddlewareFactory, RenderMiddlewareFactory, TransformMiddlewareFactory } from "./middeware";
 
 export function isObject(item: any) {
   return (item && typeof item === 'object' && !Array.isArray(item));
@@ -22,13 +31,6 @@ export function mergeDeep(target: any, ...sources: any[]) {
   return mergeDeep(target, ...sources);
 }
 
-//export function makeRenderProps(props: NodeProps, nodes: Record<number, NodeInfo>) {
-  //return {
-    //...props,
-    //Slot: makeSlot(props.children, nodes, props.k),
-  //};
-//}
-
 export function makeNodeSlot(children: React.ReactNode) {
   return () => {
     return children;
@@ -48,3 +50,39 @@ export function makeComponentSlot(children: React.ReactNode, nodes: Record<numbe
     }
   }
 }
+
+//export function tagHandlerToMiddleware<T extends NodeType>(
+  //handler: TagHandler<T>,
+  //nodes: Record<number, NodeInfo>
+//): ImagoMiddleware<Element<T>> {
+  //if (handler instanceof ComponentFactory) {
+    //const fact = new ComponentMiddlewareFactory<T>(handler);
+    //return fact.createMiddleware(nodes);
+    ////return () => elem => resolveInOther(elem.name, handler.createTemplate(nodes, elem.props), elem.props);
+  //}
+
+  //if (handler instanceof MiddlewareFactory) {
+    //return handler.createMiddleware(nodes);
+  //}
+
+  //if (typeof handler === 'string') {
+    //const fact = new TransformMiddlewareFactory<T>({ class: handler });
+    //return fact.createMiddleware(nodes);
+
+    ////return transform({ class: handler }, props => makeNodeSlot(props.children));
+  //}
+
+  //if (typeof handler === 'object') {
+    //const fact = new TransformMiddlewareFactory<T>(handler);
+    //return fact.createMiddleware(nodes);
+    ////return transform(handler, props => makeNodeSlot(props.children));
+  //}
+
+  //if (typeof handler === 'function') {
+    //const fact = new RenderMiddlewareFactory<T>(handler);
+    //return fact.createMiddleware(nodes);
+    ////return () => elem => handler({...elem.props as any, Slot: makeNodeSlot(elem.props.children)});
+  //}
+
+  //return next => elem => next(elem);
+//}

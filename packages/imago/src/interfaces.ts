@@ -1,4 +1,3 @@
-import { Template } from "@birdwing/react";
 import React, { createContext, ReactNode } from "react";
 
 export interface NodeProps extends Record<string, any>{
@@ -12,26 +11,6 @@ export interface NodeProps extends Record<string, any>{
 
 export interface MetaProps extends NodeProps {
   content: string;
-}
-
-export interface GridProps extends NodeProps {
-  name?: string;
-
-  columns?: number;
-
-  rows?: number;
-
-  flow?: 'row' | 'column' | 'dense' | 'row dense' | 'column dense';
-}
-
-export interface TileProps extends NodeProps {
-  name?: string;
-
-  colspan?: number;
-
-  rowspan?: number;
-
-  order?: number;
 }
 
 export interface LinkProps extends NodeProps {
@@ -51,11 +30,12 @@ export interface FenceProps extends NodeProps {
 
 export type ImagoHandler<T = any> = React.FunctionComponent<T>;
 export type ImagoMiddleware<T = any> = (next: ImagoHandler<T> | (() => React.ReactElement | null), final: ImagoHandler<T>) => ImagoHandler<T>;
-export type Middleware<T = any> = (props: T, next: ImagoHandler<T>) => React.FunctionComponent<T>;
 
-export interface MiddlewareComponent {
-  apply(): void;
+export abstract class MiddlewareFactory<T extends NodeType> {
+  abstract createMiddleware(nodes: Record<number, NodeInfo>): ImagoMiddleware<Element<T>>;
 }
+
+export type Entries<T> = { [K in keyof T]: [K, T[K]] }[keyof T][];
 
 export type NodeType = 
   'document' |
@@ -131,35 +111,7 @@ export type TagProps<T extends NodeType> =
   T extends 'meta' ? MetaProps :
   NodeProps;
 
-export abstract class AbstractSelector<T extends NodeType> {
-  constructor(public readonly types: NodeType[]) {}
-
-  abstract match(props: TagProps<T>): boolean;
-}
-
-export interface TemplateOptions {
-  refs?: Template[],
-  elements?: Record<string, ImagoHandler>;
-  selector?: AbstractSelector<any>;
-}
-
-export type Matcher<T extends NodeProps> = (props: T) => boolean;
-
-
 export type NodeMap = Record<string, NodeType>;
-export type PropertyMap = Record<string, Property<NodeType, any>>;
-
-export interface Property<TNode extends NodeType, T> {
-  tag: TNode;
-
-  type: T;
-}
-
-export type PropertyTag<T extends Property<NodeType, T>> = T["tag"] ;
-export type PropertyType<T extends Property<NodeType, T>> = T["type"] ;
-
-export type PropertyNodes<T extends PropertyMap> = { [P in keyof T]: PropertyTag<T[P]> };
-export type PropertyTypes<T extends PropertyMap> = { [P in keyof T]: PropertyType<T[P]> };
 
 export abstract class AbstractTemplate {
   abstract resolve(node: string): React.FunctionComponent<any>;
@@ -190,10 +142,6 @@ export interface TransformOptions<T extends NodeType, TSlot extends React.Functi
   childAfter?: ReactNode;
   childBefore?: ReactNode;
   parent?: React.FunctionComponent<{ children: ReactNode }>;
-}
-
-export interface TOptions<T extends NodeType = NodeType> extends TransformOptions<T> {
-  middleware?: ImagoMiddleware<Element<T>>
 }
 
 export type NamedChildOptions<T extends NodeMap> = { [P in keyof T]: TagHandler<T[P]> };
@@ -285,7 +233,6 @@ export class NodeContext<T extends ComponentType<any>> {
 }
 
 export const TemplateContext = createContext<AbstractTemplate | undefined>(undefined);
-export const NodeTreeContext = createContext<Record<number, NodeInfo>>({});
 
 export interface Element<T extends NodeType = NodeType> {
   name: T;
@@ -298,8 +245,9 @@ export class TypeSelector<T extends ComponentType<any>> {
 }
 
 export type TagHandler<T extends NodeType> =
-  TOptions<T> |
+  TransformOptions<T> |
   ComponentFactory<T> |
+  MiddlewareFactory<T> |
   React.FunctionComponent<HandlerProps<TagProps<T>>> |
   string;
 

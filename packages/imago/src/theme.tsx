@@ -4,8 +4,6 @@ import {
   NodeProps,
   TemplateContext,
   ComponentFactory,
-  NodeTreeContext,
-  NodeContext,
 } from "./interfaces";
 import { NodeTree } from "./types";
 import { schema } from "./schema";
@@ -32,9 +30,7 @@ export class Theme extends AbstractTemplate {
         const t = this.templates[props.typeof].createTemplate(nt.nodes, props);
         return (
           <TemplateContext.Provider value={t}>
-            <NodeTreeContext.Provider value={nt.nodes}>
-              { t.resolve(node)(props) }
-            </NodeTreeContext.Provider>
+            { t.resolve(node)(props) }
           </TemplateContext.Provider>
         )
       }
