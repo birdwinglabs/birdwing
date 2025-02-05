@@ -18,11 +18,26 @@ import { makeComponentSlot, mergeDeep } from "./utils";
 import { Type } from "./schema";
 import { ComponentMiddlewareFactory, createMiddlewareFactory } from "./middeware";
 import { TransformMiddlewareFactory } from "./middeware/transform";
+import { trimNamespace } from "./types";
 
+function purgeDefaultNamespace(name: string | undefined) {
+  if (!name) {
+    return undefined;
+  }
+  const names = name
+    .split(' ')
+    .filter(p => p.includes(':'))
+    .join(' ')
+
+  return names !== '' ? names : undefined;
+}
 
 function createDefaultHandler(): React.FunctionComponent<Element> {
   return ({ name, props }) => {
     const { k, children, ...restProps } = props;
+
+    restProps.property = purgeDefaultNamespace(restProps.property);
+    restProps.typeof = purgeDefaultNamespace(restProps.typeof);
 
     return defaultElements[name]
       ? defaultElements[name]({...restProps, children})
@@ -90,7 +105,7 @@ export class ImagoComponentFactory<T extends ComponentType<any>> extends Compone
 
     // Properties
     for (const [propName, prop] of Object.entries(options.properties || {})) {
-      middleware[`property:${propName}`] = this.createNodeMiddleware(prop, componentMiddleware, nodes);
+      middleware[`property:${trimNamespace(propName)}`] = this.createNodeMiddleware(prop, componentMiddleware, nodes);
     }
 
     // References
@@ -147,8 +162,8 @@ export class ImagoComponent extends AbstractTemplate {
         if (props.typeof && this.middleware[`typeof:${props.typeof}`]) {
           return `typeof:${props.typeof}`
         }
-        if (props.property && this.middleware[`property:${props.property}`]) {
-          return `property:${props.property}`
+        if (props.property && this.middleware[`property:${trimNamespace(props.property)}`]) {
+          return `property:${trimNamespace(props.property)}`
         }
         if (props['data-name'] && this.middleware[`ref:${props['data-name']}`]) {
           return `ref:${props['data-name']}`

@@ -2,6 +2,10 @@ import React from "react";
 import { NodeProps, NodeType, TagProps, NodeInfo } from "./interfaces";
 import { Type } from './schema';
 
+export function trimNamespace(name: string) {
+  return name.includes(':') ? name.split(':').at(-1) : name;
+}
+
 export class NodeTree {
   public nodes: Record<number, NodeInfo> = {};
 
@@ -10,14 +14,16 @@ export class NodeTree {
   process(tagName: string, props: NodeProps, parentKey: number | undefined = undefined, instanceKey: number | undefined = undefined) {
     let meta: any = undefined;
 
-    if (props.typeof) {
-      if (this.schema[props.typeof]) {
-        meta = this.schema[props.typeof].create();
+    const type = props.typeof ? trimNamespace(props.typeof) : undefined;
+
+    if (type) {
+      if (this.schema[type]) {
+        meta = this.schema[type].create();
       }
     }
 
     const instance = instanceKey !== undefined ? this.nodes[instanceKey].meta : undefined;
-    const property = props.property;
+    const property = props.property ? trimNamespace(props.property) : undefined;
 
     if (property && instance) {
       if (property in instance) {
