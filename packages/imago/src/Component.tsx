@@ -34,25 +34,37 @@ function chain<T extends NodeType>(mw1: ImagoMiddleware<Element<T>>, mw2: ImagoM
   return (next, final) => mw1(mw2(next, final), final);
 }
 
+type ImagoComponentOptionsFactory<T extends ComponentType<any>> = (node: NodeContext<T["schema"]>) => ImagoComponentOptions<T>;
+
 export class ImagoComponentFactory<T extends ComponentType<any>> extends ComponentFactory<T["tag"]> {
   constructor(
     public readonly tag: T["tag"],
     public readonly type: string,
-    private options: ImagoComponentOptions<T> | ((meta: T["schema"]) => ImagoComponentOptions<T>)
+    private options: ImagoComponentOptions<T> | ImagoComponentOptionsFactory<T>,
+    private base: ImagoComponentFactory<T> | undefined = undefined,
   ) {
     super();
   }
 
-  extend<U extends ComponentType<any>>(type: Type<U>, options: ImagoComponentOptions<T & U>): ImagoComponentFactory<U> {
-    return createComponent(type, mergeDeep({}, this.options, options));
+  extend<U extends T>(
+    type: Type<U>,
+    options: ImagoComponentOptions<U> | ImagoComponentOptionsFactory<U>
+  ): ImagoComponentFactory<U> {
+    return new ImagoComponentFactory(type.tag, type.name, options, this);
   }
 
   createTemplate(nodes: Record<number, NodeInfo>, props: TagProps<T["tag"]>) {
+    return new ImagoComponent(this.createMiddleware(nodes, this.createOptions(nodes, props)));
+  }
+
+  private createOptions(nodes: Record<number, NodeInfo>, props: TagProps<T["tag"]>): ImagoComponentOptions<T> {
     const options = typeof this.options === 'function'
       ? this.options(new NodeContext(nodes, props))
       : this.options;
 
-    return new ImagoComponent(this.createMiddleware(nodes, options));
+    return this.base
+      ? mergeDeep({}, this.base.createOptions(nodes, props), options)
+      : options;
   }
 
   private createMiddleware(nodes: Record<number, NodeInfo>, options: ImagoComponentOptions<T>) {
@@ -157,7 +169,7 @@ export class ImagoComponent extends AbstractTemplate {
 
 export function createComponent<T extends ComponentType<any>>(
   type: Type<T>,
-  options: ImagoComponentOptions<T> | ((args: NodeContext<T["schema"]>) => ImagoComponentOptions<T>)
+  options: ImagoComponentOptions<T> | ImagoComponentOptionsFactory<T>
 ) {
   return new ImagoComponentFactory(type.tag, type.name, options);
 }

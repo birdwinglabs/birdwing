@@ -8,7 +8,7 @@ import { Footer, FooterComponent } from './footer.js';
 import { Grid, GridComponent } from './grid.js';
 import { Hint, HintComponent } from './hint.js';
 import { Menu, MenuComponent } from './menu.js';
-import { Page, PageComponent } from './page.js';
+import { Page, PageComponent, PageSection, PageSectionComponent } from './page.js';
 import { SequentialPagination, SequentialPaginationComponent } from './pagination.js';
 import { Pricing, PricingComponent, Tier, TierComponent } from './pricing.js';
 import { Step, StepComponent, Steps, StepsComponent } from './steps.js';
@@ -34,6 +34,7 @@ export function defineType<T extends ComponentType<any>>(name: string, tag: T["t
 
 export const schema = {
   Page: defineType<PageComponent>('Page', 'document', Page),
+  PageSection: defineType<PageSectionComponent>('PageSection', 'section', PageSection),
   DocPage: defineType<DocPageComponent>('DocPage', 'document', DocPage),
   Headings: defineType<HeadingsComponent>('Headings', 'aside', Headings),
   Hint: defineType<HintComponent>('Hint', 'section', Hint),

@@ -148,7 +148,7 @@ export type ReferencesOptions<T extends ComponentType<any>> =
   { [P in keyof T["refs"]]: TagHandler<T["refs"][P], undefined> };
 
 export type PropertiesOptions<T extends ComponentType<any>> = 
-  { [P in keyof T["properties"]]: PropertyHandler<T["properties"][P], T["schema"][P]> };
+  { [P in keyof T["properties"]]: PropertyHandler<T["properties"][P], ArrayElement<T["schema"][P]>> };
 
 export type TagMap = { [P in NodeType ]: TagHandler<P, undefined> }
 
@@ -256,12 +256,13 @@ type ArrayElement<ArrayType extends readonly unknown[] | unknown> =
 export type TagHandler<T extends NodeType, TSchema> =
   TransformOptions<T> |
   MiddlewareFactory<T> |
-  ((node: NodeContext<ArrayElement<TSchema>>) => TagHandler<T, ArrayElement<TSchema>>) |
+  ((node: NodeContext<TSchema>) => TagHandler<T, TSchema>) |
   string;
 
 export type PropertyHandler<T extends NodeType, TSchema> =
   TagHandler<T, TSchema> |
-  ComponentFactory<T>;
+  ComponentFactory<T> |
+  ((node: NodeContext<TSchema>) => PropertyHandler<T, TSchema>);
 
 export interface Newable<T> {
   new (...args: any[]): T;
