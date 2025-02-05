@@ -31,34 +31,31 @@ function definitionList(list: Node, config: Config, grid: boolean = false): Rend
 
 export const feature: Schema = {
   attributes: {
-    'layout': {
+    split: {
       type: String,
-      default: 'stack',
-      matches: [
-        'stack',
-        '2-column',
-        '2-column-mirror'
-      ],
       required: false,
     },
-    'fractions': {
-      type: String,
-      default: '1 1',
+    mirror: {
+      type: Boolean,
       required: false,
-    },
+    }
   },
   transform(node, config) {
     const children = new NodeList(node.children);
-    const { showcase, ...attr } = node.transformAttributes(config);
+    const attr = node.transformAttributes(config);
     const [ body, showcaseSection ] = children.splitByHr();
-    const layout = createLayout({ ...attr, name: 'layout' });
+    const layout = createLayout({
+      layout: attr.split ? attr.mirror ? '2-column-mirror' : '2-column' : 'stack',
+      fractions: attr.split,
+      name: 'layout' 
+    });
 
     const bodyNodes = body.body.all();
 
     bodyNodes.forEach((n, i) => {
       if (i === 0 && n.type === 'paragraph') {
         n.attributes.property = 'name';
-      } else if (i === 1 && n.type === 'heading') {
+      } else if (n.type === 'heading') {
         n.attributes.property = 'headline';
       } else if (n.type === 'paragraph') {
         n.attributes.property = 'description';
@@ -66,7 +63,7 @@ export const feature: Schema = {
     });
 
     const bodyTags = bodyNodes.map(n => n.type === 'list' 
-      ? definitionList(n, config, attr.layout === 'stack')
+      ? definitionList(n, config, attr.split === undefined)
       : Markdoc.transform(n, config)
     );
 
@@ -79,9 +76,18 @@ export const feature: Schema = {
       layout.pushContent(showcaseSection.body.transformFlat(config), { name: 'showcase' });
     }
 
+    const classes: string[] = [];
+    if (attr.split) {
+      classes.push('split');
+    }
+    if (attr.mirror) {
+      classes.push('mirror');
+    }
+
     return new Tag('section', {
       property: 'contentSection',
-      typeof: attr.layout === 'stack' ? 'Feature' : 'FeatureSplit'
+      typeof: 'Feature',
+      class: classes.length > 0 ? classes.join(' ') : undefined,
     }, [layout.container]);
   }
 }

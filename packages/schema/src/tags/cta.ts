@@ -5,23 +5,15 @@ import { createLayout } from '../layouts';
 const { Tag } = Markdoc;
 
 export const cta: Schema = {
-  //render: 'CallToAction',
   attributes: {
-    'layout': {
+    split: {
       type: String,
-      default: 'stack',
-      matches: [
-        'stack',
-        '2-column',
-        '2-column-mirror'
-      ],
       required: false,
     },
-    'fractions': {
-      type: String,
-      default: '1 1',
+    mirror: {
+      type: Boolean,
       required: false,
-    },
+    }
   },
   transform(node, config) {
     const children = new NodeList(node.children);
@@ -30,7 +22,15 @@ export const cta: Schema = {
     const { head, body, actions, showcase, footer } = children
       .commentSections(['head', 'body', 'actions', 'showcase', 'footer'], 'body');
 
-    let actionIndex = 0;
+    body.all().forEach((n, i) => {
+      if (i === 0 && n.type === 'paragraph') {
+        n.attributes.property = 'name';
+      } else if (n.type === 'heading') {
+        n.attributes.property = 'headline';
+      } else if (n.type === 'paragraph') {
+        n.attributes.property = 'description';
+      }
+    });
 
     for (const node of actions.walk()) {
       if (node.type === 'item') {
@@ -44,17 +44,16 @@ export const cta: Schema = {
             child.attributes.property = 'name';
           }
         }
-        //console.log(node.children);
-        //node.attributes.class = 'primary';
         node.attributes.property = 'url';
-        //actionIndex++;
       } else if (node.type === 'fence') {
-        ////node.attributes.property = 'action';
-        //node.attributes.typeof = 'ActionCommand';
-        //actionIndex++;
       } 
     }
-    const layout = createLayout({...attr, name: 'layout' });
+    //const layout = createLayout({...attr, name: 'layout' });
+    const layout = createLayout({
+      layout: attr.split ? attr.mirror ? '2-column-mirror' : '2-column' : 'stack',
+      fractions: attr.split,
+      name: 'layout' 
+    });
 
     layout.pushContent([
       new Tag('header', {}, head.transformFlat(config)),
@@ -64,8 +63,18 @@ export const cta: Schema = {
     ], { name: 'main' });
     layout.pushContent(showcase.transformFlat(config), { name: 'showcase' });
 
-    //layout.container.attributes.typeof = 'bw:CallToAction';
-    //return layout.container;
-    return new Tag('section', { property: 'contentSection', typeof: 'CallToAction' }, [layout.container]);
+    const classes: string[] = [];
+    if (attr.split) {
+      classes.push('split');
+    }
+    if (attr.mirror) {
+      classes.push('mirror');
+    }
+
+    return new Tag('section', {
+      property: 'contentSection',
+      typeof: 'CallToAction',
+      class: classes.length > 0 ? classes.join(' ') : undefined,
+    }, [layout.container]);
   }
 }
