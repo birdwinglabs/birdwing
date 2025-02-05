@@ -4,7 +4,6 @@ export { Tailwind } from './tailwind';
 export { schema } from './schema/index.js';
 export { createComponent } from './Component.js';
 export { createTheme } from './theme.js';
-export { select } from './middeware/select.js';
 
 export interface NavLinkConfig {
   end: boolean;

@@ -144,8 +144,13 @@ export interface TransformOptions<T extends NodeType, TSlot extends React.Functi
   parent?: React.FunctionComponent<{ children: ReactNode }>;
 }
 
-export type NamedChildOptions<T extends NodeMap> = { [P in keyof T]: TagHandler<T[P]> };
-export type TagMap = { [P in NodeType ]: TagHandler<P> }
+export type ReferencesOptions<T extends ComponentType<any>> =
+  { [P in keyof T["refs"]]: TagHandler<T["refs"][P], undefined> };
+
+export type PropertiesOptions<T extends ComponentType<any>> = 
+  { [P in keyof T["properties"]]: PropertyHandler<T["properties"][P], T["schema"][P]> };
+
+export type TagMap = { [P in NodeType ]: TagHandler<P, undefined> }
 
 export interface SlotOptions<TSchema, TSlots extends NodeMap> {
   property?: keyof TSchema;
@@ -164,8 +169,8 @@ export type ComponentMiddleware = Partial<{[ P in NodeType]: ImagoMiddleware<Ele
 
 export interface ImagoComponentOptions<T extends ComponentType<any>> extends TransformOptions<T["tag"], React.FunctionComponent<SlotOptions<T["schema"], T["refs"]>>> {
   components?: ComponentFactory<any>[],
-  properties?: Partial<NamedChildOptions<T["properties"]>>,
-  refs?: Partial<NamedChildOptions<T["refs"]>>,
+  properties?: Partial<PropertiesOptions<T>>,
+  refs?: Partial<ReferencesOptions<T>>,
   tags?: Partial<TagMap>,
   use?: ComponentMiddleware[],
 }
@@ -182,7 +187,7 @@ export interface NodeInfo<T = any> {
   meta: T;
 }
 
-export class NodeContext<T extends ComponentType<any>> {
+export class NodeContext<T> {
   private classes: Set<string>;
 
   constructor(
@@ -200,7 +205,7 @@ export class NodeContext<T extends ComponentType<any>> {
     return this.classes.has(name);
   }
 
-  get data(): T["schema"] {
+  get data(): T {
     return this.nodes[this.key].meta;
   }
 
@@ -244,12 +249,19 @@ export class TypeSelector<T extends ComponentType<any>> {
   constructor(public readonly tag: T["tag"], public readonly type: string) {}
 }
 
-export type TagHandler<T extends NodeType> =
+type ArrayElement<ArrayType extends readonly unknown[] | unknown> = 
+  ArrayType extends readonly (infer ElementType)[] ? ElementType : ArrayType;
+
+
+export type TagHandler<T extends NodeType, TSchema> =
   TransformOptions<T> |
-  ComponentFactory<T> |
   MiddlewareFactory<T> |
-  React.FunctionComponent<HandlerProps<TagProps<T>>> |
+  ((node: NodeContext<ArrayElement<TSchema>>) => TagHandler<T, ArrayElement<TSchema>>) |
   string;
+
+export type PropertyHandler<T extends NodeType, TSchema> =
+  TagHandler<T, TSchema> |
+  ComponentFactory<T>;
 
 export interface Newable<T> {
   new (...args: any[]): T;

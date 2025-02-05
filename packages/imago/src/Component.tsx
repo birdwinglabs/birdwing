@@ -83,7 +83,7 @@ export class ImagoComponentFactory<T extends ComponentType<any>> extends Compone
 
     // References
     for (const [refName, ref] of Object.entries(options.refs || {})) {
-      middleware[`ref:${refName}`] = this.createNodeMiddleware(ref, componentMiddleware, nodes);
+      middleware[`ref:${refName}`] = this.createNodeMiddleware(ref as any, componentMiddleware, nodes);
     }
 
     // Unspecified tags
@@ -103,7 +103,7 @@ export class ImagoComponentFactory<T extends ComponentType<any>> extends Compone
     return middleware;
   }
 
-  private createNodeMiddleware(handler: TagHandler<any>, cmwm: ComponentMiddleware, nodes: Record<number, NodeInfo>) {
+  private createNodeMiddleware(handler: TagHandler<any, any>, cmwm: ComponentMiddleware, nodes: Record<number, NodeInfo>) {
     const mw = createMiddlewareFactory(handler).createMiddleware(nodes);
     return this.combineMiddleware(cmwm, mw);
   }
@@ -157,7 +157,7 @@ export class ImagoComponent extends AbstractTemplate {
 
 export function createComponent<T extends ComponentType<any>>(
   type: Type<T>,
-  options: ImagoComponentOptions<T> | ((args: NodeContext<T>) => ImagoComponentOptions<T>)
+  options: ImagoComponentOptions<T> | ((args: NodeContext<T["schema"]>) => ImagoComponentOptions<T>)
 ) {
   return new ImagoComponentFactory(type.tag, type.name, options);
 }
