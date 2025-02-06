@@ -53,7 +53,6 @@ type ImagoComponentOptionsFactory<T extends ComponentType<any>> = (node: NodeCon
 
 export class ImagoComponentFactory<T extends ComponentType<any>> extends ComponentFactory<T["tag"]> {
   constructor(
-    public readonly tag: T["tag"],
     public readonly type: string,
     private options: ImagoComponentOptions<T> | ImagoComponentOptionsFactory<T>,
     private base: ImagoComponentFactory<T> | undefined = undefined,
@@ -65,7 +64,7 @@ export class ImagoComponentFactory<T extends ComponentType<any>> extends Compone
     type: Type<U>,
     options: ImagoComponentOptions<U> | ImagoComponentOptionsFactory<U>
   ): ImagoComponentFactory<U> {
-    return new ImagoComponentFactory(type.tag, type.name, options, this);
+    return new ImagoComponentFactory(type.name, options, this);
   }
 
   createTemplate(nodes: Record<number, NodeInfo>, props: TagProps<T["tag"]>) {
@@ -182,9 +181,9 @@ export class ImagoComponent extends AbstractTemplate {
   }
 }
 
-export function createComponent<T extends ComponentType<any>>(
+export function createComponent<T extends ComponentType<object>>(
   type: Type<T>,
   options: ImagoComponentOptions<T> | ImagoComponentOptionsFactory<T>
 ) {
-  return new ImagoComponentFactory(type.tag, type.name, options);
+  return new ImagoComponentFactory(type.name, options);
 }

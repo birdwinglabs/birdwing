@@ -1,4 +1,5 @@
 import { ComponentType } from "../interfaces";
+import { PageSection, PageSectionProperties } from "./page";
 
 export class TabGroup {
   tab: Tab[] = [];
@@ -6,7 +7,7 @@ export class TabGroup {
 }
 
 export interface TabGroupComponent extends ComponentType<TabGroup> {
-  tag: 'section',
+  tag: 'div',
   properties: {
     tab: 'li',
     panel: 'li',
@@ -35,4 +36,17 @@ export interface TabComponent extends ComponentType<Tab> {
     name: 'h1',
     image: 'img' | 'svg',
   }
+}
+
+export class TabSection extends PageSection {
+  tabs: TabGroup = new TabGroup();
+}
+
+export interface TabSectionProperties extends PageSectionProperties {
+  tabs: 'div',
+}
+
+export interface TabSectionComponent extends ComponentType<TabSection> {
+  tag: 'section',
+  properties: TabSectionProperties,
 }

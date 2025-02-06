@@ -118,19 +118,21 @@ export abstract class AbstractTemplate {
 }
 
 export abstract class ComponentFactory<T extends NodeType> {
-  tag: T;
+  //private tag: T;
 
   type: string;
 
   abstract createTemplate(nodes: Record<number, NodeInfo>, props: TagProps<T>): AbstractTemplate;
 }
 
+export type PropertyNodes<TSchema> = { [P in keyof TSchema ]: NodeType };
+
 export interface ComponentType<TSchema> {
   tag: NodeType;
 
   schema: TSchema;
 
-  properties: {[P in keyof TSchema]: NodeType};
+  properties: PropertyNodes<TSchema>;
 
   refs: Record<string, NodeType>
 }

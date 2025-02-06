@@ -1,4 +1,4 @@
-import { ComponentType } from "../interfaces";
+import { ComponentType, PropertyNodes } from "../interfaces";
 import { Menu } from "./menu";
 
 
@@ -8,13 +8,15 @@ export class PageSection {
   headline: string | undefined = undefined;
 }
 
+export interface PageSectionProperties extends PropertyNodes<PageSection> {
+  name: 'p',
+  headline: 'h1',
+  description: 'p',
+}
+
 export interface PageSectionComponent extends ComponentType<PageSection> {
   tag: 'section',
-  properties: {
-    name: 'p',
-    headline: 'h1',
-    description: 'p',
-  }
+  properties: PageSectionProperties,
 }
 
 export class Page {
@@ -25,15 +27,17 @@ export class Page {
   footer: any = undefined;
 }
 
+export interface PageProperties extends PropertyNodes<Page> {
+  name: 'h1',
+  description: 'p',
+  contentSection: 'section',
+  menu: 'nav',
+  footer: 'footer',
+}
+
 export interface PageComponent extends ComponentType<Page> {
   tag: 'document',
-  properties: {
-    name: 'h1',
-    description: 'p',
-    contentSection: 'section',
-    menu: 'nav',
-    footer: 'footer',
-  },
+  properties: PageProperties,
   refs: {
     body: 'main',
   }

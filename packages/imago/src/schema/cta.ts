@@ -1,5 +1,5 @@
 import { ComponentType } from "../interfaces";
-import { PageSection } from "./page";
+import { PageSection, PageSectionProperties } from "./page";
 
 export class Action {
   url: string = '';
@@ -19,14 +19,13 @@ export interface ActionComponent extends ComponentType<Action> {
   refs: {},
 }
 
+export interface CallToActionProperties extends PageSectionProperties {
+  action: 'li',
+}
+
 export interface CallToActionComponent extends ComponentType<CallToAction> {
   tag: 'section',
-  properties: {
-    name: 'p',
-    headline: 'h1',
-    description: 'p',
-    action: 'li',
-  },
+  properties: CallToActionProperties,
   refs: {
     layout: 'div',
     body: 'section',

@@ -1,5 +1,5 @@
 import { ComponentType } from "../interfaces";
-import { Page } from "./page";
+import { Page, PageProperties } from "./page";
 import { SequentialPagination } from "./pagination";
 
 export class DocPage extends Page {
@@ -9,19 +9,16 @@ export class DocPage extends Page {
   summary: TableOfContents | undefined = undefined;
 }
 
+export interface DocPageProperties extends PageProperties {
+  topic: 'h2',
+  pagination: 'nav',
+  headings: 'aside',
+  summary: 'nav',
+}
+
 export interface DocPageComponent extends ComponentType<DocPage> {
   tag: 'document',
-  properties: {
-    name: 'h1',
-    topic: 'h2',
-    description: 'p',
-    contentSection: 'section',
-    pagination: 'nav',
-    headings: 'aside',
-    menu: 'nav',
-    summary: 'nav',
-    footer: 'footer',
-  },
+  properties: DocPageProperties,
   refs: {
     body: 'article',
   }

@@ -1,4 +1,5 @@
 import { ComponentType } from "../interfaces";
+import { PageSectionProperties } from "./page";
 
 export class Tier {
   name: string | undefined = undefined;
@@ -23,13 +24,12 @@ export class Pricing {
   tier: Tier[] = [];
 }
 
+export interface PricingProperties extends PageSectionProperties {
+  tier: 'li',
+}
+
 export interface PricingComponent extends ComponentType<Pricing> {
   tag: 'section',
-  properties: {
-    name: 'h1',
-    headline: 'h2',
-    description: 'p',
-    tier: 'li',
-  },
+  properties: PricingProperties,
   refs: {}
 }
