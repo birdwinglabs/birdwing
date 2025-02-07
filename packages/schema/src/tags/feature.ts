@@ -1,6 +1,52 @@
-import Markdoc, { Schema, Tag, Node, RenderableTreeNode, Config } from '@markdoc/markdoc';
+import Markdoc, { Schema, Tag, Node, RenderableTreeNode, Config, ConfigFunction, MaybePromise, NodeType, RenderableTreeNodes } from '@markdoc/markdoc';
 import { NodeList } from '../util';
 import { createLayout } from '../layouts';
+import { processBodyNodes } from '../common/page-section';
+
+//interface DefinitionListOptions {
+  //columns?: number | ((itemCount: number) => number);
+
+  //list?: Record<string, string | number | boolean>;
+
+  //term?: Record<string, string | number | boolean>;
+
+  //definition?: Record<string, string | number | boolean>;
+
+  //item?: Record<string, string | number | boolean>;
+//}
+
+//class DefinitionList {
+  //constructor(private options: DefinitionListOptions = {}) {}
+
+  //transform(root: Node, config: Config): RenderableTreeNode {
+    //const { columns, term, definition, item } = this.options;
+
+    //const dlAttr: any = columns 
+      //? { 'data-layout': 'grid', 'data-columns': typeof columns === 'number' ? columns : columns(root.children.length) }
+      //: {};
+
+    //return new Tag('dl', dlAttr, root.children.map(item => {
+        //const children: RenderableTreeNode[] = [];
+
+        //item.children.forEach((n, i) => {
+          //if (i === 0 && n.type === 'heading') {
+            //let tags = n.transformChildren(config);
+            //if (tags.length > 1 && tags[1] instanceof Tag && tags[1].name === 'svg') {
+              //tags = tags.reverse();
+            //}
+            //children.push(new Tag('dt', term, tags));
+          //} else if (i === 1 && n.type === 'paragraph') {
+            //children.push(new Tag('dd', definition, n.transformChildren(config)));
+          //}
+        //});
+
+        //const attr: any = { property: 'featureItem', typeof: 'FeatureDefinition' };
+
+        //return new Tag('div', attr, children);
+      //})
+    //)
+  //}
+//}
 
 function definitionList(list: Node, config: Config, grid: boolean = false): RenderableTreeNode {
   const dlAttr: any = grid 
@@ -50,17 +96,7 @@ export const feature: Schema = {
       name: 'layout' 
     });
 
-    const bodyNodes = body.body.all();
-
-    bodyNodes.forEach((n, i) => {
-      if (i === 0 && n.type === 'paragraph') {
-        n.attributes.property = 'name';
-      } else if (n.type === 'heading') {
-        n.attributes.property = 'headline';
-      } else if (n.type === 'paragraph') {
-        n.attributes.property = 'description';
-      }
-    });
+    const bodyNodes = processBodyNodes(body.body.all());
 
     const bodyTags = bodyNodes.map(n => n.type === 'list' 
       ? definitionList(n, config, attr.split === undefined)

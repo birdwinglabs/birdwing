@@ -1,5 +1,6 @@
 import Markdoc, { Schema, Config } from '@markdoc/markdoc';
 import { generateIdIfMissing, NodeList } from '../util';
+import { processBodyNodes } from '../common/page-section';
 
 const { Tag } = Markdoc;
 
@@ -21,10 +22,6 @@ export class TabFactory {
         }
       }
       return tab;
-
-      //return new Tag('item', { property: 'tab', typeof: 'Tab' }, [
-        //new Tag('heading', { level: 1, property: 'name' }, heading.transformChildren(this.config))
-      //]);
     });
     const panels = tabSections.map(({ body }) => {
       return new Tag('li', { property: 'panel', typeof: 'TabPanel' }, body.transformFlat(this.config));
@@ -37,7 +34,7 @@ export class TabFactory {
 
   createTabGroup(id: string, property: string, section: NodeList, headingLevel?: number) {
     const { tabs, panels } = this.createTabs(section, headingLevel);
-    return new Tag('section', { id, property, typeof: 'TabGroup' }, [tabs, panels]);
+    return new Tag('div', { id, property, typeof: 'TabGroup' }, [tabs, panels]);
   }
 }
 
@@ -59,12 +56,26 @@ export class TabFactory {
  * ```
  */
 export const tabs: Schema = {
+  attributes: {
+    level: { type: Number, required: false, default: 1 }
+  },
   transform(node, config) {
     generateIdIfMissing(node, config);
+    const children = new NodeList(node.children);
     const attr = node.transformAttributes(config);
     const fact = new TabFactory(config);
 
-    //return new Tag(this.render, {}, [fact.createTabGroup(attr['id'], new NodeList(node.children))]);
+    if (node.children.find(c => c.type === 'hr')) {
+      const [ header, body ] = children.splitByHr();
+
+      processBodyNodes(header.body.all());
+
+      return new Tag('section', { property: 'contentSection', typeof: 'TabSection' }, [
+        new Tag('header', {}, header.body.transformFlat(config)),
+        fact.createTabGroup(attr['id'], 'tabs', body.body) 
+      ]);
+    }
+
     return fact.createTabGroup(attr['id'], 'contentSection', new NodeList(node.children));
   }
 }

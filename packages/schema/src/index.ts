@@ -10,7 +10,6 @@ import { cta } from './tags/cta.js';
 import { grid } from './tags/grid.js';
 import { editor } from './tags/editor.js';
 import { feature } from './tags/feature.js';
-import { featureTabs } from './tags/feature-tabs.js';
 import { hint } from './tags/hint.js';
 import { steps } from './tags/steps.js';
 import { tabs } from './tags/tabs.js';
@@ -30,7 +29,6 @@ export const tags = {
   'call-to-action': cta,
   editor,
   feature,
-  'feature-tabs': featureTabs,
   grid,
   hint,
   tabs,
