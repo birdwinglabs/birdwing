@@ -1,5 +1,5 @@
-import { ComponentType } from "../interfaces";
-import { PageSection, PageSectionProperties } from "./page";
+import { ComponentType } from "../interfaces.js";
+import { PageSection, PageSectionProperties } from "./page.js";
 
 export class Action {
   url: string = '';

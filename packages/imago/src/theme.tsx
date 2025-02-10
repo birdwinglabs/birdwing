@@ -6,7 +6,7 @@ import {
   ComponentFactory,
 } from "./interfaces";
 import { NodeTree } from "./types";
-import { schema } from "./schema";
+import { schema } from "@birdwing/renderable";
 
 export class Theme extends AbstractTemplate {
   private templates: Record<string, ComponentFactory<any>> = {};

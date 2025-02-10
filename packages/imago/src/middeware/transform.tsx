@@ -1,6 +1,7 @@
 import React from "react";
-import { Element, ImagoMiddleware, MiddlewareFactory, NodeInfo, NodeType, TagProps, TransformOptions } from "../interfaces";
+import { Element, ImagoMiddleware, MiddlewareFactory, NodeInfo, TagProps, TransformOptions } from "../interfaces";
 import { ComponentMiddlewareFactory } from "./component";
+import { NodeType } from '@birdwing/renderable';
 
 export { ComponentMiddlewareFactory };
 

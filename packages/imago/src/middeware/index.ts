@@ -1,7 +1,8 @@
-import { ComponentFactory, Element, ImagoMiddleware, MiddlewareFactory, NodeContext, NodeInfo, NodeType, TagHandler } from "../interfaces";
+import { ComponentFactory, Element, ImagoMiddleware, MiddlewareFactory, NodeContext, NodeInfo, TagHandler } from "../interfaces";
 import { makeNodeSlot } from "../utils";
 import { ComponentMiddlewareFactory } from "./component";
 import { TransformMiddlewareFactory } from "./transform";
+import { NodeType } from '@birdwing/renderable';
 
 export { ComponentMiddlewareFactory };
 

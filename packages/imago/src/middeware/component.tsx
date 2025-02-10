@@ -4,9 +4,9 @@ import {
   ImagoMiddleware,
   MiddlewareFactory,
   NodeInfo,
-  NodeType,
   TemplateContext
 } from "../interfaces";
+import { NodeType } from '@birdwing/renderable';
 
 export class ComponentMiddlewareFactory<T extends NodeType> extends MiddlewareFactory<T> {
   constructor(private fact: ComponentFactory<any>) { super(); }

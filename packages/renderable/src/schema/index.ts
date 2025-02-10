@@ -1,4 +1,4 @@
-import { ComponentType, Newable } from '../interfaces.js';
+import { ComponentType } from "../interfaces";
 import { MusicPlaylist, MusicPlaylistComponent, MusicRecording, MusicRecordingComponent } from './audio.js';
 import { Action, ActionComponent, CallToAction, CallToActionComponent } from './cta.js';
 import { DocPage, DocPageComponent, Headings, HeadingsComponent, TableOfContents, TableOfContentsComponent } from './docpage.js';
@@ -14,9 +14,11 @@ import { Pricing, PricingComponent, Tier, TierComponent } from './pricing.js';
 import { Step, StepComponent, Steps, StepsComponent } from './steps.js';
 import { Tab, TabComponent, TabGroup, TabGroupComponent, TabPanel, TabPanelComponent, TabSection, TabSectionComponent } from './tabs.js';
 
-export { DocPage };
+export interface Newable<T> {
+  new (...args: any[]): T;
+}
 
-export class Type<T extends ComponentType<any>> {
+export class Type<T extends ComponentType<object>> {
   constructor(
     public readonly name: string,
     private schemaCtr: Newable<T["schema"]>,
@@ -27,11 +29,7 @@ export class Type<T extends ComponentType<any>> {
   }
 }
 
-export function defineType<T extends ComponentType<any>>(name: string, tag: T["tag"], schemaCtr: Newable<T["schema"]>) {
-  return new Type<T>(name, schemaCtr);
-}
-
-export class TypeFactory<TSchema> {
+export class TypeFactory<TSchema extends object> {
   constructor(private schema: Newable<TSchema>) {}
 
   defineType<T extends ComponentType<TSchema>>(name: string) {
@@ -39,7 +37,7 @@ export class TypeFactory<TSchema> {
   }
 }
 
-export function useSchema<T>(schema: Newable<T>) {
+export function useSchema<T extends object>(schema: Newable<T>) {
   return new TypeFactory(schema);
 }
 

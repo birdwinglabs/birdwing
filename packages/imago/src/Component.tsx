@@ -3,8 +3,6 @@ import {
   AbstractTemplate,
   ImagoComponentOptions,
   ImagoMiddleware,
-  NodeType,
-  ComponentType,
   Element,
   ComponentFactory,
   ComponentMiddleware,
@@ -15,7 +13,7 @@ import {
 } from "./interfaces";
 import { defaultElements } from "./Elements";
 import { makeComponentSlot, mergeDeep } from "./utils";
-import { Type } from "./schema";
+import { Type, ComponentType, NodeType } from "@birdwing/renderable";
 import { ComponentMiddlewareFactory, createMiddlewareFactory } from "./middeware";
 import { TransformMiddlewareFactory } from "./middeware/transform";
 import { trimNamespace } from "./types";

@@ -1,5 +1,5 @@
 {
-  "name": "@birdwing/imago",
+  "name": "@birdwing/renderable",
   "version": "0.1.0",
   "private": true,
   "description": "",
@@ -16,15 +16,7 @@
   "publishConfig": {
     "access": "public"
   },
-  "dependencies": {
-    "@birdwing/react": "0.1.0",
-    "@birdwing/renderable": "0.1.0",
-    "@types/react": "18.2.73",
-    "react": "18.3.1",
-    "react-router-dom": "6.25.1"
-  },
   "devDependencies": {
-    "@headlessui/react": "2.1.7",
-    "@types/node": "20.11.30"
+    "@types/node": "20.12.12"
   }
 }

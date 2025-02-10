@@ -1,6 +1,6 @@
 import React from "react";
-import { NodeProps, NodeType, TagProps, NodeInfo } from "./interfaces";
-import { Type } from './schema';
+import { NodeProps, TagProps, NodeInfo } from "./interfaces";
+import { Type, NodeType } from "@birdwing/renderable";
 
 export function trimNamespace(name: string) {
   return name.includes(':') ? name.split(':').at(-1) : name;
