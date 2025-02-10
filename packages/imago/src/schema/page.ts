@@ -1,7 +1,6 @@
 import { ComponentType, PropertyNodes } from "../interfaces";
 import { Menu } from "./menu";
 
-
 export class PageSection {
   name: string | undefined = undefined;
   description: string | undefined = undefined;
@@ -22,7 +21,7 @@ export interface PageSectionComponent extends ComponentType<PageSection> {
 export class Page {
   name: string = '';
   description: string = '';
-  contentSection: any[] = [];
+  contentSection: PageSection[] = [];
   menu: Menu | undefined = undefined;
   footer: any = undefined;
 }

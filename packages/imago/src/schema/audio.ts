@@ -1,4 +1,5 @@
 import { ComponentType } from "../interfaces";
+import { PageSection, PageSectionProperties } from "./page";
 
 export class MusicRecording {
   name: string = '';
@@ -7,7 +8,7 @@ export class MusicRecording {
   copyrightYear: number | undefined;
 }
 
-export class MusicPlaylist {
+export class MusicPlaylist extends PageSection {
   track: MusicRecording[] = [];
 }
 
@@ -21,11 +22,13 @@ export interface MusicRecordingComponent extends ComponentType<MusicRecording> {
   }
 }
 
+export interface MusicPlaylistProperties extends PageSectionProperties {
+  track: 'li',
+}
+
 export interface MusicPlaylistComponent extends ComponentType<MusicPlaylist> {
   tag: 'section',
-  properties: {
-    track: 'li',
-  },
+  properties: MusicPlaylistProperties,
   refs: {
     tracks: 'ol',
   }
