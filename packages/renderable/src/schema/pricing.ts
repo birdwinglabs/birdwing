@@ -1,5 +1,5 @@
-import { ComponentType } from "../interfaces";
-import { PageSectionProperties } from "./page";
+import { ComponentType } from "../interfaces.js";
+import { PageSectionProperties } from "./page.js";
 
 export class Tier {
   name: string | undefined = undefined;

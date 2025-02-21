@@ -1,6 +1,6 @@
-import { ComponentType } from "../interfaces";
-import { Page, PageProperties } from "./page";
-import { SequentialPagination } from "./pagination";
+import { ComponentType } from "../interfaces.js";
+import { Page, PageProperties } from "./page.js";
+import { SequentialPagination } from "./pagination.js";
 
 export class DocPage extends Page {
   topic: string = '';

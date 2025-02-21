@@ -1,8 +1,8 @@
-import Markdoc, { Schema } from '@markdoc/markdoc';
-import { NodeList } from '../util';
-import { createLayout } from '../layouts';
-
-const { Tag } = Markdoc;
+import Markdoc, { Ast, Schema } from '@markdoc/markdoc';
+import { createFactory, headingsToList, tag } from '../util.js';
+import { splitLayout } from '../layouts/index.js';
+import { schema } from '@birdwing/renderable';
+import { SpaceSeparatedNumberList } from '../attributes.js';
 
 /**
  * Steps component
@@ -16,7 +16,7 @@ const { Tag } = Markdoc;
  * # Step 1
  * Content for step 
  * 
- * <!-- side -->
+ * ---
  * ```
  * code
  * ```
@@ -48,42 +48,66 @@ const { Tag } = Markdoc;
  */
 export const steps: Schema = {
   attributes: {
-    'layout': {
-      type: String,
-      default: 'stack',
-      matches: [
-        'stack',
-        '2-column',
-      ],
+    split: {
+      type: SpaceSeparatedNumberList,
       required: false,
+      render: true,
     },
-    'fractions': {
-      type: String,
-      default: '1 1',
+    level: {
+      type: Number,
       required: false,
+      default: 1,
+    }
+  },
+  transform(node, config) {
+    const attr = node.transformAttributes(config);
+
+    const stepsFact = createFactory(schema.Steps, {
+      tag: 'ol',
+      property: 'contentSection',
+      nodes: [
+        headingsToList(attr.heading),
+      ],
+      transforms: {
+        item: (node, config) => Markdoc.transform(
+          new Ast.Node('tag', { split: node.attributes.split }, node.children, 'step'), config
+        ),
+      },
+      properties: {
+        step: tag({ match: { tag: 'li', deep: true }}),
+      },
+    });
+
+    return stepsFact.createTag(node, config);
+  }
+}
+
+export const step: Schema = {
+  attributes: {
+    split: {
+      type: SpaceSeparatedNumberList,
+      required: false
     },
   },
   transform(node, config) {
-    const steps = new NodeList(node.children).headingSections();
     const attr = node.transformAttributes(config);
+    const split = attr.split as number[];
 
-    const children = steps.map(s => {
-      const [main, side] = s.body.splitByHr();
-      const heading = Markdoc.transform(s.heading, config);
-      if (heading instanceof Tag) {
-        heading.attributes.property = 'name';
-      }
-      const body = [heading, ...main.body.transformFlat(config)];
-      const layout = createLayout(attr)
-        .pushContent(body, { name: 'main' });
-
-      if (side) {
-        layout.pushContent(side.body.transformFlat(config), { name: 'side' });
-      }
-
-      return new Tag('li', { property: 'step', typeof: 'Step' }, [layout.container]);
-    });
-
-    return new Tag('ol', { property: 'contentSection', typeof: 'Steps' }, children);
+    return createFactory(schema.Step, {
+      tag: 'li',
+      groups: [
+        { name: 'main', section: 0 },
+        { name: 'side', section: 1 },
+      ],
+      properties: {
+        name: tag({ group: 'main', match: 'h1' }),
+      },
+      project: p => splitLayout({
+        split,
+        mirror: false,
+        main: p.group('main'),
+        side: p.group('side'),
+      })
+    }).createTag(node, config);
   }
 }

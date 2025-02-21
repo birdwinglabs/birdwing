@@ -1,5 +1,5 @@
-import { ComponentType } from "../interfaces";
-import { PageSection, PageSectionProperties } from "./page";
+import { ComponentType } from "../interfaces.js";
+import { PageSection, PageSectionProperties } from "./page.js";
 
 export class FeatureDefinition {
   name: string | undefined = undefined;
@@ -31,5 +31,6 @@ export interface FeatureComponent extends ComponentType<Feature> {
     layout: 'div',
     body: 'div',
     showcase: 'div',
+    definitions: 'dl',
   },
 }

@@ -1,16 +1,16 @@
 import { ComponentType } from "../interfaces.js";
 import { PageSection, PageSectionProperties } from "./page.js";
 
-export class Action {
+export class LinkItem {
   url: string = '';
   name: string = '';
 }
 
 export class CallToAction extends PageSection {
-  action: Action[] = [];
+  action: LinkItem[] = [];
 }
 
-export interface ActionComponent extends ComponentType<Action> {
+export interface LinkItemComponent extends ComponentType<LinkItem> {
   tag: 'li',
   properties: {
     name: 'span',

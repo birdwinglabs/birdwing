@@ -1,84 +1,55 @@
-import Markdoc, { Schema, Tag, Node, RenderableTreeNode, Config, ConfigFunction, MaybePromise, NodeType, RenderableTreeNodes } from '@markdoc/markdoc';
-import { NodeList } from '../util';
-import { createLayout } from '../layouts';
-import { processBodyNodes } from '../common/page-section';
+import Markdoc, { Schema, Tag, Ast } from '@markdoc/markdoc';
+import { createFactory, tag } from '../util.js';
+import { splitLayout } from '../layouts/index.js';
+import { schema } from '@birdwing/renderable';
+import { SpaceSeparatedNumberList } from '../attributes.js';
 
-//interface DefinitionListOptions {
-  //columns?: number | ((itemCount: number) => number);
+export const definition: Schema = {
+  render: 'div',
+  transform(node, rootConfig) {
+    return createFactory(schema.FeatureDefinition, {
+      tag: 'div',
+      groups: [
+        {
+          name: 'term',
+          include: [{ node: 'paragraph', descendant: 'image' }, 'heading'],
+          transforms: {
+            paragraph: node => {
+              const img = Array.from(node.walk()).find(n => n.type === 'image');
+              return Markdoc.transform(img ? img : node, rootConfig);
+            },
+            heading: node => {
+              const img = Array.from(node.walk()).find(n => n.type === 'image');
+              const text = Array.from(node.walk()).filter(n => n.type === 'text');
+              const span = new Tag('span', {}, Markdoc.transform(text, rootConfig));
 
-  //list?: Record<string, string | number | boolean>;
-
-  //term?: Record<string, string | number | boolean>;
-
-  //definition?: Record<string, string | number | boolean>;
-
-  //item?: Record<string, string | number | boolean>;
-//}
-
-//class DefinitionList {
-  //constructor(private options: DefinitionListOptions = {}) {}
-
-  //transform(root: Node, config: Config): RenderableTreeNode {
-    //const { columns, term, definition, item } = this.options;
-
-    //const dlAttr: any = columns 
-      //? { 'data-layout': 'grid', 'data-columns': typeof columns === 'number' ? columns : columns(root.children.length) }
-      //: {};
-
-    //return new Tag('dl', dlAttr, root.children.map(item => {
-        //const children: RenderableTreeNode[] = [];
-
-        //item.children.forEach((n, i) => {
-          //if (i === 0 && n.type === 'heading') {
-            //let tags = n.transformChildren(config);
-            //if (tags.length > 1 && tags[1] instanceof Tag && tags[1].name === 'svg') {
-              //tags = tags.reverse();
-            //}
-            //children.push(new Tag('dt', term, tags));
-          //} else if (i === 1 && n.type === 'paragraph') {
-            //children.push(new Tag('dd', definition, n.transformChildren(config)));
-          //}
-        //});
-
-        //const attr: any = { property: 'featureItem', typeof: 'FeatureDefinition' };
-
-        //return new Tag('div', attr, children);
-      //})
-    //)
-  //}
-//}
-
-function definitionList(list: Node, config: Config, grid: boolean = false): RenderableTreeNode {
-  const dlAttr: any = grid 
-    ? { 'data-layout': 'grid', 'data-columns': 3 }
-    : {};
-
-  return new Tag('dl', dlAttr, list.children.map(item => {
-      const children: RenderableTreeNode[] = [];
-
-      item.children.forEach((n, i) => {
-        if (i === 0 && n.type === 'heading') {
-          let tags = n.transformChildren(config);
-          if (tags.length > 1 && tags[1] instanceof Tag && tags[1].name === 'svg') {
-            tags = tags.reverse();
+              return img ? [ Markdoc.transform(img, rootConfig), span ] : span;
+            }
+          },
+          output: nodes => new Tag('dt', {}, nodes),
+        },
+        {
+          name: 'description',
+          include: ['paragraph'],
+          transforms: {
+            paragraph: 'dd',
           }
-          children.push(new Tag('dt', { property: 'name' }, tags));
-        } else if (i === 1 && n.type === 'paragraph') {
-          children.push(new Tag('dd', { property: 'description' }, n.transformChildren(config)));
-        }
-      });
-
-      const attr: any = { property: 'featureItem', typeof: 'FeatureDefinition' };
-
-      return new Tag('div', attr, children);
+        },
+      ],
+      properties: {
+        image: tag({ group: 'term', match: 'svg' }),
+        name: tag({ group: 'term', match: 'span' }),
+        description: tag({ group: 'description', match: 'dd' }),
+      },
     })
-  )
+      .createTag(node, rootConfig);
+  }
 }
 
 export const feature: Schema = {
   attributes: {
     split: {
-      type: String,
+      type: SpaceSeparatedNumberList,
       required: false,
     },
     mirror: {
@@ -87,43 +58,53 @@ export const feature: Schema = {
     }
   },
   transform(node, config) {
-    const children = new NodeList(node.children);
     const attr = node.transformAttributes(config);
-    const [ body, showcaseSection ] = children.splitByHr();
-    const layout = createLayout({
-      layout: attr.split ? attr.mirror ? '2-column-mirror' : '2-column' : 'stack',
-      fractions: attr.split,
-      name: 'layout' 
-    });
+    const split = attr['split'] as number[];
 
-    const bodyNodes = processBodyNodes(body.body.all());
-
-    const bodyTags = bodyNodes.map(n => n.type === 'list' 
-      ? definitionList(n, config, attr.split === undefined)
-      : Markdoc.transform(n, config)
-    );
-
-    const dlIndex = bodyTags.findIndex(t => t instanceof Tag && t.name === 'dl');
-    const header = new Tag('header', {}, bodyTags.slice(0, dlIndex));
-
-    layout.pushContent([header, ...bodyTags.slice(dlIndex)], { name: 'body' });
-
-    if (showcaseSection) {
-      layout.pushContent(showcaseSection.body.transformFlat(config), { name: 'showcase' });
-    }
-
-    const classes: string[] = [];
-    if (attr.split) {
-      classes.push('split');
-    }
-    if (attr.mirror) {
-      classes.push('mirror');
-    }
-
-    return new Tag('section', {
+    return createFactory(schema.Feature, {
+      tag: 'section',
       property: 'contentSection',
-      typeof: 'Feature',
-      class: classes.length > 0 ? classes.join(' ') : undefined,
-    }, [layout.container]);
+      class: split.length > 0 ? 'split' : undefined,
+      groups: [
+        {
+          name: 'header',
+          section: 0,
+          include: ['heading', 'paragraph'],
+          output: nodes => new Tag('header', {}, nodes),
+        },
+        {
+          name: 'definitions',
+          section: 0,
+          include: ['list'],
+          transforms: {
+            item: (node, config) => Markdoc.transform(
+              new Ast.Node('tag', {}, node.children, 'definition'), config
+            ),
+            list: (node, config) => new Tag(
+              'dl', split ? {} : { 'data-layout': 'grid', 'data-columns': 3 }, node.transformChildren(config)
+            ),
+          }
+        },
+        { name: 'showcase', section: 1 },
+      ],
+      properties: {
+        headline: tag({ group: 'header', match: 'h1' }),
+        description: tag({ group: 'header', match: 'p' }),
+        featureItem: tag({ group: 'definitions', match: { tag: 'div', deep: true } })
+      },
+      refs: {
+        definitions: tag({
+          group: 'definitions',
+          match: 'dl',
+        })
+      },
+      project: p => splitLayout({
+        split,
+        mirror: attr.mirror,
+        main: p.group('header', 'definitions'),
+        side: p.group('showcase'),
+      }),
+    })
+      .createTag(node, config)
   }
 }

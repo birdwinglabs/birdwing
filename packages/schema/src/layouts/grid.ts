@@ -1,5 +1,6 @@
 import { RenderableTreeNode, Tag } from "@markdoc/markdoc";
-import { ContentOptions, Layout } from "../interfaces";
+import { ContentOptions } from "../interfaces.js";
+import { Layout } from "./common.js";
 
 export interface GridLayoutConfig {
   name?: string;

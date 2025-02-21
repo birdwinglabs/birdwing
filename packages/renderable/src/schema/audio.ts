@@ -9,11 +9,12 @@ export class MusicRecording {
 }
 
 export class MusicPlaylist extends PageSection {
+  image: string | undefined = undefined;
   track: MusicRecording[] = [];
 }
 
 export interface MusicRecordingComponent extends ComponentType<MusicRecording> {
-  tag: 'li',
+  tag: 'div' | 'li',
   properties: {
     name: 'h1',
     byArtist: 'span',
@@ -23,7 +24,8 @@ export interface MusicRecordingComponent extends ComponentType<MusicRecording> {
 }
 
 export interface MusicPlaylistProperties extends PageSectionProperties {
-  track: 'li',
+  image: 'img',
+  track: 'div',
 }
 
 export interface MusicPlaylistComponent extends ComponentType<MusicPlaylist> {

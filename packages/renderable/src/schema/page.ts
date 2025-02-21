@@ -1,5 +1,5 @@
-import { ComponentType, PropertyNodes } from "../interfaces";
-import { Menu } from "./menu";
+import { ComponentType, PropertyNodes } from "../interfaces.js";
+import { Menu } from "./menu.js";
 
 export class PageSection {
   name: string | undefined = undefined;

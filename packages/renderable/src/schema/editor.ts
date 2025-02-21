@@ -1,5 +1,5 @@
-import { ComponentType } from "../interfaces";
-import { TabGroup } from "./tabs";
+import { ComponentType } from "../interfaces.js";
+import { TabGroup } from "./tabs.js";
 
 export class Editor {
   tabs: TabGroup[] = [];

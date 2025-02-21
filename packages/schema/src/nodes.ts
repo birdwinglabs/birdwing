@@ -3,6 +3,7 @@ import Markdoc, { RenderableTreeNode, Schema } from '@markdoc/markdoc';
 import { TargetFile } from '@birdwing/core';
 import * as xml from 'fast-xml-parser';
 import hljs from 'highlight.js';
+import { TransformFunction } from './interfaces.js';
 
 const { dirname, join, isAbsolute } = pb;
 const { Tag, nodes } = Markdoc;
@@ -198,8 +199,8 @@ export const image: Schema = {
 
       if (attr.property) {
         tag.attributes.property = attr.property;
-        tag.attributes.xmlns = undefined;
       }
+      tag.attributes.xmlns = undefined;
 
       return tag;
     }
@@ -207,6 +208,20 @@ export const image: Schema = {
     return new Tag(this.render, attr, node.transformChildren(config));
   },
 };
+
+export const proxy: Schema = {
+  attributes: {
+    node: { type: Object },
+    property: { type: String },
+    transform: { type: Object, required: true },
+  },
+  transform(node, config) {
+    const t = node.attributes['transform'] as TransformFunction<any>;
+    const res = t(node.attributes.node, config);
+    res.attributes.property = node.attributes.property;
+    return res;
+  }
+}
 
 function jObjToTag(tagName: string, content: Record<string, any> | Record<string, any>[]): any {
   if (Array.isArray(content)) {

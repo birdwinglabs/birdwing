@@ -1,13 +1,27 @@
 import Markdoc, { Schema } from '@markdoc/markdoc';
-import { NodeList } from '../util';
-import { createLayout } from '../layouts';
+import { createFactory, tag } from '../util.js';
+import { splitLayout } from '../layouts/index.js';
+import { schema } from '@birdwing/renderable';
+import { SpaceSeparatedNumberList } from '../attributes.js';
 
 const { Tag } = Markdoc;
+
+
+const linkItemFactory = createFactory(schema.LinkItem, {
+  tag: 'li',
+  transforms: {
+    text: node => new Tag('span', {}, [node.attributes.content]),
+  },
+  properties: {
+    name: tag({ match: { tag: 'span', deep: true } }),
+    url: tag({ match: 'a' }),
+  }
+});
 
 export const cta: Schema = {
   attributes: {
     split: {
-      type: String,
+      type: SpaceSeparatedNumberList,
       required: false,
     },
     mirror: {
@@ -15,66 +29,49 @@ export const cta: Schema = {
       required: false,
     }
   },
-  transform(node, config) {
-    const children = new NodeList(node.children);
-    const attr = node.transformAttributes(config);
+  transform(node, rootConfig) {
+    const attr = node.transformAttributes(rootConfig);
+    const split = attr['split'] as number[];
 
-    const { head, body, actions, showcase, footer } = children
-      .commentSections(['head', 'body', 'actions', 'showcase', 'footer'], 'body');
-
-    body.all().forEach((n, i) => {
-      if (i === 0 && n.type === 'paragraph') {
-        n.attributes.property = 'name';
-      } else if (n.type === 'heading') {
-        n.attributes.property = 'headline';
-      } else if (n.type === 'paragraph') {
-        n.attributes.property = 'description';
-      }
-    });
-
-    for (const node of actions.walk()) {
-      if (node.type === 'item') {
-        node.attributes.typeof = 'Action';
-        node.attributes.property = 'action';
-      }
-
-      if (node.type === 'link') {
-        for (const child of node.children) {
-          if (child.type === 'text') {
-            child.attributes.property = 'name';
-          }
-        }
-        node.attributes.property = 'url';
-      } else if (node.type === 'fence') {
-      } 
-    }
-    //const layout = createLayout({...attr, name: 'layout' });
-    const layout = createLayout({
-      layout: attr.split ? attr.mirror ? '2-column-mirror' : '2-column' : 'stack',
-      fractions: attr.split,
-      name: 'layout' 
-    });
-
-    layout.pushContent([
-      new Tag('header', {}, head.transformFlat(config)),
-      new Tag('section', { 'data-name': 'body' }, body.transformFlat(config)),
-      new Tag('section', { 'data-name': 'actions' }, actions.transformFlat(config)),
-      new Tag('footer', {}, footer.transformFlat(config)),
-    ], { name: 'main' });
-    layout.pushContent(showcase.transformFlat(config), { name: 'showcase' });
-
-    const classes: string[] = [];
-    if (attr.split) {
-      classes.push('split');
-    }
-    if (attr.mirror) {
-      classes.push('mirror');
-    }
-
-    return new Tag('section', {
+    return createFactory(schema.CallToAction, {
+      tag: 'section',
       property: 'contentSection',
-      typeof: 'CallToAction',
-      class: classes.length > 0 ? classes.join(' ') : undefined,
-    }, [layout.container]);
+      class: split.length > 0 ? 'split' : undefined,
+      groups: [
+        {
+          name: 'nav',
+          section: 0,
+          include: ['list'],
+          output: nodes => nodes.length > 0 ? new Tag('nav', {}, nodes) : [],
+        },
+        {
+          name: 'header',
+          section: 0,
+          include: ['heading', 'paragraph'],
+          output: nodes => new Tag('header', {}, nodes),
+        },
+        {
+          name: 'actions',
+          section: 0,
+          include: ['list', 'fence'],
+          transforms: {
+            item: node => linkItemFactory.createTag(node, rootConfig),
+          },
+        },
+        { name: 'showcase', section: 1 },
+      ],
+      properties: {
+        headline: tag({ match: 'h1', group: 'header' }),
+        description: tag({ group: 'header', match: 'p' }),
+        action: tag({ group: 'actions', match: { tag: 'li', deep: true } })
+      },
+      project: p => splitLayout({
+        split,
+        mirror: attr.mirror,
+        main: p.group('nav', 'header', 'actions'),
+        side: p.group('showcase'),
+      }),
+    })
+      .createTag(node, rootConfig)
   }
 }

@@ -1,4 +1,4 @@
-import { ComponentType } from "../interfaces";
+import { ComponentType } from "../interfaces.js";
 
 export class Steps {
   step: Step[] = [];

@@ -1,6 +1,9 @@
-import Markdoc, { Schema, Config } from '@markdoc/markdoc';
-import { generateIdIfMissing, NodeList } from '../util';
-import { processBodyNodes } from '../common/page-section';
+import Markdoc, { Schema, Config, Ast, Node } from '@markdoc/markdoc';
+import { createFactory, Factory, generateIdIfMissing, headingsToList, NodeList, tag } from '../util.js';
+import { processBodyNodes } from '../common/page-section.js';
+import { schema } from '@birdwing/renderable';
+import { Group } from '../interfaces.js';
+import { TabComponent } from '@birdwing/renderable/dist/schema/tabs.js';
 
 const { Tag } = Markdoc;
 
@@ -38,6 +41,39 @@ export class TabFactory {
   }
 }
 
+const isTabName = (n: Node, heading: number) => n.type === 'heading' && n.attributes.level === heading;
+
+function tabFactory(config: Config) {
+  return createFactory(schema.Tab, {
+    tag: 'li',
+    transforms: {
+      heading: node => {
+        const img = Array.from(node.walk()).find(n => n.type === 'image');
+        const text = Array.from(node.walk()).filter(n => n.type === 'text');
+        const span = new Tag('span', {}, Markdoc.transform(text, config));
+
+        return img ? [ Markdoc.transform(img, config), span ] : span;
+      }
+    },
+    properties: {
+      name: tag({ match: 'span' }),
+      image: tag({ match: 'svg' }),
+    }
+  });
+}
+
+function tabsGroup(factory: Factory<TabComponent>, heading: number, config: Config): Group {
+  return {
+    name: 'tabs',
+    transforms: {
+      item: node => {
+        const children = node.children.filter(c => isTabName(c, heading));
+        return factory.createTag(new Ast.Node('item', {}, children), config);
+      },
+    },
+  }
+}
+
 /**
  * Tabs component
  * 
@@ -59,23 +95,81 @@ export const tabs: Schema = {
   attributes: {
     level: { type: Number, required: false, default: 1 }
   },
-  transform(node, config) {
-    generateIdIfMissing(node, config);
-    const children = new NodeList(node.children);
-    const attr = node.transformAttributes(config);
-    const fact = new TabFactory(config);
+  transform(node, rootConfig) {
+    generateIdIfMissing(node, rootConfig);
+    const attr = node.transformAttributes(rootConfig);
 
-    if (node.children.find(c => c.type === 'hr')) {
-      const [ header, body ] = children.splitByHr();
+    const isTabName = (n: Node) => n.type === 'heading' && n.attributes.level === attr.level
 
-      processBodyNodes(header.body.all());
 
-      return new Tag('section', { property: 'contentSection', typeof: 'TabSection' }, [
-        new Tag('header', {}, header.body.transformFlat(config)),
-        fact.createTabGroup(attr['id'], 'tabs', body.body) 
-      ]);
+    const panelFactory = createFactory(schema.TabPanel, { tag: 'li' })
+
+
+    const panelsGroup: Group = {
+      name: 'panels',
+      transforms: {
+        item: node => {
+          const children = node.children.filter(c => !(isTabName(c)));
+          return panelFactory.createTag(new Ast.Node('item', {}, children), rootConfig);
+        },
+      },
     }
 
-    return fact.createTabGroup(attr['id'], 'contentSection', new NodeList(node.children));
+    //const tabGroupFactory = createFactory(schema.TabGroup, {
+      //tag: 'div',
+      //nodes: [
+        //headingsToList(attr.level),
+      //],
+      //groups: [tabsGroup, panelsGroup],
+    //});
+
+    const fact = createFactory(schema.TabSection, {
+      tag: 'section',
+      nodes: [
+        headingsToList(attr.level),
+      ],
+      groups: [
+        {
+          name: 'header',
+          include: ['heading', 'paragraph']
+        },
+        {
+          name: 'tabgroup',
+          include: ['list'],
+          facets: [
+            tabsGroup(tabFactory(rootConfig), attr.level, rootConfig),
+            panelsGroup,
+          ],
+          output: nodes => new Tag('div', {}, nodes),
+        }
+      ],
+      properties: {
+        headline: tag({ match: 'h1', group: 'header' }),
+        tab: tag({ match: { tag: 'li', deep: true }, group: 'tabs' }),
+        panel: tag({ match: { tag: 'li', deep: true }, group: 'panels' }),
+      },
+      refs: {
+        tabs: tag({ match: 'ul', group: 'tabgroup' }),
+      },
+    })
+
+    return fact.createTag(node, rootConfig);
+
+    //const children = new NodeList(node.children);
+    //const attr = node.transformAttributes(config);
+    //const fact = new TabFactory(config);
+
+    //if (node.children.find(c => c.type === 'hr')) {
+      //const [ header, body ] = children.splitByHr();
+
+      //processBodyNodes(header.body.all());
+
+      //return new Tag('section', { property: 'contentSection', typeof: 'TabSection' }, [
+        //new Tag('header', {}, header.body.transformFlat(config)),
+        //fact.createTabGroup(attr['id'], 'tabs', body.body) 
+      //]);
+    //}
+
+    //return fact.createTabGroup(attr['id'], 'contentSection', new NodeList(node.children));
   }
 }

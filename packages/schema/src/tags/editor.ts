@@ -1,7 +1,7 @@
 import Markdoc, { Schema } from '@markdoc/markdoc';
-import { generateIdIfMissing, NodeList } from '../util';
-import { TabFactory } from './tabs';
-import { createLayout } from '../layouts';
+import { generateIdIfMissing, NodeList } from '../util.js';
+import { TabFactory } from './tabs.js';
+import { createLayout } from '../layouts/index.js';
 
 const { Tag } = Markdoc;
 

@@ -1,11 +1,9 @@
-import Markdoc, { Schema, Tag } from '@markdoc/markdoc';
-import { NodeList } from '../util';
-import { createLayout } from '../layouts';
-
-const { Tag: TagCtr } = Markdoc;
+import { Schema, Tag } from '@markdoc/markdoc';
+import { schema } from '@birdwing/renderable';
+import { createFactory } from '../util.js';
+import { createLayout } from '../layouts/index.js';
 
 export const grid: Schema = {
-  //render: 'Grid',
   attributes: {
     'columns': {
       type: Number,
@@ -30,19 +28,20 @@ export const grid: Schema = {
     }
   },
   transform(node, config) {
-    try {
-      const attr = node.transformAttributes(config);
-      const layout = createLayout({ layout: 'grid', ...attr });
+    const attr = node.transformAttributes(config);
 
-      new NodeList(node.children)
-        .splitByHr()
-        .map(s => s.body)
-        .forEach(nodes => layout.pushContent(nodes.transformFlat(config), { name: 'item' }));
+    const fact = createFactory(schema.Grid, {
+      tag: 'section',
+      groups: [
+        { name: 'tiles' },
+      ],
+      project: p => {
+        const layout = createLayout({ layout: 'grid', ...attr });
+        p.eachSection(nodes => layout.pushContent(nodes, { name: 'item' }));
+        return new Tag('section', { typeof: 'Grid' }, [layout.container]);
+      }
+    });
 
-      return new Tag('section', { typeof: 'Grid' }, [layout.container]);
-    } catch (err) {
-      console.log(err);
-      throw err;
-    }
+    return fact.createTag(node, config);
   },
 }
