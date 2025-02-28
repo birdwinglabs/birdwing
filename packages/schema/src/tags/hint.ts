@@ -1,20 +1,29 @@
-import { Schema, Tag } from '@markdoc/markdoc';
+import { Tag } from '@markdoc/markdoc';
+import { schema } from '@birdwing/renderable';
+import { attribute, Model, createComponentRenderable, createSchema } from '../lib/index.js';
 
-export const hint: Schema = {
-  attributes: {
-    type: {
-      type: String,
-      default: 'note',
-      matches: ['caution', 'check', 'note', 'warning'],
-      errorLevel: 'critical'
-    },
-  },
-  transform(node, config) {
-    const attr = node.transformAttributes(config);
+const hintType = ['caution', 'check', 'note', 'warning'] as const;
 
-    return new Tag('section', { property: 'contentSection', typeof: 'Hint' }, [
-      new Tag('meta', { property: 'hintType', content: attr['type']}),
-      new Tag('section', { 'data-name': 'body' }, node.transformChildren(config))
-    ]);
-  },
+class HintModel extends Model {
+  @attribute({ type: String, matches: hintType.slice(), errorLevel: 'critical' })
+  type: typeof hintType[number] = 'note';
+
+  transform() {
+    const hintType = new Tag('meta', { content: this.type });
+    const children = this.transformChildren().wrap('div');
+
+    return createComponentRenderable(schema.Hint, {
+      tag: 'section',
+      property: 'contentSection',
+      properties: {
+        hintType,
+      },
+      refs: {
+        body: children.tag('div')
+      },
+      children: [hintType, children.next()],
+    })
+  }
 }
+
+export const hint = createSchema(HintModel);

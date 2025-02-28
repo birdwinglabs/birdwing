@@ -1,56 +1,52 @@
-import Markdoc, { Schema } from '@markdoc/markdoc';
-import { generateIdIfMissing, NodeList } from '../util.js';
-import { TabFactory } from './tabs.js';
-import { createLayout } from '../layouts/index.js';
+import { schema } from '@birdwing/renderable';
+import { flow, GridFlow, gridItems, gridLayout } from '../layouts/index.js';
+import { attribute, groupList, Model } from '../lib/index.js';
+import { SpaceSeparatedList } from '../attributes.js';
+import { NodeStream } from '../lib/node.js';
+import { createComponentRenderable, createSchema } from '../lib/index.js';
+import { RenderableNodeCursor } from '../lib/renderable.js';
 
-const { Tag } = Markdoc;
 
+class EditorModel extends Model {
+  @attribute({ type: Number, required: false })
+  columns: number | undefined;
 
-export const editor: Schema = {
-  children: ['heading', 'fence', 'hr'],
-  attributes: {
-    'layout': {
-      type: String,
-      default: 'grid',
-      required: false,
-    },
-    'columns': {
-      type: Number,
-      default: undefined,
-      required: false,
-    },
-    'rows': {
-      type: Number,
-      default: undefined,
-      required: false,
-    },
-    'flow': {
-      type: String,
-      default: undefined,
-      required: false,
-      matches: ['row', 'column', 'dense', 'row dense', 'column dense'],
-    },
-    'tiles': {
-      type: String,
-      default: '1',
-      required: false,
+  @attribute({ type: Number, required: false })
+  rows: number | undefined;
+
+  @attribute({ type: String, required: false, matches: flow.slice() })
+  flow: GridFlow
+
+  @attribute({ type: SpaceSeparatedList, required: false })
+  layout: string[];
+
+  @groupList({ delimiter: 'hr' })
+  sections: NodeStream[];
+
+  createLayout(tabGroups: RenderableNodeCursor[]) {
+    if (tabGroups.length > 1) {
+      return gridLayout({
+        items: gridItems(this.layout, tabGroups),
+        rows: this.rows,
+        columns: this.columns,
+        flow: this.flow
+      });
     }
-  },
-  transform(node, config) {
-    generateIdIfMissing(node, config);
+    return tabGroups[0].next();
+  }
 
-    const attr = node.transformAttributes(config);
-    const fact = new TabFactory(config);
-    const tabGroups = new NodeList(node.children)
-      .splitByHr()
-      .map(s => fact.createTabGroup(attr['id'], 'tabs', s.body));
+  transform() {
+    const tabGroups = this.sections.map(s => s.wrapTag('tabs', { section: false, headingLevel: 1 }).transform());
 
-    const layout = createLayout({...attr, items: attr.tiles });
-
-    for (const tabGroup of tabGroups) {
-      layout.pushContent([tabGroup], { name: 'area' });
-    }
-
-    return new Tag('section', { typeof: 'Editor' }, [layout.container]);
+    return createComponentRenderable(schema.Editor, {
+      tag: 'section',
+      property: 'contentSection',
+      properties: {
+        tabs: tabGroups.map(g => g.tag('section').toArray()).flat(),
+      },
+      children: this.createLayout(tabGroups),
+    });
   }
 }
+
+export const editor = createSchema(EditorModel);

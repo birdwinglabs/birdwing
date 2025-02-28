@@ -10,7 +10,7 @@ export class FeatureDefinition {
 export interface FeatureDefinitionComponent extends ComponentType<FeatureDefinition> {
   tag: 'div',
   properties: {
-    name: 'dt',
+    name: 'span' | 'dt',
     description: 'dd',
     image: 'img' | 'svg',
   }

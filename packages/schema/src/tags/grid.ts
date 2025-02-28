@@ -1,47 +1,47 @@
-import { Schema, Tag } from '@markdoc/markdoc';
+import { RenderableTreeNodes } from '@markdoc/markdoc';
 import { schema } from '@birdwing/renderable';
-import { createFactory } from '../util.js';
-import { createLayout } from '../layouts/index.js';
+import { attribute, groupList, Model } from '../lib/index.js';
+import { createComponentRenderable, createSchema } from '../lib/index.js';
+import { NodeStream } from '../lib/node.js';
+import { SpaceSeparatedList } from '../attributes.js';
+import { flow, GridFlow, gridItems, gridLayout } from '../layouts/index.js';
+import { RenderableNodeCursor } from '../lib/renderable.js';
 
-export const grid: Schema = {
-  attributes: {
-    'columns': {
-      type: Number,
-      default: undefined,
-      required: false,
-    },
-    'rows': {
-      type: Number,
-      default: undefined,
-      required: false,
-    },
-    'flow': {
-      type: String,
-      default: undefined,
-      required: false,
-      matches: ['row', 'column', 'dense', 'row dense', 'column dense'],
-    },
-    'items': {
-      type: String,
-      default: '1',
-      required: false,
-    }
-  },
-  transform(node, config) {
-    const attr = node.transformAttributes(config);
+class GridModel extends Model {
+  @attribute({ type: Number, required: false })
+  columns: number | undefined;
 
-    const fact = createFactory(schema.Grid, {
+  @attribute({ type: Number, required: false })
+  rows: number | undefined;
+
+  @attribute({ type: String, required: false, matches: flow.slice() })
+  flow: GridFlow;
+
+  @attribute({ type: SpaceSeparatedList, required: false })
+  layout: string[];
+
+  @groupList({ delimiter: 'hr' })
+  tiles: NodeStream[];
+
+  transform(): RenderableTreeNodes {
+    const tiles = this.tiles.map(t => t.transform());
+
+    const layout = gridLayout({
+      items: gridItems(this.layout, tiles),
+      rows: this.rows,
+      columns: this.columns,
+      flow: this.flow
+    })
+    
+    return createComponentRenderable(schema.Grid, {
       tag: 'section',
-      groups: [
-        { name: 'tiles' },
-      ],
-      project: p => {
-        const layout = createLayout({ layout: 'grid', ...attr });
-        p.eachSection(nodes => layout.pushContent(nodes, { name: 'item' }));
-        return new Tag('section', { typeof: 'Grid' }, [layout.container]);
+      children: layout,
+      properties: {},
+      refs: {
+        item: new RenderableNodeCursor(layout.children).tag('div'),
       }
-    });
-
-    return fact.createTag(node, config);
-  },
+    })
+  }
 }
+
+export const grid = createSchema(GridModel);

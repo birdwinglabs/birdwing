@@ -1,8 +1,62 @@
-import Markdoc, { Ast, Schema } from '@markdoc/markdoc';
-import { createFactory, headingsToList, tag } from '../util.js';
+import Markdoc, { Ast, Node } from '@markdoc/markdoc';
+import { headingsToList } from '../util.js';
 import { splitLayout } from '../layouts/index.js';
 import { schema } from '@birdwing/renderable';
 import { SpaceSeparatedNumberList } from '../attributes.js';
+import { attribute, group, Model, createComponentRenderable, createSchema } from '../lib/index.js';
+import { NodeStream } from '../lib/node.js';
+
+class StepsModel extends Model {
+  @attribute({ type: SpaceSeparatedNumberList, required: false })
+  split: number[];
+
+  processChildren(nodes: Node[]) {
+    return super.processChildren(headingsToList(1)(nodes));
+  }
+
+  transform() {
+    const children = this.transformChildren({
+      item: (node, config) => {
+        return Markdoc.transform(
+          new Ast.Node('tag', { split: node.attributes.split }, node.children, 'step'), config
+        );
+      }
+    });
+
+    return createComponentRenderable(schema.Steps, {
+      tag: 'ol',
+      property: 'contentSection',
+      properties: {
+        step: children.flatten().tag('li').typeof('Step')
+      },
+      children: children.toArray(),
+    });
+  }
+}
+
+class StepModel extends Model {
+  @attribute({ type: SpaceSeparatedNumberList, required: false })
+  split: number[];
+
+  @group({ section: 0 })
+  main: NodeStream;
+
+  @group({ section: 1})
+  side: NodeStream;
+
+  transform() {
+    const main = this.main.transform();
+    const side = this.side.transform();
+
+    return createComponentRenderable(schema.Step, {
+      tag: 'li',
+      properties: {
+        name: main.tag('h1')
+      },
+      children: splitLayout({ split: this.split, mirror: false, main: main.toArray(), side: side.toArray() })
+    });
+  }
+}
 
 /**
  * Steps component
@@ -46,68 +100,7 @@ import { SpaceSeparatedNumberList } from '../attributes.js';
  *    </li>
  *  </ol>
  */
-export const steps: Schema = {
-  attributes: {
-    split: {
-      type: SpaceSeparatedNumberList,
-      required: false,
-      render: true,
-    },
-    level: {
-      type: Number,
-      required: false,
-      default: 1,
-    }
-  },
-  transform(node, config) {
-    const attr = node.transformAttributes(config);
 
-    const stepsFact = createFactory(schema.Steps, {
-      tag: 'ol',
-      property: 'contentSection',
-      nodes: [
-        headingsToList(attr.heading),
-      ],
-      transforms: {
-        item: (node, config) => Markdoc.transform(
-          new Ast.Node('tag', { split: node.attributes.split }, node.children, 'step'), config
-        ),
-      },
-      properties: {
-        step: tag({ match: { tag: 'li', deep: true }}),
-      },
-    });
+export const steps = createSchema(StepsModel);
 
-    return stepsFact.createTag(node, config);
-  }
-}
-
-export const step: Schema = {
-  attributes: {
-    split: {
-      type: SpaceSeparatedNumberList,
-      required: false
-    },
-  },
-  transform(node, config) {
-    const attr = node.transformAttributes(config);
-    const split = attr.split as number[];
-
-    return createFactory(schema.Step, {
-      tag: 'li',
-      groups: [
-        { name: 'main', section: 0 },
-        { name: 'side', section: 1 },
-      ],
-      properties: {
-        name: tag({ group: 'main', match: 'h1' }),
-      },
-      project: p => splitLayout({
-        split,
-        mirror: false,
-        main: p.group('main'),
-        side: p.group('side'),
-      })
-    }).createTag(node, config);
-  }
-}
+export const step = createSchema(StepModel);

@@ -40,7 +40,7 @@ export class Tab {
 export interface TabComponent extends ComponentType<Tab> {
   tag: 'li',
   properties: {
-    name: 'h1',
+    name: 'span',
     image: 'img' | 'svg',
   }
 }
@@ -51,14 +51,15 @@ export class TabSection extends PageSection implements Tabs {
 }
 
 export interface TabSectionProperties extends PageSectionProperties {
-    tab: 'li',
-    panel: 'li',
+  tab: 'li',
+  panel: 'li',
 }
 
 export interface TabSectionComponent extends ComponentType<TabSection> {
   tag: 'section',
   properties: PageSectionProperties & TabGroupProperties,
   refs: {
+    tabgroup: 'div',
     tabs: 'ul',
     panels: 'ul',
   }

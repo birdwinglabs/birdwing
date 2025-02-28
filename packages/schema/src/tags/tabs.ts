@@ -1,76 +1,130 @@
-import Markdoc, { Schema, Config, Ast, Node } from '@markdoc/markdoc';
-import { createFactory, Factory, generateIdIfMissing, headingsToList, NodeList, tag } from '../util.js';
-import { processBodyNodes } from '../common/page-section.js';
+import Markdoc, { Ast, Node, Tag, RenderableTreeNodes, RenderableTreeNode } from '@markdoc/markdoc';
+import { headingsToList } from '../util.js';
 import { schema } from '@birdwing/renderable';
-import { Group } from '../interfaces.js';
-import { TabComponent } from '@birdwing/renderable/dist/schema/tabs.js';
+import { NodeStream } from '../lib/node.js';
+import { attribute, group, id, Model, createComponentRenderable, createSchema } from '../lib/index.js';
+import { RenderableNodeCursor } from '../lib/renderable.js';
 
-const { Tag } = Markdoc;
+class TabModel extends Model {
+  @attribute({ type: String, required: true })
+  name: string;
 
-export class TabFactory {
-  constructor(private config: Config) {}
+  @attribute({ type: String, required: false })
+  image: string;
 
-  createTabs(section: NodeList, headingLevel?: number) {
-    const tabSections = section.headingSections(headingLevel);
-    const tabs = tabSections.map(({ heading }) => {
-      const tab = new Tag('li', { property: 'tab', typeof: 'Tab' });
+  transform(): RenderableTreeNodes {
+    let tab = new RenderableNodeCursor<RenderableTreeNode>([]);
 
-      for (const c of heading.children[0].children) {
-        if (c.type === 'text') {
-          tab.children.push(new Tag('h1', { property: 'name' }, [Markdoc.transform(c, this.config)]));
-        } else if (c.type === 'image') {
-          c.attributes.property = 'image';
-          const tag = Markdoc.transform(c, this.config);
-          tab.children.push(tag );
-        }
-      }
-      return tab;
-    });
-    const panels = tabSections.map(({ body }) => {
-      return new Tag('li', { property: 'panel', typeof: 'TabPanel' }, body.transformFlat(this.config));
-    });
-    return {
-      tabs: new Tag('ul', { 'data-name': 'tabs' }, tabs),
-      panels: new Tag('ul', { 'data-name': 'panels' }, panels),
-    };
-  }
-
-  createTabGroup(id: string, property: string, section: NodeList, headingLevel?: number) {
-    const { tabs, panels } = this.createTabs(section, headingLevel);
-    return new Tag('div', { id, property, typeof: 'TabGroup' }, [tabs, panels]);
-  }
-}
-
-const isTabName = (n: Node, heading: number) => n.type === 'heading' && n.attributes.level === heading;
-
-function tabFactory(config: Config) {
-  return createFactory(schema.Tab, {
-    tag: 'li',
-    transforms: {
-      heading: node => {
-        const img = Array.from(node.walk()).find(n => n.type === 'image');
-        const text = Array.from(node.walk()).filter(n => n.type === 'text');
-        const span = new Tag('span', {}, Markdoc.transform(text, config));
-
-        return img ? [ Markdoc.transform(img, config), span ] : span;
-      }
-    },
-    properties: {
-      name: tag({ match: 'span' }),
-      image: tag({ match: 'svg' }),
+    if (this.image) {
+      tab = tab.concat(Markdoc.transform(new Ast.Node('image', { src: this.image }), this.config));
     }
-  });
+
+    tab = tab.concat(new Tag('span', {}, [this.name]));
+
+    const panel = this.transformChildren();
+
+    const name = tab.tag('span');
+    const image = tab.tag('svg');
+
+    return [
+      createComponentRenderable(schema.Tab, {
+        tag: 'li',
+        properties: { name, image },
+        children: tab.toArray(),
+      }),
+      createComponentRenderable(schema.TabPanel, {
+        tag: 'li',
+        properties: {},
+        children: panel.toArray(),
+      })
+    ];
+  }
 }
 
-function tabsGroup(factory: Factory<TabComponent>, heading: number, config: Config): Group {
-  return {
-    name: 'tabs',
-    transforms: {
-      item: node => {
-        const children = node.children.filter(c => isTabName(c, heading));
-        return factory.createTag(new Ast.Node('item', {}, children), config);
-      },
-    },
+export const tab = createSchema(TabModel);
+
+class TabsModel extends Model {
+  @id({ generate: true })
+  id: string;
+
+  @attribute({ type: Boolean, required: false })
+  section: boolean = true;
+
+  @attribute({ type: Number, required: false })
+  headingLevel: number | undefined = undefined;
+
+  @group({ include: ['heading', 'paragraph'] })
+  header: NodeStream;
+
+  @group({ include: ['tag'] })
+  tabgroup: NodeStream;
+
+  convertHeadings(nodes: Node[]) {
+    const converted = headingsToList(this.headingLevel)(nodes);
+    const n = converted.length - 1;
+    const tags = converted[n].children.map(item => {
+      const heading = item.children[0];
+      const image = Array.from(heading.walk()).find(n => n.type === 'image');
+      const name = Array.from(heading.walk()).filter(n => n.type === 'text').map(t => t.attributes.content);
+      return new Ast.Node('tag', {
+        name,
+        image: image ? image.attributes.src : undefined,
+      }, item.children.slice(1), 'tab');
+    });
+
+    converted.splice(n, 1, ...tags);
+
+    return converted;
+  }
+
+  processChildren(nodes: Node[]) {
+    if (this.headingLevel !== undefined) {
+      return super.processChildren(this.convertHeadings(nodes));
+    }
+    return super.processChildren(nodes);
+  }
+
+  transform(): RenderableTreeNodes {
+    const header = this.header.transform();
+    const tabStream = this.tabgroup.transform();
+
+    const tabs = tabStream.tag('li').typeof('Tab');
+    const panels = tabStream.tag('li').typeof('TabPanel')
+    
+    const tabsList = tabs.wrap('ul');
+    const panelsList = panels.wrap('ul');
+
+    if (this.section) {
+      const tabgroup = new Tag('div', { id: this.id }, [tabsList.next(), panelsList.next()]);
+
+      return createComponentRenderable(schema.TabSection, {
+        tag: 'section',
+        property: 'contentSection',
+        properties: {
+          name: header.tag('p'),
+          headline: header.tag('h1'),
+          description: header.tag('p'),
+          tab: tabs,
+          panel: panels,
+        },
+        refs: { tabs: tabsList, panels: panelsList, tabgroup },
+        children: [header.wrap('header').next(), tabgroup],
+      });
+    } else {
+      return createComponentRenderable(schema.TabGroup, {
+        tag: 'div',
+        id: this.id,
+        properties: {
+          tab: tabs,
+          panel: panels,
+        },
+        refs: {
+          tabs: tabsList,
+          panels: panelsList,
+        },
+        children: [tabsList.next(), panelsList.next()],
+      });
+    }
   }
 }
 
@@ -91,85 +145,4 @@ function tabsGroup(factory: Factory<TabComponent>, heading: number, config: Conf
  * {% /tabs %}
  * ```
  */
-export const tabs: Schema = {
-  attributes: {
-    level: { type: Number, required: false, default: 1 }
-  },
-  transform(node, rootConfig) {
-    generateIdIfMissing(node, rootConfig);
-    const attr = node.transformAttributes(rootConfig);
-
-    const isTabName = (n: Node) => n.type === 'heading' && n.attributes.level === attr.level
-
-
-    const panelFactory = createFactory(schema.TabPanel, { tag: 'li' })
-
-
-    const panelsGroup: Group = {
-      name: 'panels',
-      transforms: {
-        item: node => {
-          const children = node.children.filter(c => !(isTabName(c)));
-          return panelFactory.createTag(new Ast.Node('item', {}, children), rootConfig);
-        },
-      },
-    }
-
-    //const tabGroupFactory = createFactory(schema.TabGroup, {
-      //tag: 'div',
-      //nodes: [
-        //headingsToList(attr.level),
-      //],
-      //groups: [tabsGroup, panelsGroup],
-    //});
-
-    const fact = createFactory(schema.TabSection, {
-      tag: 'section',
-      nodes: [
-        headingsToList(attr.level),
-      ],
-      groups: [
-        {
-          name: 'header',
-          include: ['heading', 'paragraph']
-        },
-        {
-          name: 'tabgroup',
-          include: ['list'],
-          facets: [
-            tabsGroup(tabFactory(rootConfig), attr.level, rootConfig),
-            panelsGroup,
-          ],
-          output: nodes => new Tag('div', {}, nodes),
-        }
-      ],
-      properties: {
-        headline: tag({ match: 'h1', group: 'header' }),
-        tab: tag({ match: { tag: 'li', deep: true }, group: 'tabs' }),
-        panel: tag({ match: { tag: 'li', deep: true }, group: 'panels' }),
-      },
-      refs: {
-        tabs: tag({ match: 'ul', group: 'tabgroup' }),
-      },
-    })
-
-    return fact.createTag(node, rootConfig);
-
-    //const children = new NodeList(node.children);
-    //const attr = node.transformAttributes(config);
-    //const fact = new TabFactory(config);
-
-    //if (node.children.find(c => c.type === 'hr')) {
-      //const [ header, body ] = children.splitByHr();
-
-      //processBodyNodes(header.body.all());
-
-      //return new Tag('section', { property: 'contentSection', typeof: 'TabSection' }, [
-        //new Tag('header', {}, header.body.transformFlat(config)),
-        //fact.createTabGroup(attr['id'], 'tabs', body.body) 
-      //]);
-    //}
-
-    //return fact.createTabGroup(attr['id'], 'contentSection', new NodeList(node.children));
-  }
-}
+export const tabs = createSchema(TabsModel);

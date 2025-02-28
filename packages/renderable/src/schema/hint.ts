@@ -10,6 +10,6 @@ export interface HintComponent extends ComponentType<Hint> {
     hintType: 'meta',
   },
   refs: {
-    body: 'section',
+    body: 'div',
   }
 }

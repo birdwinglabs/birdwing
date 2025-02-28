@@ -1,54 +1,51 @@
-import { RenderableTreeNode, Tag } from "@markdoc/markdoc";
-import { ContentOptions } from "../interfaces.js";
-import { Layout } from "./common.js";
+import { Tag } from "@markdoc/markdoc";
+import { RenderableNodeCursor } from "../lib/renderable.js";
 
-export interface GridLayoutConfig {
-  name?: string;
-  property?: string;
-  typeof?: string;
+export const flow = ['row', 'column', 'dense', 'row dense', 'column dense'] as const;
+
+export type GridFlow = typeof flow[number];
+
+export interface GridItem {
+  colspan?: number;
+  rowspan?: number;
+  children: RenderableNodeCursor;
+}
+
+export interface GridLayoutOptions {
+  items: GridItem[];
   columns?: number;
   rows?: number;
-  flow?: 'row' | 'column' | 'dense' | 'row dense' | 'column dense';
-  items: string;
+  flow?: GridFlow;
 }
 
-export interface GridTileConfig {
-  colspan?: number
-  rowspan?: number
-}
-
-export class GridLayout extends Layout {
-  private tiles: GridTileConfig[];
-
-  constructor({ items, name, property, columns, rows, flow, ...attr  }: GridLayoutConfig) {
-    super(new Tag('div', {
-      'data-layout': 'grid',
-      'data-name': name,
-      property,
-      typeof: attr.typeof,
-      'data-columns': columns,
-      'data-rows': rows,
-      'data-flow': flow,
-    }));
-    this.tiles = items.split(' ').map(e => {
+export function gridItems(layout: string[], content: RenderableNodeCursor[]): GridItem[] {
+  return layout
+    .map((e, i) => {
       const [c, r] = e.split(':');
       return {
         colspan: parseInt(c),
         rowspan: r ? parseInt(r) : undefined ,
+        children: content[i],
       }
     })
-  }
+    .filter(item => item.children !== undefined);
+}
 
-  pushContent(nodes: RenderableTreeNode[], {name, ...options}: ContentOptions) {
-    const children = this.container.children;
-    const tile = this.tiles[children.length];
+export function gridLayout(options: GridLayoutOptions) {
+  const items = options.items
+    .map(({ children, colspan, rowspan }) => children
+      .wrap('div', { 'data-colspan': colspan, 'data-rowspan': rowspan })
+      .toArray()
+    )
+    .flat()
 
-    children.push(new Tag('div', {
-      ...options,
-      'data-name': name,
-      'data-colspan': tile.colspan,
-      'data-rowspan': tile.rowspan,
-    }, nodes));
-    return this;
-  }
+  const attr = {
+    'data-layout':
+    'grid',
+    'data-columns': options.columns,
+    'data-rows': options.rows,
+    'data-flow': options.flow,
+  };
+
+  return new Tag('div', attr, items);
 }

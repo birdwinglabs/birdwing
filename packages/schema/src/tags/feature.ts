@@ -1,110 +1,99 @@
-import Markdoc, { Schema, Tag, Ast } from '@markdoc/markdoc';
-import { createFactory, tag } from '../util.js';
+import Markdoc, { Tag, Ast, RenderableTreeNodes } from '@markdoc/markdoc';
 import { splitLayout } from '../layouts/index.js';
 import { schema } from '@birdwing/renderable';
+import { NodeStream } from '../lib/node.js';
+import { attribute, group, Model } from '../lib/index.js';
+import { createComponentRenderable, createSchema } from '../lib/index.js';
 import { SpaceSeparatedNumberList } from '../attributes.js';
 
-export const definition: Schema = {
-  render: 'div',
-  transform(node, rootConfig) {
-    return createFactory(schema.FeatureDefinition, {
-      tag: 'div',
-      groups: [
-        {
-          name: 'term',
-          include: [{ node: 'paragraph', descendant: 'image' }, 'heading'],
-          transforms: {
-            paragraph: node => {
-              const img = Array.from(node.walk()).find(n => n.type === 'image');
-              return Markdoc.transform(img ? img : node, rootConfig);
-            },
-            heading: node => {
-              const img = Array.from(node.walk()).find(n => n.type === 'image');
-              const text = Array.from(node.walk()).filter(n => n.type === 'text');
-              const span = new Tag('span', {}, Markdoc.transform(text, rootConfig));
+export class DefinitionModel extends Model {
+  @group({ include: [{ node: 'paragraph', descendant: 'image' }, 'heading'] })
+  term: NodeStream;
 
-              return img ? [ Markdoc.transform(img, rootConfig), span ] : span;
-            }
-          },
-          output: nodes => new Tag('dt', {}, nodes),
-        },
-        {
-          name: 'description',
-          include: ['paragraph'],
-          transforms: {
-            paragraph: 'dd',
-          }
-        },
-      ],
+  @group({ include: ['paragraph'] })
+  description: NodeStream;
+
+  transform() {
+    const dt = this.term
+      .useNode('paragraph', node => {
+        const img = Array.from(node.walk()).find(n => n.type === 'image');
+        return Markdoc.transform(img ? img : node, this.config);
+      })
+      .useNode('heading', node => {
+        const img = Array.from(node.walk()).find(n => n.type === 'image');
+        const text = Array.from(node.walk()).filter(n => n.type === 'text');
+        const span = new Tag('span', {}, Markdoc.transform(text, this.config));
+
+        return img ? [ Markdoc.transform(img, this.config), span ] : span;
+      })
+      .transform()
+      .wrap('dt');
+
+    const dd = this.description
+      .useNode('paragraph', 'dd')
+      .transform();
+
+    return createComponentRenderable(schema.FeatureDefinition, {
+      tag: 'div',
       properties: {
-        image: tag({ group: 'term', match: 'svg' }),
-        name: tag({ group: 'term', match: 'span' }),
-        description: tag({ group: 'description', match: 'dd' }),
+        image: dt.flatten().tag('svg'),
+        name: dt.flatten().tag('span'),
+        description: dd.tag('dd'),
       },
-    })
-      .createTag(node, rootConfig);
+      children: dt.concat(dd).toArray(),
+    });
   }
 }
 
-export const feature: Schema = {
-  attributes: {
-    split: {
-      type: SpaceSeparatedNumberList,
-      required: false,
-    },
-    mirror: {
-      type: Boolean,
-      required: false,
-    }
-  },
-  transform(node, config) {
-    const attr = node.transformAttributes(config);
-    const split = attr['split'] as number[];
+export const definition = createSchema(DefinitionModel);
 
-    return createFactory(schema.Feature, {
+class FeatureModel extends Model {
+  @attribute({ type: SpaceSeparatedNumberList, required: false })
+  split: number[] = [];
+  
+  @attribute({ type: Boolean, required: false })
+  mirror: boolean = false;
+
+  @group({ section: 0, include: ['heading', 'paragraph'] })
+  header: NodeStream;
+
+  @group({ section: 0, include: ['list'] })
+  definitions: NodeStream;
+
+  @group({ section: 1 })
+  showcase: NodeStream;
+
+  transform(): RenderableTreeNodes {
+    const header = this.header.transform();
+    const definitions = this.definitions
+      .useNode('item', (node, config) => {
+        return Markdoc.transform(new Ast.Node('tag', {}, node.children, 'definition'), config);
+      })
+      .useNode('list', (node, config) => {
+        return new Tag('dl', this.split.length > 0 ? {} : { 'data-layout': 'grid', 'data-columns': 3 }, node.transformChildren(config));
+      })
+      .transform();
+
+    const side = this.showcase.transform();
+
+    return createComponentRenderable(schema.Feature, {
       tag: 'section',
       property: 'contentSection',
-      class: split.length > 0 ? 'split' : undefined,
-      groups: [
-        {
-          name: 'header',
-          section: 0,
-          include: ['heading', 'paragraph'],
-          output: nodes => new Tag('header', {}, nodes),
-        },
-        {
-          name: 'definitions',
-          section: 0,
-          include: ['list'],
-          transforms: {
-            item: (node, config) => Markdoc.transform(
-              new Ast.Node('tag', {}, node.children, 'definition'), config
-            ),
-            list: (node, config) => new Tag(
-              'dl', split ? {} : { 'data-layout': 'grid', 'data-columns': 3 }, node.transformChildren(config)
-            ),
-          }
-        },
-        { name: 'showcase', section: 1 },
-      ],
+      class: this.split.length > 0 ? 'split' : undefined,
       properties: {
-        headline: tag({ group: 'header', match: 'h1' }),
-        description: tag({ group: 'header', match: 'p' }),
-        featureItem: tag({ group: 'definitions', match: { tag: 'div', deep: true } })
+        name: header.tag('p'),
+        headline: header.tag('h1'),
+        description: header.tag('p'),
+        featureItem: definitions.flatten().tag('div'),
       },
-      refs: {
-        definitions: tag({
-          group: 'definitions',
-          match: 'dl',
-        })
-      },
-      project: p => splitLayout({
-        split,
-        mirror: attr.mirror,
-        main: p.group('header', 'definitions'),
-        side: p.group('showcase'),
-      }),
-    })
-      .createTag(node, config)
+      children: splitLayout({
+        split: this.split,
+        mirror: this.mirror,
+        main: header.concat(definitions).toArray(),
+        side: side.toArray(),
+      })
+    });
   }
 }
+
+export const feature = createSchema(FeatureModel);

@@ -1,71 +1,65 @@
-import { Schema, Tag } from '@markdoc/markdoc';
-import { attribute, createFactory, tag } from '../util.js';
+import { RenderableTreeNodes, Tag } from '@markdoc/markdoc';
 import { schema } from '@birdwing/renderable';
+import { NodeStream } from '../lib/node.js';
+import { attribute, group, Model, createComponentRenderable, createSchema } from '../lib/index.js';
 
-export const pricing: Schema = {
-  transform(node, config) {
+class PricingModel extends Model {
+  @group({ include: ['heading', 'paragraph'] })
+  header: NodeStream;
 
-    const fact = createFactory(schema.Pricing, {
+  @group({ include: ['tag'] })
+  tiers: NodeStream;
+
+  transform(): RenderableTreeNodes {
+    const header = this.header.transform();
+    const tiers = this.tiers.transform();
+
+    const name = header.tag('p');
+    const headline = header.tag('h1');
+    const description = header.tag('p');
+    const tier = tiers.tag('li');
+
+    return createComponentRenderable(schema.Pricing, {
       tag: 'section',
       property: 'contentSection',
-      groups: [
-        {
-          name: 'header',
-          include: ['heading', 'paragraph'],
-          output: nodes => new Tag('header', {}, nodes),
-        },
-        {
-          name: 'tiers',
-          include: ['tag'],
-          output: nodes => new Tag('ul', { 'data-layout': 'grid', 'data-columns': nodes.length }, nodes)
-        },
-      ],
-      properties: {
-        headline: tag({ group: 'header', match: 'h1' }),
-        description: tag({ group: 'header', match: 'p' }),
-        tier: tag({ group: 'tiers', match: 'li' }),
-      },
+      properties: { name, headline, description, tier },
+      children: [
+        header.wrap('header').next(),
+        tiers.wrap('ul', { 'data-layout': 'grid', 'data-columns': tiers.nodes.length }).next(),
+      ]
     });
-
-    return fact.createTag(node, config);
-  },
+  }
 }
 
-export const tier: Schema = {
-  attributes: {
-    name: {
-      type: String,
-      required: true,
-    },
-    priceMonthly: {
-      type: String,
-      required: true,
-    },
-    featured: {
-      type: Boolean,
-      required: false,
-      default: false,
-    }
-  },
-  transform(node, config) {
-    const { name, priceMonthly, featured } = node.transformAttributes(config);
+export const pricing = createSchema(PricingModel);
 
-    //createFactory(featured ? schema.FeaturedTier : schema.Tier, {
-      //tag: 'li',
-      //groups: [
-        //{ name: 'header' },
-        //{ name: 'description', include: ['list', 'paragraph'] },
-      //],
-      //properties: {
-        //name: attribute({ tag: 'h3', group: 'header' }),
-        //price: attribute({ tag: 'p', group: 'header' }),
-      //}
-    //})
+export class TierModel extends Model {
+  @attribute({ type: String, required: true })
+  name: string;
 
-    return new Tag('li', { property: 'tier', typeof: featured ? 'FeaturedTier' : 'Tier' }, [
-      new Tag('h3', { property: 'name' }, [name]),
-      new Tag('p', { property: 'price', typeof: 'BillingMonthly' }, [priceMonthly]),
-      ...node.transformChildren(config)
-    ]);
-  },
+  @attribute({ type: String, required: true })
+  priceMonthly: string;
+
+  @attribute({ type: Boolean, required: false })
+  featured: boolean = false;
+
+  transform(): RenderableTreeNodes {
+    const type = this.featured ? schema.FeaturedTier : schema.Tier;
+
+    const name = new Tag('h1', {}, [this.name]);
+    const priceMonthly = new Tag('p', {}, [this.priceMonthly]);
+    const children = this.transformChildren();
+
+    return createComponentRenderable(type, {
+      tag: 'li',
+      properties: {
+        name,
+        description: children.tag('p'),
+        price: priceMonthly,
+      },
+      children: [name, priceMonthly, ...children.nodes],
+    })
+  }
 }
+
+export const tier = createSchema(TierModel);

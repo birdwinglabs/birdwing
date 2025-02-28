@@ -12,7 +12,7 @@ import { editor } from './tags/editor.js';
 import { feature, definition } from './tags/feature.js';
 import { hint } from './tags/hint.js';
 import { steps, step } from './tags/steps.js';
-import { tabs } from './tags/tabs.js';
+import { tab, tabs } from './tags/tabs.js';
 import { pricing, tier } from './tags/pricing.js';
 import { musicPlaylist } from './tags/music-playlist.js'
 import { musicRecording } from './tags/music-playlist.js'
@@ -35,6 +35,7 @@ export const tags = {
   definition,
   grid,
   hint,
+  tab,
   tabs,
   step,
   steps,
