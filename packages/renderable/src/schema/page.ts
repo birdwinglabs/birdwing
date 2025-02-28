@@ -4,12 +4,10 @@ import { Menu } from "./menu.js";
 export class PageSection {
   name: string | undefined = undefined;
   description: string | undefined = undefined;
-  headline: string | undefined = undefined;
 }
 
 export interface PageSectionProperties extends PropertyNodes<PageSection> {
-  name: 'p',
-  headline: 'h1',
+  name: 'h1' | 'h2' | 'h3' | 'h4' | 'h5' | 'h6',
   description: 'p',
 }
 

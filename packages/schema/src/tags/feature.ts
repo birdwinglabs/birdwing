@@ -5,6 +5,7 @@ import { NodeStream } from '../lib/node.js';
 import { attribute, group, Model } from '../lib/index.js';
 import { createComponentRenderable, createSchema } from '../lib/index.js';
 import { SpaceSeparatedNumberList } from '../attributes.js';
+import { description, name } from './common.js';
 
 export class DefinitionModel extends Model {
   @group({ include: [{ node: 'paragraph', descendant: 'image' }, 'heading'] })
@@ -81,9 +82,8 @@ class FeatureModel extends Model {
       property: 'contentSection',
       class: this.split.length > 0 ? 'split' : undefined,
       properties: {
-        name: header.tag('p'),
-        headline: header.tag('h1'),
-        description: header.tag('p'),
+        name: name(header),
+        description: description(header),
         featureItem: definitions.flatten().tag('div'),
       },
       children: splitLayout({

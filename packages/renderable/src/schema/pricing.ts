@@ -1,5 +1,5 @@
 import { ComponentType } from "../interfaces.js";
-import { PageSectionProperties } from "./page.js";
+import { PageSection, PageSectionProperties } from "./page.js";
 
 export class Tier {
   name: string | undefined = undefined;
@@ -17,10 +17,7 @@ export interface TierComponent extends ComponentType<Tier> {
   refs: {}
 }
 
-export class Pricing {
-  name: string | undefined = undefined;
-  headline: string | undefined = undefined;
-  description: string | undefined = undefined;
+export class Pricing extends PageSection {
   tier: Tier[] = [];
 }
 

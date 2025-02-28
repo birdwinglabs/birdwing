@@ -2,9 +2,10 @@ import { RenderableTreeNodes, Tag } from '@markdoc/markdoc';
 import { schema } from '@birdwing/renderable';
 import { NodeStream } from '../lib/node.js';
 import { attribute, group, Model, createComponentRenderable, createSchema } from '../lib/index.js';
+import { description, name } from './common.js';
 
 class PricingModel extends Model {
-  @group({ include: ['heading', 'paragraph'] })
+  @group({ include: ['heading', 'paragraph' ] })
   header: NodeStream;
 
   @group({ include: ['tag'] })
@@ -14,15 +15,14 @@ class PricingModel extends Model {
     const header = this.header.transform();
     const tiers = this.tiers.transform();
 
-    const name = header.tag('p');
-    const headline = header.tag('h1');
-    const description = header.tag('p');
-    const tier = tiers.tag('li');
-
     return createComponentRenderable(schema.Pricing, {
       tag: 'section',
       property: 'contentSection',
-      properties: { name, headline, description, tier },
+      properties: {
+        name: name(header),
+        description: description(header),
+        tier: tiers.tag('li'),
+      },
       children: [
         header.wrap('header').next(),
         tiers.wrap('ul', { 'data-layout': 'grid', 'data-columns': tiers.nodes.length }).next(),

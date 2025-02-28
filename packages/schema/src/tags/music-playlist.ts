@@ -6,7 +6,7 @@ import { TypedNode } from '../interfaces.js';
 import { attribute, group, Model, createComponentRenderable, createSchema } from '../lib/index.js';
 import { NodeStream } from '../lib/node.js';
 import { RenderableNodeCursor } from '../lib/renderable.js';
-import { SplitablePageSectionModel } from './common.js';
+import { SplitablePageSectionModel, name, description } from './common.js';
 
 
 class MusicRecordingModel extends Model {
@@ -112,16 +112,15 @@ class MusicPlaylistModel extends SplitablePageSectionModel {
       })
       .transform();
 
-    const name = header.tag('p');
-    const headline = header.tag('h1');
-    const image = header.tag('img');
-    const description = header.tag('p');
-    const track = tracks.flatten().tag('div').typeof('MusicRecording');
-
     return createComponentRenderable(schema.MusicPlaylist, {
       tag: 'section',
       property: 'contentSection',
-      properties: { name, headline, image, description, track },
+      properties: {
+        name: name(header),
+        image: header.tag('img'),
+        description: description(header),
+        track: tracks.flatten().tag('div').typeof('MusicRecording'),
+      },
       children: splitLayout({
         split: this.split,
         mirror: this.mirror,

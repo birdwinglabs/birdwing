@@ -5,6 +5,7 @@ import { schema } from '@birdwing/renderable';
 import { SpaceSeparatedNumberList } from '../attributes.js';
 import { attribute, group, Model, createComponentRenderable, createSchema } from '../lib/index.js';
 import { NodeStream } from '../lib/node.js';
+import { description, name } from './common.js';
 
 class StepsModel extends Model {
   @attribute({ type: SpaceSeparatedNumberList, required: false })
@@ -16,6 +17,7 @@ class StepsModel extends Model {
 
   transform() {
     const children = this.transformChildren({
+      list: 'ol',
       item: (node, config) => {
         return Markdoc.transform(
           new Ast.Node('tag', { split: node.attributes.split }, node.children, 'step'), config
@@ -24,9 +26,11 @@ class StepsModel extends Model {
     });
 
     return createComponentRenderable(schema.Steps, {
-      tag: 'ol',
+      tag: 'section',
       property: 'contentSection',
       properties: {
+        name: name(children),
+        description: description(children),
         step: children.flatten().tag('li').typeof('Step')
       },
       children: children.toArray(),
@@ -51,7 +55,7 @@ class StepModel extends Model {
     return createComponentRenderable(schema.Step, {
       tag: 'li',
       properties: {
-        name: main.tag('h1')
+        name: name(main),
       },
       children: splitLayout({ split: this.split, mirror: false, main: main.toArray(), side: side.toArray() })
     });

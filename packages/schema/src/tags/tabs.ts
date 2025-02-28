@@ -101,8 +101,7 @@ class TabsModel extends Model {
         tag: 'section',
         property: 'contentSection',
         properties: {
-          name: header.tag('p'),
-          headline: header.tag('h1'),
+          name: header.tags('h1', 'h2', 'h3', 'h4', 'h5', 'h6'),
           description: header.tag('p'),
           tab: tabs,
           panel: panels,

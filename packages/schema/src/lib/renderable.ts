@@ -18,6 +18,11 @@ export class RenderableNodeCursor<T extends RenderableTreeNode = RenderableTreeN
     return new RenderableNodeCursor(nodes);
   }
 
+  tags<TagNames extends renderable.NodeType[]>(...tags: TagNames): RenderableNodeCursor<Tag<TagNames[number]>> {
+    const nodes = this.nodes.filter(n => Tag.isTag(n) && (tags as string[]).includes(n.name)) as unknown as Tag<TagNames[number]>[];
+    return new RenderableNodeCursor(nodes);
+  }
+
   typeof(type: string): RenderableNodeCursor<T> {
     return new RenderableNodeCursor(this.nodes.filter(n => Tag.isTag(n) && n.attributes.typeof === type));
   }
@@ -31,6 +36,10 @@ export class RenderableNodeCursor<T extends RenderableTreeNode = RenderableTreeN
     const nodes = this.nodes.map(t => Tag.isTag(t) ? Array.from(walkTag(t)) : t).flat();
     return new RenderableNodeCursor(nodes);
   } 
+
+  limit(count: number) {
+    return new RenderableNodeCursor(this.nodes.slice(0, count));
+  }
 
   toArray(): T[] {
     return this.nodes;
