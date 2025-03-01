@@ -47,9 +47,6 @@ class TabsModel extends Model {
   @id({ generate: true })
   id: string;
 
-  @attribute({ type: Boolean, required: false })
-  section: boolean = true;
-
   @attribute({ type: Number, required: false })
   headingLevel: number | undefined = undefined;
 
@@ -91,39 +88,26 @@ class TabsModel extends Model {
     const tabs = tabStream.tag('li').typeof('Tab');
     const panels = tabStream.tag('li').typeof('TabPanel')
     
-    const tabsList = tabs.wrap('ul');
-    const panelsList = panels.wrap('ul');
+    const tabList = tabs.wrap('ul');
+    const panelList = panels.wrap('ul');
 
-    if (this.section) {
-      const tabgroup = new Tag('div', { id: this.id }, [tabsList.next(), panelsList.next()]);
+    const children = header.count() > 0
+      ? [header.wrap('header').next(), tabList.next(), panelList.next()]
+      : [tabList.next(), panelList.next()];
 
-      return createComponentRenderable(schema.TabSection, {
-        tag: 'section',
-        property: 'contentSection',
-        properties: {
-          name: header.tags('h1', 'h2', 'h3', 'h4', 'h5', 'h6'),
-          description: header.tag('p'),
-          tab: tabs,
-          panel: panels,
-        },
-        refs: { tabs: tabsList, panels: panelsList, tabgroup },
-        children: [header.wrap('header').next(), tabgroup],
-      });
-    } else {
-      return createComponentRenderable(schema.TabGroup, {
-        tag: 'div',
-        id: this.id,
-        properties: {
-          tab: tabs,
-          panel: panels,
-        },
-        refs: {
-          tabs: tabsList,
-          panels: panelsList,
-        },
-        children: [tabsList.next(), panelsList.next()],
-      });
-    }
+    return createComponentRenderable(schema.TabGroup, {
+      tag: 'section',
+      id: this.id,
+      property: 'contentSection',
+      properties: {
+        name: header.tags('h1', 'h2', 'h3', 'h4', 'h5', 'h6'),
+        description: header.tag('p'),
+        tab: tabs,
+        panel: panels,
+      },
+      refs: { tabs: tabList, panels: panelList },
+      children,
+    });
   }
 }
 

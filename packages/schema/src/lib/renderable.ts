@@ -45,6 +45,10 @@ export class RenderableNodeCursor<T extends RenderableTreeNode = RenderableTreeN
     return this.nodes;
   }
 
+  count(): number {
+    return this.nodes.length;
+  }
+
   next(): T {
     return this.nodes[0];
   }

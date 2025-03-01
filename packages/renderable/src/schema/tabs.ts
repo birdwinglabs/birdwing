@@ -1,23 +1,18 @@
 import { ComponentType } from "../interfaces.js";
 import { PageSection, PageSectionProperties } from "./page.js";
 
-export interface Tabs {
-  tab: Tab[];
-  panel: TabPanel[];
-}
-
-export class TabGroup implements Tabs {
+export class TabGroup extends PageSection {
   tab: Tab[] = [];
   panel: TabPanel[] = [];
 }
 
-export interface TabGroupProperties {
+export interface TabGroupProperties extends PageSectionProperties {
   tab: 'li',
   panel: 'li',
 }
 
 export interface TabGroupComponent extends ComponentType<TabGroup> {
-  tag: 'div',
+  tag: 'section',
   properties: TabGroupProperties,
   refs: {
     tabs: 'ul',
@@ -42,25 +37,5 @@ export interface TabComponent extends ComponentType<Tab> {
   properties: {
     name: 'span',
     image: 'img' | 'svg',
-  }
-}
-
-export class TabSection extends PageSection implements Tabs {
-  tab: Tab[] = [];
-  panel: TabPanel[] = [];
-}
-
-export interface TabSectionProperties extends PageSectionProperties {
-  tab: 'li',
-  panel: 'li',
-}
-
-export interface TabSectionComponent extends ComponentType<TabSection> {
-  tag: 'section',
-  properties: PageSectionProperties & TabGroupProperties,
-  refs: {
-    tabgroup: 'div',
-    tabs: 'ul',
-    panels: 'ul',
   }
 }

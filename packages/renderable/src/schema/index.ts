@@ -12,7 +12,7 @@ import { Page, PageComponent, PageSection, PageSectionComponent } from './page.j
 import { SequentialPagination, SequentialPaginationComponent } from './pagination.js';
 import { Pricing, PricingComponent, Tier, TierComponent } from './pricing.js';
 import { Step, StepComponent, Steps, StepsComponent } from './steps.js';
-import { Tab, TabComponent, TabGroup, TabGroupComponent, TabPanel, TabPanelComponent, TabSection, TabSectionComponent } from './tabs.js';
+import { Tab, TabComponent, TabGroup, TabGroupComponent, TabPanel, TabPanelComponent } from './tabs.js';
 
 export interface Newable<T> {
   new (...args: any[]): T;
@@ -53,7 +53,6 @@ export const schema = {
   Steps: useSchema(Steps).defineType<StepsComponent>('Steps'),
   Step: useSchema(Step).defineType<StepComponent>('Step'),
   TableOfContents: useSchema(TableOfContents).defineType<TableOfContentsComponent>('TableOfContents'),
-  TabSection: useSchema(TabSection).defineType<TabSectionComponent>('TabSection'),
   TabGroup: useSchema(TabGroup).defineType<TabGroupComponent>('TabGroup'),
   Tab: useSchema(Tab).defineType<TabComponent>('Tab'),
   TabPanel: useSchema(TabPanel).defineType<TabPanelComponent>('TabPanel'),
