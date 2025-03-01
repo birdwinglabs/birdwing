@@ -5,6 +5,7 @@ export class Tier {
   name: string | undefined = undefined;
   description: string | undefined = undefined;
   price: string | undefined = undefined;
+  url: string | undefined = undefined;
 }
 
 export interface TierComponent extends ComponentType<Tier> {
@@ -13,6 +14,7 @@ export interface TierComponent extends ComponentType<Tier> {
     name: 'h1',
     description: 'p',
     price: 'p',
+    url: 'a',
   },
   refs: {}
 }

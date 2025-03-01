@@ -54,8 +54,9 @@ export class TierModel extends Model {
       tag: 'li',
       properties: {
         name,
-        description: children.tag('p'),
+        description: description(children),
         price: priceMonthly,
+        url: children.flatten().tag('a'),
       },
       children: [name, priceMonthly, ...children.nodes],
     })
