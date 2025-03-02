@@ -25,7 +25,7 @@ export interface MusicRecordingComponent extends ComponentType<MusicRecording> {
 
 export interface MusicPlaylistProperties extends PageSectionProperties {
   image: 'img',
-  track: 'div',
+  track: 'li',
 }
 
 export interface MusicPlaylistComponent extends ComponentType<MusicPlaylist> {

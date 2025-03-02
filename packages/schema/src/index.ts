@@ -15,7 +15,7 @@ import { steps, step } from './tags/steps.js';
 import { tab, tabs } from './tags/tabs.js';
 import { pricing, tier } from './tags/pricing.js';
 import { musicPlaylist } from './tags/music-playlist.js'
-import { musicRecording } from './tags/music-playlist.js'
+import { musicRecording } from './tags/music-recording.js'
 
 export * from './interfaces.js';
 

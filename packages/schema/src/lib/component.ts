@@ -7,6 +7,7 @@ export interface TransformResult<TSchema, T extends ComponentType<TSchema>> {
   tag: T["tag"],
   id?: string;
   class?: string;
+  ns?: string;
   property?: string;
   properties: {
     [P in keyof T["properties"]]: 
@@ -32,7 +33,7 @@ export function createComponentRenderable<TOutput extends ComponentType<object>>
 
     tags.forEach(n => {
       if (Tag.isTag(n)) {
-        n.attributes.property = k;
+        n.attributes.property = result.ns ? `${result.ns}:${k}` : k;
       }
     });
   }
