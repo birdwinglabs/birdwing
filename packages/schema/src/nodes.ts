@@ -153,6 +153,11 @@ export const text: Schema = {
 };
 
 export const link: Schema = {
+  children: ['strong', 'em', 's', 'code', 'text', 'tag'],
+  attributes: {
+    href: { type: String, required: true },
+    title: { type: String },
+  },
   render: 'a',
   transform(node, config) {
     const { urls, path } = config.variables || {};

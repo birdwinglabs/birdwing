@@ -3,6 +3,7 @@ import { MusicPlaylist, MusicPlaylistComponent, MusicRecording, MusicRecordingCo
 import { CallToAction, CallToActionComponent, LinkItem, LinkItemComponent } from './cta.js';
 import { DocPage, DocPageComponent, Headings, HeadingsComponent, TableOfContents, TableOfContentsComponent } from './docpage.js';
 import { Editor, EditorComponent } from './editor.js';
+import { Error, ErrorComponent } from "./error";
 import { Feature, FeatureComponent, FeatureDefinition, FeatureDefinitionComponent } from './feature.js';
 import { Footer, FooterComponent } from './footer.js';
 import { Grid, GridComponent } from './grid.js';
@@ -68,4 +69,5 @@ export const schema = {
   Tier: useSchema(Tier).defineType<TierComponent>('Tier'),
   FeaturedTier: useSchema(Tier).defineType<TierComponent>('FeaturedTier'),
   Grid: useSchema(Grid).defineType<GridComponent>('Grid'),
+  Error: useSchema(Error).defineType<ErrorComponent>('Error'),
 }

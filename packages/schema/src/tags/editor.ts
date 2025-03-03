@@ -36,7 +36,7 @@ class EditorModel extends Model {
   }
 
   transform() {
-    const tabGroups = this.sections.map(s => s.wrapTag('tabs', { section: false, headingLevel: 1 }).transform());
+    const tabGroups = this.sections.map(s => s.wrapTag('tabs', { headingLevel: 1 }).transform());
 
     return createComponentRenderable(schema.Editor, {
       tag: 'section',

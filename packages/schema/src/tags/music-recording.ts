@@ -68,6 +68,13 @@ export class MusicRecordingNode<T extends 'div' | 'li'> extends TypedNode<'tag',
     super('tag', attributes, children, 'music-recording');
   }
 
+  static parseProperty(name: string, value: string) {
+    switch (name) {
+      case 'copyrightYear': return parseInt(value);
+      default: return value;
+    }
+  }
+
   static fromItem(item: Node, fieldNames: string[]) {
     const inline = item.children.find(n => n.type === 'inline');
     const text = inline ? inline.children[0] : undefined;
@@ -78,7 +85,7 @@ export class MusicRecordingNode<T extends 'div' | 'li'> extends TypedNode<'tag',
     if (text) {
       const fields = (text.attributes.content as string).split('|').map(f => f.trim());
       fieldNames.forEach((key, index) => {
-        attr[key] = fields[index];
+        attr[key] = MusicRecordingNode.parseProperty(key, fields[index]);
       });
     }
     return new MusicRecordingNode<'li'>(attr, item.children.filter(c => c.type === 'heading'))
