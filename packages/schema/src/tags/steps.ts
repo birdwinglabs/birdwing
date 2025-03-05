@@ -5,7 +5,7 @@ import { schema } from '@birdwing/renderable';
 import { SpaceSeparatedNumberList } from '../attributes.js';
 import { attribute, group, Model, createComponentRenderable, createSchema } from '../lib/index.js';
 import { NodeStream } from '../lib/node.js';
-import { description, name } from './common.js';
+import { name, pageSectionProperties } from './common.js';
 
 class StepsModel extends Model {
   @attribute({ type: SpaceSeparatedNumberList, required: false })
@@ -29,8 +29,7 @@ class StepsModel extends Model {
       tag: 'section',
       property: 'contentSection',
       properties: {
-        name: name(children),
-        description: description(children),
+        ...pageSectionProperties(children),
         step: children.flatten().tag('li').typeof('Step')
       },
       children: children.toArray(),

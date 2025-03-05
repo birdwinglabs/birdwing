@@ -1,4 +1,4 @@
-import { heading, paragraph, fence, list, item, em, strong, text, link, hardbreak, image, proxy } from './nodes.js';
+import { heading, paragraph, fence, list, item, em, strong, text, link, hardbreak, image } from './nodes.js';
 
 export { Page } from './documents/page.js';
 import { menu } from './documents/menu.js';
@@ -17,6 +17,7 @@ import { tab, tabs } from './tags/tabs.js';
 import { pricing, tier } from './tags/pricing.js';
 import { musicPlaylist } from './tags/music-playlist.js'
 import { musicRecording } from './tags/music-recording.js'
+import Markdoc from '@markdoc/markdoc';
 
 export * from './interfaces.js';
 
@@ -45,7 +46,7 @@ export const tags = {
   tier,
   'music-playlist': musicPlaylist,
   'music-recording': musicRecording,
-  proxy,
+  ...Markdoc.tags
 }
 
 export const nodes = {
@@ -60,4 +61,10 @@ export const nodes = {
   link,
   hardbreak,
   image,
+  table: Markdoc.nodes.table,
+  thead: Markdoc.nodes.thead,
+  tbody: Markdoc.nodes.tbody,
+  th: Markdoc.nodes.th,
+  tr: Markdoc.nodes.tr,
+  error: Markdoc.nodes.error,
 }

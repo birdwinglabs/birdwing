@@ -3,24 +3,33 @@ import { Type } from "@birdwing/renderable/dist/schema";
 import { Tag, RenderableTreeNodes } from "@markdoc/markdoc";
 import { RenderableNodeCursor } from "./renderable";
 
+export type PropertyInput<TSchema, T extends ComponentType<TSchema>> = {
+  [P in keyof T["properties"]]: 
+    RenderableNodeCursor<Tag<T["properties"][P]>> |
+    Tag<T["properties"][P]> |
+    Tag<T["properties"][P]>[]
+};
+
+export type RefInput<TSchema, T extends ComponentType<TSchema>> = {
+  [P in keyof T["refs"]]: 
+    RenderableNodeCursor<Tag<T["refs"][P]>> |
+    Tag<T["refs"][P]> |
+    Tag<T["refs"][P]>[]
+};
+
+export interface PropertyMapping {
+  ns?: string;
+  additional?: string[]
+}
+
 export interface TransformResult<TSchema, T extends ComponentType<TSchema>> {
   tag: T["tag"],
   id?: string;
   class?: string;
-  ns?: string;
+  propertyMapping?: (property: keyof T["properties"]) => PropertyMapping | false,
   property?: string;
-  properties: {
-    [P in keyof T["properties"]]: 
-      RenderableNodeCursor<Tag<T["properties"][P]>> |
-      Tag<T["properties"][P]> |
-      Tag<T["properties"][P]>[]
-  };
-  refs?: {
-    [P in keyof T["refs"]]:
-      RenderableNodeCursor<Tag<T["refs"][P]>> |
-      Tag<T["refs"][P]> |
-      Tag<T["refs"][P]>[]
-  };
+  properties: Partial<PropertyInput<TSchema, T>>,
+  refs?: Partial<RefInput<TSchema, T>>,
   children: RenderableTreeNodes;
 }
 
@@ -33,7 +42,20 @@ export function createComponentRenderable<TOutput extends ComponentType<object>>
 
     tags.forEach(n => {
       if (Tag.isTag(n)) {
-        n.attributes.property = result.ns ? `${result.ns}:${k}` : k;
+        let property = k;
+
+        if (result.propertyMapping) {
+          const pm = result.propertyMapping(property as any);
+          if (pm) {
+            if (pm.ns) {
+              property = `${pm.ns}:${property}`;
+            }
+            if (pm.additional) {
+              property += (' ' + pm.additional.join(' '));
+            }
+          }
+        }
+        n.attributes.property = property;
       }
     });
   }

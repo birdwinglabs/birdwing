@@ -16,14 +16,14 @@ class ErrorModel extends Model {
   error: ValidationError;
 
   transform() {
-    const code = new Tag('span', {}, [this.error.id]);
-    const tag = new Tag('span', {}, [this.tag]);
-    const level = new Tag('meta', { content: this.error.level });
-    const message = new Tag('p', {}, [this.error.message]);
+    const code = new Tag('td', {}, [this.error.id]);
+    const tag = new Tag('td', {}, [this.tag]);
+    const level = new Tag('td', {}, [this.error.level]);
+    const message = new Tag('td', {}, [this.error.message]);
     //const children = this.transformChildren().wrap('div');
 
     return createComponentRenderable(schema.Error, {
-      tag: 'section',
+      tag: 'tr',
       property: 'error',
       properties: {
         code,

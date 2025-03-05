@@ -3,6 +3,8 @@ import * as renderable from '@birdwing/renderable';
 import { walkTag } from "../util";
 
 export class RenderableNodeCursor<T extends RenderableTreeNode = RenderableTreeNode> {
+  private offset = 0;
+
   constructor(public readonly nodes: T[]) {}
 
   static fromData<TagName extends renderable.NodeType>(data: any, tag: TagName) {
@@ -23,6 +25,10 @@ export class RenderableNodeCursor<T extends RenderableTreeNode = RenderableTreeN
     return new RenderableNodeCursor(nodes);
   }
 
+  headings() {
+    return this.tags('h1', 'h2', 'h3', 'h4', 'h5', 'h6');
+  }
+
   typeof(type: string): RenderableNodeCursor<T> {
     return new RenderableNodeCursor(this.nodes.filter(n => Tag.isTag(n) && n.attributes.typeof === type));
   }
@@ -41,6 +47,10 @@ export class RenderableNodeCursor<T extends RenderableTreeNode = RenderableTreeN
     return new RenderableNodeCursor(this.nodes.slice(0, count));
   }
 
+  slice(start: number, end?: number) {
+    return new RenderableNodeCursor(this.nodes.slice(start, end));
+  }
+
   toArray(): T[] {
     return this.nodes;
   }
@@ -50,6 +60,6 @@ export class RenderableNodeCursor<T extends RenderableTreeNode = RenderableTreeN
   }
 
   next(): T {
-    return this.nodes[0];
+    return this.nodes[this.offset++];
   }
 }

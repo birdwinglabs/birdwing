@@ -4,6 +4,7 @@ import { schema } from '@birdwing/renderable';
 import { NodeStream } from '../lib/node.js';
 import { attribute, group, id, Model, createComponentRenderable, createSchema } from '../lib/index.js';
 import { RenderableNodeCursor } from '../lib/renderable.js';
+import { pageSectionProperties } from './common.js';
 
 class TabModel extends Model {
   @attribute({ type: String, required: true })
@@ -100,8 +101,7 @@ class TabsModel extends Model {
       id: this.id,
       property: 'contentSection',
       properties: {
-        name: header.tags('h1', 'h2', 'h3', 'h4', 'h5', 'h6'),
-        description: header.tag('p'),
+        ...pageSectionProperties(header),
         tab: tabs,
         panel: panels,
       },

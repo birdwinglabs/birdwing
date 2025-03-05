@@ -4,7 +4,7 @@ import { splitLayout } from '../layouts/index.js';
 import { CommaSeparatedList, SpaceSeparatedNumberList } from '../attributes.js';
 import { attribute, group, Model, createComponentRenderable, createSchema } from '../lib/index.js';
 import { NodeStream } from '../lib/node.js';
-import { name, description } from './common.js';
+import { pageSectionProperties } from './common.js';
 import { MusicRecordingNode } from './music-recording.js';
 
 
@@ -49,12 +49,16 @@ class MusicPlaylistModel extends Model {
 
     return createComponentRenderable(schema.MusicPlaylist, {
       tag: 'section',
-      ns: 'schema',
+      propertyMapping(property) {
+        switch (property) {
+          case 'eyebrow': return false;
+          case 'headline': return { ns: 'schema', additional: ['schema:name'] };
+          default: return { ns: 'schema' };
+        }
+      },
       property: 'contentSection',
       properties: {
-        name: name(header),
-        image: header.tag('img'),
-        description: description(header),
+        ...pageSectionProperties(header),
         track: tracks.tag('li').typeof('schema:MusicRecording'),
       },
       children: splitLayout({

@@ -2,7 +2,7 @@ import { RenderableTreeNodes, Tag } from '@markdoc/markdoc';
 import { schema } from '@birdwing/renderable';
 import { NodeStream } from '../lib/node.js';
 import { attribute, group, Model, createComponentRenderable, createSchema } from '../lib/index.js';
-import { description, name } from './common.js';
+import { description, pageSectionProperties } from './common.js';
 
 class PricingModel extends Model {
   @group({ include: ['heading', 'paragraph' ] })
@@ -19,8 +19,7 @@ class PricingModel extends Model {
       tag: 'section',
       property: 'contentSection',
       properties: {
-        name: name(header),
-        description: description(header),
+        ...pageSectionProperties(header),
         tier: tiers.tag('li'),
       },
       children: [

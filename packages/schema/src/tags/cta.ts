@@ -5,7 +5,7 @@ import { attribute, group, Model } from '../lib/index.js';
 import { NodeStream } from '../lib/node.js';
 import { createComponentRenderable, createSchema } from '../lib/index.js';
 import { SpaceSeparatedNumberList } from '../attributes.js';
-import { description, name } from './common.js';
+import { pageSectionProperties } from './common.js';
 
 
 class LinkItemModel extends Model {
@@ -57,8 +57,7 @@ class CallToActionModel extends Model {
       property: 'contentSection',
       class: this.split.length > 0 ? 'split' : undefined,
       properties: {
-        name: name(header),
-        description: description(header),
+        ...pageSectionProperties(header),
         action: actions.flatten().tag('li'),
       },
       children: splitLayout({
