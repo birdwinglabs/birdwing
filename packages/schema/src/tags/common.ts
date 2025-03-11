@@ -26,6 +26,6 @@ export function pageSectionProperties(cursor: RenderableNodeCursor) {
     eyebrow: headings.count() > 1 ? headings.next() : undefined,
     headline: headings.next(),
     image: cursor.tag('img').limit(1),
-    description: cursor.tag('p').limit(1),
+    blurb: cursor.tag('p').limit(1),
   }
 }

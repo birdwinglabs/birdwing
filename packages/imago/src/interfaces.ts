@@ -1,5 +1,6 @@
 import React, { createContext, ReactNode } from "react";
 import { NodeType, ComponentType } from "@birdwing/renderable";
+import { PropertyNode, TypeNode } from "@birdwing/renderable/dist/types";
 
 export interface NodeProps extends Record<string, any>{
   id?: string;
@@ -54,11 +55,9 @@ export abstract class AbstractTemplate {
 }
 
 export abstract class ComponentFactory<T extends NodeType> {
-  //private tag: T;
-
   type: string;
 
-  abstract createTemplate(nodes: Record<number, NodeInfo>, props: TagProps<T>): AbstractTemplate;
+  abstract createTemplate(nodes: Record<number, NodeInfo>, props: TagProps<T>, parentContext?: Record<string, string>): AbstractTemplate;
 }
 
 
@@ -102,16 +101,16 @@ export interface ImagoComponentOptions<T extends ComponentType<any>> extends Tra
   use?: ComponentMiddleware[],
 }
 
-export interface NodeInfo<T = any> {
+export interface PropertyInfo {
   name: string;
+  key: number;
+}
+
+export interface NodeInfo<T = any> {
   element: React.ReactNode | undefined;
-  children: number[];
-  refs: Record<string, number>;
-  properties: Record<string, number>;
   parent: number | undefined;
-  property: string | undefined;
-  typeof: string | undefined;
-  meta: T;
+  children: number[];
+  meta?: PropertyNode<React.ReactElement, T> | TypeNode<React.ReactElement, any>;
 }
 
 export class NodeContext<T> {
@@ -133,7 +132,7 @@ export class NodeContext<T> {
   }
 
   get data(): T {
-    return this.nodes[this.key].meta;
+    return this.nodes[this.key].meta?.data;
   }
 
   get lastChild(): boolean {

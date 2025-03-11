@@ -3,7 +3,7 @@ import { MusicPlaylist, MusicPlaylistComponent, MusicRecording, MusicRecordingCo
 import { CallToAction, CallToActionComponent, LinkItem, LinkItemComponent } from './cta.js';
 import { DocPage, DocPageComponent, Headings, HeadingsComponent, TableOfContents, TableOfContentsComponent } from './docpage.js';
 import { Editor, EditorComponent } from './editor.js';
-import { Error, ErrorComponent } from "./error";
+import { DebugInfo, DebugInfoComponent, Error, ErrorComponent } from "./error";
 import { Feature, FeatureComponent, FeatureDefinition, FeatureDefinitionComponent } from './feature.js';
 import { Footer, FooterComponent } from './footer.js';
 import { Grid, GridComponent } from './grid.js';
@@ -23,6 +23,7 @@ export class Type<T extends ComponentType<object>> {
   constructor(
     public readonly name: string,
     private schemaCtr: Newable<T["schema"]>,
+    public context: Record<string, string> = {},
   ) {}
 
   create() {
@@ -33,8 +34,8 @@ export class Type<T extends ComponentType<object>> {
 export class TypeFactory<TSchema extends object> {
   constructor(private schema: Newable<TSchema>) {}
 
-  defineType<T extends ComponentType<TSchema>>(name: string) {
-    return new Type<T>(name, this.schema);
+  defineType<T extends ComponentType<TSchema>>(name: string, context: Record<string, string> = {}) {
+    return new Type<T>(name, this.schema, context);
   }
 }
 
@@ -58,8 +59,21 @@ export const schema = {
   Tab: useSchema(Tab).defineType<TabComponent>('Tab'),
   TabPanel: useSchema(TabPanel).defineType<TabPanelComponent>('TabPanel'),
   Footer: useSchema(Footer).defineType<FooterComponent>('Footer'),
-  MusicPlaylist: useSchema(MusicPlaylist).defineType<MusicPlaylistComponent>('schema:MusicPlaylist'),
-  MusicRecording: useSchema(MusicRecording).defineType<MusicRecordingComponent>('schema:MusicRecording'),
+  MusicPlaylist: useSchema(MusicPlaylist).defineType<MusicPlaylistComponent>('MusicPlaylist', {
+    schema: 'http://schema.org/',
+    MusicPlaylist: 'schema:MusicPlaylist',
+    headline: 'schema:name schema:headline',
+    image: 'schema:image',
+    track: 'schema:track',
+  }),
+  MusicRecording: useSchema(MusicRecording).defineType<MusicRecordingComponent>('MusicRecording', {
+    schema: 'http://schema.org/',
+    MusicRecording: 'schema:MusicRecording',
+    name: 'schema:name',
+    byArtist: 'schema:byArtist',
+    duration: 'schema:duration',
+    copyrightYear: 'schema:copyrightYear',
+  }),
   CallToAction: useSchema(CallToAction).defineType<CallToActionComponent>('CallToAction'),
   LinkItem: useSchema(LinkItem).defineType<LinkItemComponent>('LinkItem'),
   Feature: useSchema(Feature).defineType<FeatureComponent>('Feature'),
@@ -70,4 +84,5 @@ export const schema = {
   FeaturedTier: useSchema(Tier).defineType<TierComponent>('FeaturedTier'),
   Grid: useSchema(Grid).defineType<GridComponent>('Grid'),
   Error: useSchema(Error).defineType<ErrorComponent>('Error'),
+  DebugInfo: useSchema(DebugInfo).defineType<DebugInfoComponent>('DebugInfo'),
 }

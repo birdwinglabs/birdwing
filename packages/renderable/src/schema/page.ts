@@ -2,13 +2,15 @@ import { ComponentType, PropertyNodes } from "../interfaces.js";
 import { Menu } from "./menu.js";
 
 export class PageSection {
-  name: string | undefined = undefined;
-  description: string | undefined = undefined;
+  eyebrow: string | undefined = undefined;
+  headline: string | undefined = undefined;
+  blurb: string | undefined = undefined;
 }
 
 export interface PageSectionProperties extends PropertyNodes<PageSection> {
-  name: 'h1' | 'h2' | 'h3' | 'h4' | 'h5' | 'h6',
-  description: 'p',
+  eyebrow: 'h1' | 'h2' | 'h3' | 'h4' | 'h5' | 'h6',
+  headline: 'h1' | 'h2' | 'h3' | 'h4' | 'h5' | 'h6',
+  blurb: 'p',
 }
 
 export interface PageSectionComponent extends ComponentType<PageSection> {

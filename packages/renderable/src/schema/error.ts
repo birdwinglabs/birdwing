@@ -1,18 +1,29 @@
 import { ComponentType } from "../interfaces.js";
 
+export class DebugInfo {
+  error: Error[] = [];
+}
+
+export interface DebugInfoComponent extends ComponentType<DebugInfo> {
+  tag: 'section',
+  properties: {
+    error: 'tr',
+  },
+}
+
 export class Error {
-  code: string;
-  tag: string;
-  level: 'debug' | 'info' | 'warning' | 'error' | 'critical';
-  message: string;
+  code: string = '';
+  tag: string = '';
+  level: 'debug' | 'info' | 'warning' | 'error' | 'critical' = 'debug';
+  message: string = '';
 }
 
 export interface ErrorComponent extends ComponentType<Error> {
-  tag: 'section',
+  tag: 'tr',
   properties: {
-    code: 'span',
-    tag: 'span',
-    level: 'meta',
-    message: 'p',
+    code: 'td',
+    tag: 'td',
+    level: 'td',
+    message: 'td',
   },
 }

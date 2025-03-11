@@ -5,8 +5,8 @@ import {
   TemplateContext,
   ComponentFactory,
 } from "./interfaces";
-import { NodeTree } from "./types";
 import { schema } from "@birdwing/renderable";
+import { ReactElementWrapper } from "./types";
 
 export class Theme extends AbstractTemplate {
   private templates: Record<string, ComponentFactory<any>> = {};
@@ -25,9 +25,9 @@ export class Theme extends AbstractTemplate {
       if (template && template !== this) {
         return template.resolve(node)(props);
       } else if (props.typeof && this.templates[props.typeof]) {
-        const nt = new NodeTree(schema);
-        nt.process('document', props);
-        const t = this.templates[props.typeof].createTemplate(nt.nodes, props);
+        const wrapper = new ReactElementWrapper(React.createElement(node, props));
+        const info = wrapper.info(schema);
+        const t = this.templates[props.typeof].createTemplate(info, props);
         return (
           <TemplateContext.Provider value={t}>
             { t.resolve(node)(props) }

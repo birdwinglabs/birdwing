@@ -48,9 +48,6 @@ class MusicRecordingModel extends Model {
     const duration = this.transformDuration();
 
     return createComponentRenderable(schema.MusicRecording, {
-      propertyMapping() {
-        return { ns: 'schema' };
-      },
       tag: tagName,
       properties: {
         name,

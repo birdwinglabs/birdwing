@@ -1,3 +1,4 @@
+import { TypeNode } from "@birdwing/renderable/dist/types";
 import { NodeInfo } from "./interfaces";
 
 export function isObject(item: any) {
@@ -31,11 +32,22 @@ export function makeNodeSlot(children: React.ReactNode) {
 export function makeComponentSlot(children: React.ReactNode, nodes: Record<number, NodeInfo>, key: number) {
   return ({ name, property }: any) => {
     if (name) {
-      const refKey = nodes[key].refs[name];
-      return refKey ? nodes[refKey].element: '';
+      if (nodes[key].meta instanceof TypeNode) {
+        return nodes[key].meta.refs[name];
+      }
+      return '';
+      //const refKey = nodes[key].refs[name];
+      //return refKey ? nodes[refKey].element: '';
     } else if (property) {
-      const refKey = nodes[key].properties[property];
-      return refKey ? nodes[refKey].element: '';
+      if (nodes[key].meta instanceof TypeNode) {
+        return nodes[key].meta.propertyNodes
+          .filter(p => p.propertyName === property)
+          .map(p => p.element);
+
+      }
+      return '';
+      //const refKey = nodes[key].properties[property];
+      //return refKey ? nodes[refKey].element: '';
     } else {
       return children;
     }

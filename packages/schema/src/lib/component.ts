@@ -1,7 +1,23 @@
-import { ComponentType } from "@birdwing/renderable";
+import { AbstractElementWrapper, ComponentType } from "@birdwing/renderable";
 import { Type } from "@birdwing/renderable/dist/schema";
 import { Tag, RenderableTreeNodes } from "@markdoc/markdoc";
 import { RenderableNodeCursor } from "./renderable";
+import * as renderable from '@birdwing/renderable';
+import { PropertyNode } from "@birdwing/renderable/dist/types";
+
+export class TagWrapper extends AbstractElementWrapper<Tag> {
+  get children(): AbstractElementWrapper<Tag>[] {
+    return this.elem.children.filter(c => Tag.isTag(c)).map(t => new TagWrapper(t));
+  }
+
+  get attributes() {
+    return this.elem.attributes;
+  }
+
+  get text() {
+    return this.elem.children.filter(c => !Tag.isTag(c)).join(' ');
+  }
+}
 
 export type PropertyInput<TSchema, T extends ComponentType<TSchema>> = {
   [P in keyof T["properties"]]: 
@@ -26,7 +42,6 @@ export interface TransformResult<TSchema, T extends ComponentType<TSchema>> {
   tag: T["tag"],
   id?: string;
   class?: string;
-  propertyMapping?: (property: keyof T["properties"]) => PropertyMapping | false,
   property?: string;
   properties: Partial<PropertyInput<TSchema, T>>,
   refs?: Partial<RefInput<TSchema, T>>,
@@ -42,20 +57,7 @@ export function createComponentRenderable<TOutput extends ComponentType<object>>
 
     tags.forEach(n => {
       if (Tag.isTag(n)) {
-        let property = k;
-
-        if (result.propertyMapping) {
-          const pm = result.propertyMapping(property as any);
-          if (pm) {
-            if (pm.ns) {
-              property = `${pm.ns}:${property}`;
-            }
-            if (pm.additional) {
-              property += (' ' + pm.additional.join(' '));
-            }
-          }
-        }
-        n.attributes.property = property;
+        n.attributes.property = k
       }
     });
   }
@@ -70,10 +72,23 @@ export function createComponentRenderable<TOutput extends ComponentType<object>>
     });
   }
 
-  return new Tag(result.tag, {
+  const tag = new Tag(result.tag, {
     id: result.id,
     property: result.property,
     typeof: type.name,
     class: result.class
   }, Array.isArray(result.children) ? result.children : [result.children]);
+
+  //if (type.name === 'MusicPlaylist') {
+    //const node = new TagWrapper(tag).parseStrict(renderable.schema.MusicPlaylist, renderable.schema);
+
+    //const nodeMap = new Map<Tag, PropertyNode<Tag, any>>();
+    //for (const n of node.walk()) {
+      //nodeMap.set(n.element, n);
+    //}
+
+    //console.log(nodeMap);
+  //}
+
+  return tag;
 }

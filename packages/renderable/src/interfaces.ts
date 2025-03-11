@@ -64,7 +64,20 @@ export type NodeType =
   // SVG and MathML
   'svg' |
   'path' |
-  'math';
+  'math' |
+
+  // Table content
+  'caption' |
+  'col' |
+  'colgroup' |
+  'table' |
+  'tbody' |
+  'td' |
+  'tfoot' |
+  'th' |
+  'thead' |
+  'tr';
+
 
 export interface ComponentType<TSchema> {
   tag: NodeType;

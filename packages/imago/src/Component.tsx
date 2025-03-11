@@ -16,26 +16,27 @@ import { makeComponentSlot, mergeDeep } from "./utils";
 import { Type, ComponentType, NodeType } from "@birdwing/renderable";
 import { ComponentMiddlewareFactory, createMiddlewareFactory } from "./middeware";
 import { TransformMiddlewareFactory } from "./middeware/transform";
-import { trimNamespace } from "./types";
 
-function purgeDefaultNamespace(name: string | undefined) {
-  if (!name) {
-    return undefined;
+function createDefaultHandler(context: Record<string, string>): React.FunctionComponent<Element> {
+  const applyContext = (name: string) => {
+    const translation = context[name];
+
+    if (!translation) {
+      return undefined;
+    }
+
+    if (translation.includes(':')) {
+      const [ns, localName] = translation.split(':');
+      return context[ns] + localName;
+    }
+    return translation;
   }
-  const names = name
-    .split(' ')
-    .filter(p => p.includes(':'))
-    .join(' ')
 
-  return names !== '' ? names : undefined;
-}
-
-function createDefaultHandler(): React.FunctionComponent<Element> {
   return ({ name, props }) => {
     const { k, children, ...restProps } = props;
 
-    restProps.property = purgeDefaultNamespace(restProps.property);
-    restProps.typeof = purgeDefaultNamespace(restProps.typeof);
+    restProps.property = restProps.property ? applyContext(restProps.property) : undefined;
+    restProps.typeof = restProps.typeof ? applyContext(restProps.typeof) : undefined;
 
     return defaultElements[name]
       ? defaultElements[name]({...restProps, children})
@@ -52,6 +53,7 @@ type ImagoComponentOptionsFactory<T extends ComponentType<any>> = (node: NodeCon
 export class ImagoComponentFactory<T extends ComponentType<any>> extends ComponentFactory<T["tag"]> {
   constructor(
     public readonly type: string,
+    private context: Record<string, string>,
     private options: ImagoComponentOptions<T> | ImagoComponentOptionsFactory<T>,
     private base: ImagoComponentFactory<T> | undefined = undefined,
   ) {
@@ -62,11 +64,11 @@ export class ImagoComponentFactory<T extends ComponentType<any>> extends Compone
     type: Type<U>,
     options: ImagoComponentOptions<U> | ImagoComponentOptionsFactory<U>
   ): ImagoComponentFactory<U> {
-    return new ImagoComponentFactory(type.name, options, this);
+    return new ImagoComponentFactory(type.name, type.context, options, this);
   }
 
-  createTemplate(nodes: Record<number, NodeInfo>, props: TagProps<T["tag"]>) {
-    return new ImagoComponent(this.createMiddleware(nodes, this.createOptions(nodes, props)));
+  createTemplate(nodes: Record<number, NodeInfo>, props: TagProps<T["tag"]>, parentContext: Record<string, string> = {}) {
+    return new ImagoComponent(this.type, this.createMiddleware(nodes, this.createOptions(nodes, props)), this.context, parentContext);
   }
 
   private createOptions(nodes: Record<number, NodeInfo>, props: TagProps<T["tag"]>): ImagoComponentOptions<T> {
@@ -84,7 +86,7 @@ export class ImagoComponentFactory<T extends ComponentType<any>> extends Compone
 
     // Components
     for (const c of options.components || []) {
-      const fact = new ComponentMiddlewareFactory(c);
+      const fact = new ComponentMiddlewareFactory(c, this.context);
       middleware[`typeof:${c.type}`] = fact.createMiddleware(nodes);
     }
 
@@ -102,7 +104,7 @@ export class ImagoComponentFactory<T extends ComponentType<any>> extends Compone
 
     // Properties
     for (const [propName, prop] of Object.entries(options.properties || {})) {
-      middleware[`property:${trimNamespace(propName)}`] = this.createNodeMiddleware(prop, componentMiddleware, nodes);
+      middleware[`property:${propName}`] = this.createNodeMiddleware(prop, componentMiddleware, nodes);
     }
 
     // References
@@ -146,21 +148,24 @@ export class ImagoComponentFactory<T extends ComponentType<any>> extends Compone
 
 export class ImagoComponent extends AbstractTemplate {
   constructor(
+    private type: string,
     private middleware: Record<string, ImagoMiddleware<Element>> = {},
+    private context: Record<string, string>,
+    private parentContext: Record<string, string> = {},
   ) {
     super();
   }
 
   resolve(name: NodeType): React.FunctionComponent<any> {
-    const fallback = createDefaultHandler();
-
     return props => {
       const handlerName = () => {
+        const property = props.property;
+
         if (props.typeof && this.middleware[`typeof:${props.typeof}`]) {
           return `typeof:${props.typeof}`
         }
-        if (props.property && this.middleware[`property:${trimNamespace(props.property)}`]) {
-          return `property:${trimNamespace(props.property)}`
+        if (property && this.middleware[`property:${property}`]) {
+          return `property:${property}`
         }
         if (props['data-name'] && this.middleware[`ref:${props['data-name']}`]) {
           return `ref:${props['data-name']}`
@@ -169,6 +174,12 @@ export class ImagoComponent extends AbstractTemplate {
       }
 
       const hName = handlerName();
+
+      const context = hName === `typeof:${this.type}` && props.property
+        ? { ...this.context, [props.property]: this.parentContext[props.property] }
+        : this.context;
+
+      const fallback = createDefaultHandler(context);
 
       if (!this.middleware[hName]) {
         return fallback({ name, props });
@@ -183,5 +194,5 @@ export function createComponent<T extends ComponentType<object>>(
   type: Type<T>,
   options: ImagoComponentOptions<T> | ImagoComponentOptionsFactory<T>
 ) {
-  return new ImagoComponentFactory(type.name, options);
+  return new ImagoComponentFactory(type.name, type.context, options);
 }

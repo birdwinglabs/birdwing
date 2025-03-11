@@ -49,17 +49,10 @@ class MusicPlaylistModel extends Model {
 
     return createComponentRenderable(schema.MusicPlaylist, {
       tag: 'section',
-      propertyMapping(property) {
-        switch (property) {
-          case 'eyebrow': return false;
-          case 'headline': return { ns: 'schema', additional: ['schema:name'] };
-          default: return { ns: 'schema' };
-        }
-      },
       property: 'contentSection',
       properties: {
         ...pageSectionProperties(header),
-        track: tracks.tag('li').typeof('schema:MusicRecording'),
+        track: tracks.tag('li').typeof('MusicRecording'),
       },
       children: splitLayout({
         split: this.split,
