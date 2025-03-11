@@ -140,9 +140,7 @@ export abstract class AbstractElementWrapper<T> {
       }
     }
 
-
     if (property && parentNode) {
-      console.log(parentNode);
       if (property in parentNode.data) {
         const value = node ? node.data : this.value;
         parentNode.addProperty(node ? node : new PropertyNode(property, this.elem, value));

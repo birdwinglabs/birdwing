@@ -1,4 +1,5 @@
 import { ComponentType } from "../interfaces.js";
+import { LinkItem } from "./common.js";
 import { Page, PageProperties } from "./page.js";
 import { SequentialPagination } from "./pagination.js";
 
@@ -31,10 +32,29 @@ export interface HeadingsComponent extends ComponentType<Headings> {
   tag: 'aside'
 }
 
-export class TableOfContents {}
+export class Topic {
+  name: string | undefined = undefined;
+  item: LinkItem[] = [];
+}
+
+export interface TopicComponent extends ComponentType<Topic> {
+  tag: 'div',
+  properties: {
+    name: 'h2' | 'h3' | 'h4' | 'h5' | 'h6',
+    item: 'li',
+  }
+}
+
+export class TableOfContents {
+  headline: string | undefined = undefined;
+  topic: Topic[] = [];
+}
 
 export interface TableOfContentsComponent extends ComponentType<TableOfContents> {
   tag: 'nav',
-  properties: {},
+  properties: {
+    headline: 'h1',
+    topic: 'div',
+  },
   refs: {},
 }

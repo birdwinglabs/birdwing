@@ -1,9 +1,8 @@
-import pb from 'path-browserify';
 import { createPlugin, RouteData } from '@birdwing/core';
 import { makeSummary, SummaryPageData } from './summary.js';
 import { Tag } from '@markdoc/markdoc';
-
-const { dirname } = pb;
+import { TagWrapper } from '@birdwing/schema';
+import * as renderable from '@birdwing/renderable';
 
 export interface DocPage extends RouteData {
   title: string;
@@ -78,18 +77,22 @@ const docs = createPlugin<DocPage>('docs', (transformer) => {
         disableNav: frontmatter.disableNav,
         content,
         headings,
+        errors: [],
       };
     },
     fragments: {
       summary: ({ path, ast }) => {
         const tag = transformer.transform(ast, { node: 'summary', variables: { path} });
-        const data = makeSummary(ast, dirname(path), transformer.urlMap);
+        const toc = new TagWrapper(tag)
+          .parseStrict(renderable.schema.TableOfContents, renderable.schema)
+          .data;
+
+        const data = makeSummary(toc);
 
         return route => {
           if (data[route.url]) {
             const prev = data[route.url].prev;
             const next = data[route.url].next;
-            const topic = data[route.url].topic;
 
             route.pagination = new Tag('nav', { typeof: 'SequentialPagination', property: 'pagination' }, []);
 

@@ -1,7 +1,8 @@
 import { ComponentType } from "../interfaces";
 import { MusicPlaylist, MusicPlaylistComponent, MusicRecording, MusicRecordingComponent } from './audio.js';
-import { CallToAction, CallToActionComponent, LinkItem, LinkItemComponent } from './cta.js';
-import { DocPage, DocPageComponent, Headings, HeadingsComponent, TableOfContents, TableOfContentsComponent } from './docpage.js';
+import { LinkItem, LinkItemComponent } from "./common";
+import { CallToAction, CallToActionComponent } from './cta.js';
+import { DocPage, DocPageComponent, Headings, HeadingsComponent, TableOfContents, TableOfContentsComponent, Topic, TopicComponent } from './docpage.js';
 import { Editor, EditorComponent } from './editor.js';
 import { DebugInfo, DebugInfoComponent, Error, ErrorComponent } from "./error";
 import { Feature, FeatureComponent, FeatureDefinition, FeatureDefinitionComponent } from './feature.js';
@@ -55,6 +56,7 @@ export const schema = {
   Steps: useSchema(Steps).defineType<StepsComponent>('Steps'),
   Step: useSchema(Step).defineType<StepComponent>('Step'),
   TableOfContents: useSchema(TableOfContents).defineType<TableOfContentsComponent>('TableOfContents'),
+  Topic: useSchema(Topic).defineType<TopicComponent>('Topic'),
   TabGroup: useSchema(TabGroup).defineType<TabGroupComponent>('TabGroup'),
   Tab: useSchema(Tab).defineType<TabComponent>('Tab'),
   TabPanel: useSchema(TabPanel).defineType<TabPanelComponent>('TabPanel'),

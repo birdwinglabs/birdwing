@@ -3,7 +3,7 @@ import { heading, paragraph, fence, list, item, em, strong, text, link, hardbrea
 export { Page } from './documents/page.js';
 import { menu } from './documents/menu.js';
 import { doc } from './documents/doc.js';
-import { summary } from './documents/summary.js';
+import { summary, topic } from './documents/summary.js';
 import { footer } from './documents/footer.js';
 
 import { cta } from './tags/cta.js';
@@ -20,6 +20,7 @@ import { musicRecording } from './tags/music-recording.js'
 import Markdoc from '@markdoc/markdoc';
 
 export * from './interfaces.js';
+export { TagWrapper } from './lib/types.js';
 
 export const documents = {
   //page,
@@ -44,6 +45,7 @@ export const tags = {
   steps,
   pricing,
   tier,
+  topic,
   'music-playlist': musicPlaylist,
   'music-recording': musicRecording,
   ...Markdoc.tags

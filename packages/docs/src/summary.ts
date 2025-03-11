@@ -1,7 +1,4 @@
-import pb from 'path-browserify';
-import { Node } from '@markdoc/markdoc';
-
-const { join } = pb;
+import { TableOfContents } from '@birdwing/renderable/dist/schema/docpage';
 
 export interface SummaryLink {
   href: string;
@@ -16,31 +13,25 @@ export interface SummaryPageData {
   next: SummaryLink | undefined;
 }
 
-export function makeSummary(ast: Node, basePath: string, urls: Record<string, string>) {
-  let heading: string | undefined;
+export function makeToc(toc: TableOfContents) {
   const links: SummaryLink[] = [];
 
-  for (const node of ast.walk()) {
-    switch (node.type) {
-      case 'heading':
-        for (const child of node.walk()) {
-          if (child.type === 'text') {
-            heading = child.attributes.content;
-          }
-        }
-        break;
-      case 'link':
-        const href = urls[join(basePath, node.attributes.href)];
-        let title = '';
-        for (const child of node.walk()) {
-          if (child.type === 'text') {
-            title = child.attributes.content;
-          }
-        }
-        links.push({ href, title, topic: heading });
-        break;
+  for (const topic of toc.topic) {
+    for (const item of topic.item) {
+      links.push({ href: item.url, title: item.name, topic: topic.name });
     }
   }
+}
+
+export function makeSummary(toc: TableOfContents) {
+  const links: SummaryLink[] = [];
+
+  for (const topic of toc.topic) {
+    for (const item of topic.item) {
+      links.push({ href: item.url, title: item.name, topic: topic.name });
+    }
+  }
+
   const prev = (i: number) => i >= 1 ? links[i - 1] : undefined;
   const next = (i: number) => i < (links.length - 1) ? links[i + 1] : undefined;
 

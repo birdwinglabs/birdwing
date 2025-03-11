@@ -1,23 +1,7 @@
-import { AbstractElementWrapper, ComponentType } from "@birdwing/renderable";
+import { ComponentType } from "@birdwing/renderable";
 import { Type } from "@birdwing/renderable/dist/schema";
 import { Tag, RenderableTreeNodes } from "@markdoc/markdoc";
 import { RenderableNodeCursor } from "./renderable";
-import * as renderable from '@birdwing/renderable';
-import { PropertyNode } from "@birdwing/renderable/dist/types";
-
-export class TagWrapper extends AbstractElementWrapper<Tag> {
-  get children(): AbstractElementWrapper<Tag>[] {
-    return this.elem.children.filter(c => Tag.isTag(c)).map(t => new TagWrapper(t));
-  }
-
-  get attributes() {
-    return this.elem.attributes;
-  }
-
-  get text() {
-    return this.elem.children.filter(c => !Tag.isTag(c)).join(' ');
-  }
-}
 
 export type PropertyInput<TSchema, T extends ComponentType<TSchema>> = {
   [P in keyof T["properties"]]: 
@@ -78,17 +62,6 @@ export function createComponentRenderable<TOutput extends ComponentType<object>>
     typeof: type.name,
     class: result.class
   }, Array.isArray(result.children) ? result.children : [result.children]);
-
-  //if (type.name === 'MusicPlaylist') {
-    //const node = new TagWrapper(tag).parseStrict(renderable.schema.MusicPlaylist, renderable.schema);
-
-    //const nodeMap = new Map<Tag, PropertyNode<Tag, any>>();
-    //for (const n of node.walk()) {
-      //nodeMap.set(n.element, n);
-    //}
-
-    //console.log(nodeMap);
-  //}
 
   return tag;
 }
