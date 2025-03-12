@@ -37,28 +37,28 @@ export class LoadThemeTask extends Task<Theme> {
       exports: {},
       components: {},
       TextEncoder,
+      OuterFunction: Function,
+      OuterString: String,
+      OuterNumber: Number,
+      OuterBoolean: Boolean,
+      OuterArray: Array,
+      OuterObject: Object,
       URL,
     };
 
-    vm.runInNewContext(build.outputFiles[0].text, sandbox, { });
+    const code = `
+      Object.setPrototypeOf(Function.prototype, OuterFunction.prototype);
+      String = OuterString;
+      Boolean = OuterBoolean;
+      Number = OuterNumber;
+      Array = OuterArray;
+      Object = OuterObject;
+      ${build.outputFiles[0].text}
+    `;
+
+    vm.runInNewContext(code, sandbox, {});
 
     const { tags, nodes, documents, plugins } = (sandbox as any)['theme'] as ThemeConfig;
-
-    const ensureFunctions = (schema: Schema) => {
-      const t = schema.transform;
-      const v = schema.validate;
-      if (typeof t === 'function') {
-        schema.transform = function(...args: any) { return t.apply(schema, args); }
-      }
-      if (typeof v === 'function') {
-        schema.validate = function(...args: any) { return v.apply(schema, args); }
-      }
-    }
-
-    // This is a bit of a hack to make sure that transform and validate are instanceof Function
-    Object.values(tags).forEach(s => ensureFunctions(s));
-    Object.values(nodes).forEach(s => ensureFunctions(s));
-    Object.values(documents).forEach(s => ensureFunctions(s));
   
     return new Theme(themePath, { tags, nodes, documents, plugins })
   }
