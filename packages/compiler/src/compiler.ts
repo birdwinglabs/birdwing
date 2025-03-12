@@ -58,6 +58,7 @@ export class Compiler {
     const { tags, nodes, documents } = themeConfig;
     const cache = await ContentCache.load(store);
     const transformer = new MarkdocTransformer(tags, nodes, documents, {}, appConfig.variables);
+  
     for (const {path, ast} of cache.partials) {
       transformer.setPartial(path, ast);
     }
@@ -68,7 +69,7 @@ export class Compiler {
         pluginMap[content.path] = plugin.mount(content.path, transformer);
       }
       return pluginMap;
-    }, {} as Record<string, PluginConfig<Route>>)
+    }, {} as Record<string, PluginConfig<RouteData>>)
 
     return new Compiler(plugins, transformer, cache);
   }

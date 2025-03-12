@@ -43,4 +43,18 @@ export class MarkdocTransformer implements Transformer {
 
     return tag;
   }
+
+  validate(ast: Node, config: TransformConfig) {
+    Object.assign(config.variables || {}, this.variables, {
+      urls: this.urlMap,
+      ast: ast,
+    });
+
+    return Markdoc.validate(ast, {
+      tags: this.tags,
+      nodes: { ...this.nodes, document: this.documents[config.node] },
+      partials: this.partials,
+      variables: config.variables,
+    });
+  }
 }

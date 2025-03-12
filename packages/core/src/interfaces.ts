@@ -1,4 +1,4 @@
-import { Node, Tag, Schema } from "@markdoc/markdoc";
+import { Node, Tag, Schema, ValidateError } from "@markdoc/markdoc";
 import { resolvePageUrl } from "./util.js";
 import { Plugin } from "./plugin.js";
 
@@ -68,6 +68,8 @@ export interface RouteData {
   url: string;
 
   title: string;
+
+  errors: ValidateError[];
 }
 
 export interface Route<T extends Record<string, any> = Record<string, any>> {
@@ -112,6 +114,8 @@ export interface Transformer {
   setVariable(name: string, value: any): void;
 
   transform(ast: Node, config: TransformConfig): Tag;
+  
+  validate(ast: Node, config: TransformConfig): ValidateError[];
 }
 
 export interface ThemeConfig {
