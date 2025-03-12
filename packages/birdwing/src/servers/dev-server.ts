@@ -96,6 +96,12 @@ export class DevServer {
           stream.pipe(res);
           return;
         }
+        if (req.url?.endsWith('.png')) {
+          res.setHeader('Content-Type', 'image/png');
+          const stream = fs.createReadStream(join('pages', url));
+          stream.pipe(res);
+          return;
+        }
         if (req.url?.endsWith('.js')) {
           res.setHeader('Content-Type', 'text/javascript');
         }
