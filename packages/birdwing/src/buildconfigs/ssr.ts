@@ -1,22 +1,14 @@
 import * as esbuild from 'esbuild'
 import { Theme } from '../theme.js';
-import { CodeSnippet } from '../interfaces.js';
-import { ThemeSnippet } from '../snippets/theme.js';
 
 export function configureSsr(theme: Theme): esbuild.BuildOptions {
-  const snippets: CodeSnippet[] = [
-    new ThemeSnippet(theme),
-  ];
-
   const code = `
     import React from 'react';
     import { Routes, Route } from 'react-router-dom';
     import { StaticRouter } from "react-router-dom/server";
     import ReactDOMServer from "react-dom/server";
     import { Content, Page as PageWrapper  } from '@birdwing/react';
-
-    ${snippets.map(s => s.head).join('\n')}
-    ${snippets.map(s => s.body).join('\n')}
+    import theme from './index.ts';
 
     app = (routes, path) => {
       return ReactDOMServer.renderToString(

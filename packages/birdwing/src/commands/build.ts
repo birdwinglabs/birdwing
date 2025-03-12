@@ -14,7 +14,6 @@ import { TailwindCssTask } from '../tasks/tailwind.js';
 import { FileWriterTask } from '../tasks/file-writer.js';
 import { BuildTask } from '../tasks/build.js';
 import { configureProducationClient } from '../buildconfigs/client-producation.js';
-import { ExtractFenceLanguagesTask } from '../tasks/extract-fence-languages.js';
 import { Logger } from '../logger.js';
 import { configureSsr } from '../buildconfigs/ssr.js';
 import { RenderStaticRoutesTask } from '../tasks/render-static-routes.js';
@@ -48,12 +47,10 @@ export class BuildCommand extends Command {
     const routes = await this.executeTask(
       new CompileRoutesTask(compiler)
     );
-    const themeBuild = await this.executeTask(new BuildTask(configureTheme(this.root, theme, {}), {
+    const themeBuild = await this.executeTask(new BuildTask(configureTheme(this.root, {}), {
       start: 'Building theme',
       success: 'Built theme',
     }));
-
-    //console.log(themeBuild);
 
     const themeTemplate = await this.executeTask(new LoadThemeTemplateTask(themeBuild[0].content));
 
@@ -62,10 +59,6 @@ export class BuildCommand extends Command {
       success: 'Built SSR application'
     }));
 
-    const languages = await this.executeTask(
-      new ExtractFenceLanguagesTask(compiler.cache.documents)
-    );
-
     const staticRoutes = await this.executeTask(new RenderStaticRoutesTask(routes, themeTemplate, {
       start: 'Rendering static routes...',
       success: 'Rendered static routes',
@@ -73,7 +66,7 @@ export class BuildCommand extends Command {
 
     const output: TargetFile[] = [
       await this.executeTask(
-        new BuildTask(configureProducationClient(this.root, theme, staticRoutes, languages), {
+        new BuildTask(configureProducationClient(this.root, theme, staticRoutes), {
           start: 'Building SPA client...',
           success: 'Built SPA client',
         })

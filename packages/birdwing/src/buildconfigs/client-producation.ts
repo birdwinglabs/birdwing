@@ -3,25 +3,17 @@ import path from 'path';
 import * as esbuild from 'esbuild'
 import { TargetFile } from '@birdwing/core';
 import { Theme } from '../theme.js';
-import { CodeSnippet } from '../interfaces.js';
-import { ThemeSnippet } from '../snippets/theme.js';
 
 export function configureProducationClient(
-  root: string, theme: Theme, staticRoutes: TargetFile[], languages: string[]
+  root: string, theme: Theme, staticRoutes: TargetFile[]
 ): esbuild.BuildOptions
 {
-  const snippets: CodeSnippet[] = [
-    new ThemeSnippet(theme),
-  ];
-
   const code = `
     import { Page as PageWrapper } from '@birdwing/react';
     import React from 'react';
     import ReactDOM from 'react-dom/client';
     import { createBrowserRouter, RouterProvider, useLoaderData } from "react-router-dom";
-
-    ${snippets.map(s => s.head).join('\n')}
-    ${snippets.map(s => s.body).join('\n')}
+    import theme from './index.ts';
 
     const container = document.getElementById('app');
 
