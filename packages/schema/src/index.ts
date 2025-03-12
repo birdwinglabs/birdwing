@@ -21,6 +21,7 @@ import Markdoc from '@markdoc/markdoc';
 
 export * from './interfaces.js';
 export { TagWrapper } from './lib/types.js';
+export { RenderableNodeCursor } from './lib/renderable.js';
 
 export const documents = {
   //page,

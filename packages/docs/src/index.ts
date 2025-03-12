@@ -3,6 +3,7 @@ import { makeSummary, SummaryPageData } from './summary.js';
 import { Tag } from '@markdoc/markdoc';
 import { TagWrapper } from '@birdwing/schema';
 import * as renderable from '@birdwing/renderable';
+import { RenderableNodeCursor } from '@birdwing/schema';
 
 export interface DocPage extends RouteData {
   title: string;
@@ -46,6 +47,24 @@ function createHeader(title: string, topic?: string, description?: string) {
   return header;
 }
 
+function createHeadingNav(content: Tag) {
+  const items = new RenderableNodeCursor(content.children)
+    .tags('h1', 'h2')
+    .toArray()
+    .map(heading => {
+      return new Tag('li', { property: 'item', typeof: 'LinkItem' }, [
+        new Tag('a', { property: 'url', href: `#${heading.attributes.id}` }, [
+          new Tag(heading.name, { property: 'name' }, heading.children)
+        ])
+      ]);
+    });
+
+  return new Tag('aside', { property: 'headings', typeof: 'Headings' }, [
+    new Tag('h1', { property: "headline" }, ["On this page"]),
+    new Tag('ul', {}, items)
+  ]);
+}
+
 const docs = createPlugin<DocPage>('docs', (transformer) => {
   return {
     page: ({ id, path, url, ast, frontmatter }) => {
@@ -54,21 +73,6 @@ const docs = createPlugin<DocPage>('docs', (transformer) => {
         variables: { frontmatter, path },
       });
 
-      const headings = frontmatter.disableNav
-        ? undefined
-        : new Tag('aside', { property: 'headings', typeof: 'Headings' }, 
-            content.children
-              .filter(c => c instanceof Tag && ['h1', 'h2'].includes(c.name))
-              .map((c => {
-                if (c instanceof Tag) {
-                  const { attr, id } = c.attributes;
-                  return new Tag(c.name, attr, [ new Tag('a', { href: `#${id}` }, c.children)]);
-                } else {
-                  return c;
-                }
-              }))
-          );
-
       return {
         source: id,
         url,
@@ -76,7 +80,7 @@ const docs = createPlugin<DocPage>('docs', (transformer) => {
         description: frontmatter.description,
         disableNav: frontmatter.disableNav,
         content,
-        headings,
+        headings: frontmatter.disableNav ? undefined : createHeadingNav(content),
         errors: [],
       };
     },

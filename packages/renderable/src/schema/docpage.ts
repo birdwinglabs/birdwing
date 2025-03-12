@@ -26,10 +26,16 @@ export interface DocPageComponent extends ComponentType<DocPage> {
 }
 
 export class Headings {
+  headline: string;
+  item: LinkItem[] = [];
 }
 
 export interface HeadingsComponent extends ComponentType<Headings> {
   tag: 'aside'
+  properties: {
+    headline: 'h1',
+    item: 'li',
+  }
 }
 
 export class Topic {
