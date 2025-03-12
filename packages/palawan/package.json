@@ -1,0 +1,29 @@
+{
+  "name": "@birdwing/palawan",
+  "version": "0.1.0",
+  "private": true,
+  "description": "",
+  "type": "module",
+  "scripts": {
+    "build": "tsc",
+    "lint": "eslint --cache --ext .js,.ts src/"
+  },
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "author": "Björn Andersson",
+  "license": "MIT",
+  "publishConfig": {
+    "access": "public"
+  },
+  "dependencies": {
+    "@birdwing/core": "0.1.0",
+    "@birdwing/renderable": "0.1.0",
+    "@markdoc/markdoc": "0.4.0",
+    "@types/react": "18.2.73",
+    "react": "18.3.1"
+  },
+  "devDependencies": {
+    "@types/node": "20.11.30",
+    "@types/react-dom": "18.3.0"
+  }
+}
