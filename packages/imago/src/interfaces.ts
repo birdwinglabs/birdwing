@@ -179,6 +179,15 @@ export class NodeContext<T> {
     return siblingKeys.length === 0 || siblingKeys[0] === this.key;
   }
 
+  hasParent(type: string): boolean {
+    const parentKey = this.nodes[this.key].parent;
+    if (parentKey) {
+      const parent = this.nodes[parentKey];
+      return React.isValidElement(parent.element) && (parent.element.type as any).displayName === type;
+    }
+    return false;
+  }
+
   get index(): number {
     const siblingKeys = this.siblingKeys;
     return Math.max(siblingKeys.indexOf(this.key), 0);
