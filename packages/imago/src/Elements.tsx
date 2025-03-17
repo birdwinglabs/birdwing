@@ -7,9 +7,6 @@ export const defaultElements: Partial<Record<NodeType, ImagoHandler>> = {
   document: ({ children, className }: any) => {
     return <article className={className}>{ children }</article>;
   },
-  pre: ({ children, ...props }: NodeProps) => {
-    return <pre>{ children }</pre>;
-  },
   a({ href, children, nav, ...props }) {
     return nav === true
       ? <NavLink to={href} {...props}>{ children }</NavLink>

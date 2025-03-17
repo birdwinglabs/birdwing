@@ -2,6 +2,36 @@ import React, { createContext, ReactNode } from "react";
 import { NodeType, ComponentType } from "@birdwing/renderable";
 import { PropertyNode, TypeNode } from "@birdwing/renderable/dist/types";
 
+export interface ComponentEntry {
+  component: ComponentFactory<any>;
+
+  domain?: ComponentFactory<any>[];
+}
+
+export class ComponentResolver {
+  constructor(private entries: ComponentEntry[]) {}
+
+  resolve(type: string, domain?: ComponentFactory<any>) {
+    const entries = this.entries.filter(e => e.component.type === type);
+    let entry = domain
+      ? entries.find(e => e.domain && e.domain.includes(domain))
+      : entries[0]
+
+    entry = entry || entries[0];
+
+    if (entry) {
+      return entry.component;
+    }
+    return undefined;
+  }
+
+  resolveAll(domain: ComponentFactory<any>) {
+    return this.entries
+      .filter(e => e.domain === undefined || e.domain.includes(domain))
+      .map(e => e.component);
+  }
+}
+
 export interface NodeProps extends Record<string, any>{
   id?: string;
   className?: string | any;
@@ -57,7 +87,11 @@ export abstract class AbstractTemplate {
 export abstract class ComponentFactory<T extends NodeType> {
   type: string;
 
-  abstract createTemplate(nodes: Record<number, NodeInfo>, props: TagProps<T>, parentContext?: Record<string, string>): AbstractTemplate;
+  abstract createTemplate(
+    componentResolver: ComponentResolver,
+    nodes: Record<number, NodeInfo>, props: TagProps<T>,
+    parentContext?: Record<string, string>
+  ): AbstractTemplate;
 }
 
 

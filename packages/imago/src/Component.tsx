@@ -10,6 +10,7 @@ import {
   NodeInfo,
   TagProps,
   TagHandler,
+  ComponentResolver,
 } from "./interfaces";
 import { defaultElements } from "./Elements";
 import { makeComponentSlot, mergeDeep } from "./utils";
@@ -67,8 +68,8 @@ export class ImagoComponentFactory<T extends ComponentType<any>> extends Compone
     return new ImagoComponentFactory(type.name, type.context, options, this);
   }
 
-  createTemplate(nodes: Record<number, NodeInfo>, props: TagProps<T["tag"]>, parentContext: Record<string, string> = {}) {
-    return new ImagoComponent(this.type, this.createMiddleware(nodes, this.createOptions(nodes, props)), this.context, parentContext);
+  createTemplate(componentResolver: ComponentResolver, nodes: Record<number, NodeInfo>, props: TagProps<T["tag"]>, parentContext: Record<string, string> = {}) {
+    return new ImagoComponent(this.type, this.createMiddleware(componentResolver, nodes, this.createOptions(nodes, props)), this.context, parentContext);
   }
 
   private createOptions(nodes: Record<number, NodeInfo>, props: TagProps<T["tag"]>): ImagoComponentOptions<T> {
@@ -81,12 +82,12 @@ export class ImagoComponentFactory<T extends ComponentType<any>> extends Compone
       : options;
   }
 
-  private createMiddleware(nodes: Record<number, NodeInfo>, options: ImagoComponentOptions<T>) {
+  private createMiddleware(componentResolver: ComponentResolver, nodes: Record<number, NodeInfo>, options: ImagoComponentOptions<T>) {
     const middleware: Record<string, ImagoMiddleware<Element>> = {};
 
     // Components
-    for (const c of options.components || []) {
-      const fact = new ComponentMiddlewareFactory(c, this.context);
+    for (const c of componentResolver.resolveAll(this)) {
+      const fact = new ComponentMiddlewareFactory(componentResolver, c, this.context);
       middleware[`typeof:${c.type}`] = fact.createMiddleware(nodes);
     }
 
@@ -104,12 +105,12 @@ export class ImagoComponentFactory<T extends ComponentType<any>> extends Compone
 
     // Properties
     for (const [propName, prop] of Object.entries(options.properties || {})) {
-      middleware[`property:${propName}`] = this.createNodeMiddleware(prop, componentMiddleware, nodes);
+      middleware[`property:${propName}`] = this.createNodeMiddleware(componentResolver, prop, componentMiddleware, nodes);
     }
 
     // References
     for (const [refName, ref] of Object.entries(options.refs || {})) {
-      middleware[`ref:${refName}`] = this.createNodeMiddleware(ref as any, componentMiddleware, nodes);
+      middleware[`ref:${refName}`] = this.createNodeMiddleware(componentResolver, ref as any, componentMiddleware, nodes);
     }
 
     // Unspecified tags
@@ -119,7 +120,7 @@ export class ImagoComponentFactory<T extends ComponentType<any>> extends Compone
 
     // Tags
     for (const [tagName, tag] of Object.entries(options.tags || {})) {
-      middleware[tagName] = this.createNodeMiddleware(tag, componentMiddleware, nodes);
+      middleware[tagName] = this.createNodeMiddleware(componentResolver, tag, componentMiddleware, nodes);
     }
 
     const fact = new TransformMiddlewareFactory(options, props => makeComponentSlot(props.children, nodes, props.k));
@@ -129,8 +130,8 @@ export class ImagoComponentFactory<T extends ComponentType<any>> extends Compone
     return middleware;
   }
 
-  private createNodeMiddleware(handler: TagHandler<any, any>, cmwm: ComponentMiddleware, nodes: Record<number, NodeInfo>) {
-    const mw = createMiddlewareFactory(handler).createMiddleware(nodes);
+  private createNodeMiddleware(componentResolver: ComponentResolver, handler: TagHandler<any, any>, cmwm: ComponentMiddleware, nodes: Record<number, NodeInfo>) {
+    const mw = createMiddlewareFactory(componentResolver, handler).createMiddleware(nodes);
     return this.combineMiddleware(cmwm, mw);
   }
 
@@ -195,4 +196,8 @@ export function createComponent<T extends ComponentType<object>>(
   options: ImagoComponentOptions<T> | ImagoComponentOptionsFactory<T>
 ) {
   return new ImagoComponentFactory(type.name, type.context, options);
+}
+
+export function createConfiguration<T extends ComponentType<object>>(type: Type<T>, options: ImagoComponentOptions<T>) {
+  return options;
 }

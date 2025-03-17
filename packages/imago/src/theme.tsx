@@ -3,19 +3,18 @@ import {
   AbstractTemplate,
   NodeProps,
   TemplateContext,
-  ComponentFactory,
+  ComponentResolver,
+  ComponentEntry,
 } from "./interfaces";
 import { schema } from "@birdwing/renderable";
 import { ReactElementWrapper } from "./types";
 
 export class Theme extends AbstractTemplate {
-  private templates: Record<string, ComponentFactory<any>> = {};
+  private resolver: ComponentResolver;
 
-  constructor(templates: ComponentFactory<any>[]) {
+  constructor(templates: ComponentEntry[]) {
     super();
-    for (const t of templates) {
-      this.templates[t.type] = t;
-    }
+    this.resolver = new ComponentResolver(templates);
   }
 
   resolve(node: string): React.FunctionComponent<any> {
@@ -24,15 +23,19 @@ export class Theme extends AbstractTemplate {
 
       if (template && template !== this) {
         return template.resolve(node)(props);
-      } else if (props.typeof && this.templates[props.typeof]) {
-        const wrapper = new ReactElementWrapper(React.createElement(node, props));
-        const info = wrapper.info(schema);
-        const t = this.templates[props.typeof].createTemplate(info, props);
-        return (
-          <TemplateContext.Provider value={t}>
-            { t.resolve(node)(props) }
-          </TemplateContext.Provider>
-        )
+      } else if (props.typeof) {
+        const fact = this.resolver.resolve(props.typeof);
+        
+        if (fact) {
+          const wrapper = new ReactElementWrapper(React.createElement(node, props));
+          const info = wrapper.info(schema);
+          const t = fact.createTemplate(this.resolver, info, props);
+          return (
+            <TemplateContext.Provider value={t}>
+              { t.resolve(node)(props) }
+            </TemplateContext.Provider>
+          )
+        }
       }
       return null;
     }
@@ -42,6 +45,6 @@ export class Theme extends AbstractTemplate {
   }
 }
 
-export function createTheme(components: ComponentFactory<any>[]): AbstractTemplate {
+export function createTheme(components: ComponentEntry[]): AbstractTemplate {
   return new Theme(components);
 }
