@@ -92,7 +92,7 @@ export const tags: Partial<TagMap> = {
     'font-bold',
     'text-sm',
 
-    // Color
+    // Light
     'text-secondary-700',
     'bg-primary-50',
 
@@ -109,7 +109,7 @@ export const tags: Partial<TagMap> = {
     'shadow-lg',
     'overflow-x-auto',
 
-    // Color
+    // Light
     'text-stone-900',
     'bg-primary-50',
     'ring-primary-200',
