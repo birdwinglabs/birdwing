@@ -90,7 +90,7 @@ class FeatureModel extends Model {
         mirror: this.mirror,
         main: header.concat(definitions).toArray(),
         side: side.toArray(),
-      })
+      }).next()
     });
   }
 }

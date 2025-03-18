@@ -12,7 +12,7 @@ class StepsModel extends Model {
   split: number[];
 
   processChildren(nodes: Node[]) {
-    return super.processChildren(headingsToList(1)(nodes));
+    return super.processChildren(headingsToList()(nodes));
   }
 
   transform() {
@@ -56,7 +56,7 @@ class StepModel extends Model {
       properties: {
         name: name(main),
       },
-      children: splitLayout({ split: this.split, mirror: false, main: main.toArray(), side: side.toArray() })
+      children: splitLayout({ split: this.split, mirror: false, main: main.toArray(), side: side.toArray() }).next()
     });
   }
 }

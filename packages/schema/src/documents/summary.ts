@@ -34,7 +34,7 @@ class TableOfContentsModel extends Model {
   topics: NodeStream;
 
   processChildren(nodes: Node[]) {
-    const n = headingsToList(2)(nodes);
+    const n = headingsToList({ level: 2 })(nodes);
 
     const topicsIndex = n.findIndex(c => c.type === 'list');
     const topics = n[topicsIndex].children.map(item => new Ast.Node('tag', {}, item.children, 'topic'));

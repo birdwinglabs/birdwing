@@ -1,4 +1,6 @@
 import { Ast, Config, Node, RenderableTreeNode, Tag } from '@markdoc/markdoc';
+import { NodeFilter } from './interfaces';
+import { isFilterMatching } from './lib/node';
 
 export function generateIdIfMissing(node: Node, config: Config) {
   if (!config.variables?.generatedIds) {
@@ -23,6 +25,7 @@ export function generateIdIfMissing(node: Node, config: Config) {
 }
 
 export function *walkTag(tag: Tag): Generator<RenderableTreeNode> {
+  yield tag;
   for (const child of tag.children) {
     yield child;
     if (Tag.isTag(child)) {
@@ -31,26 +34,44 @@ export function *walkTag(tag: Tag): Generator<RenderableTreeNode> {
   }
 }
 
-export function headingsToList(level: number = 1) {
+export interface HeadingsToListOptions {
+  level?: number;
+
+  include?: NodeFilter[];
+}
+
+export function headingsToList(options?: HeadingsToListOptions) {
+  const { level, include }: HeadingsToListOptions = { level: 1, ...options };
+
   return (nodes: Node[]) => {
     let start: number | undefined;
     const list = new Ast.Node('list');
     const head: Node[] = [];
+    let tail: Node[] = [];
 
-    nodes.forEach((node, index) => {
+    for (let i=0; i<nodes.length; i++) {
+      const node = nodes[i];
+
       if (node.type === 'heading' && node.attributes.level === level) {
         list.children.push(new Ast.Node('item', {}, [node]));
-        start = index;
+        start = i;
       } else if (start === undefined) {
         head.push(node);
-      } else {
+      } else if (!include || include.some(filter => isFilterMatching(node, filter))) {
         const lastItem = list.children.at(-1);
         if (lastItem) {
           lastItem.children.push(node);
         }
+      } else {
+        tail = nodes.slice(i);
+        break;
       }
-    });
+    }
 
-    return [...head, list];
+    if (list.children.length === 0) {
+      return nodes;
+    }
+
+    return [...head, list, ...tail];
   }
 }

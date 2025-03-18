@@ -56,31 +56,14 @@ export const fence: Schema = {
     },
     process: { type: Boolean, render: false, default: false },
     language: { type: String, render: 'data-language', default: 'shell' },
-    height: {
-      type: String,
-      default: 'full',
-      matches: [
-        'full',
-        'xs',
-        'sm',
-        'md',
-        'lg',
-        'xl'
-      ],
-      required: false,
-    },
-    render: {
-      type: String,
-      matches: ['codeblock', 'html'],
-      default: 'codeblock',
-      required: false,
-    }
   },
   transform(node, config) {
     const attributes = node.transformAttributes(config);
     const content = hljs.highlight(node.attributes.content, { language: attributes['data-language'] });
 
-    return new Tag('pre', attributes, [content.value]);
+    return new Tag('pre', attributes, [
+      new Tag('code', { 'data-codeblock': true, content: '' }, [content.value])
+    ]);
   }
 }
 

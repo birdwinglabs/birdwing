@@ -59,7 +59,7 @@ class MusicPlaylistModel extends Model {
         mirror: this.mirror,
         main: header.toArray(),
         side: tracks.wrap('ol').toArray(),
-      })
+      }).next()
     });
   }
 }

@@ -58,7 +58,7 @@ class TabsModel extends Model {
   tabgroup: NodeStream;
 
   convertHeadings(nodes: Node[]) {
-    const converted = headingsToList(this.headingLevel)(nodes);
+    const converted = headingsToList({ level: this.headingLevel })(nodes);
     const n = converted.length - 1;
     const tags = converted[n].children.map(item => {
       const heading = item.children[0];
@@ -99,6 +99,7 @@ class TabsModel extends Model {
     return createComponentRenderable(schema.TabGroup, {
       tag: 'section',
       id: this.id,
+      class: this.node.transformAttributes(this.config).class,
       property: 'contentSection',
       properties: {
         ...pageSectionProperties(header),
