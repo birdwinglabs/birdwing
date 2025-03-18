@@ -1,6 +1,6 @@
 import { ComponentType } from "../interfaces";
 import { MusicPlaylist, MusicPlaylistComponent, MusicRecording, MusicRecordingComponent } from './audio.js';
-import { LinkItem, LinkItemComponent } from "./common";
+import { Command, CommandComponent, LinkItem, LinkItemComponent } from "./common";
 import { CallToAction, CallToActionComponent } from './cta.js';
 import { DocPage, DocPageComponent, Headings, HeadingsComponent, TableOfContents, TableOfContentsComponent, Topic, TopicComponent } from './docpage.js';
 import { Editor, EditorComponent } from './editor.js';
@@ -78,6 +78,7 @@ export const schema = {
   }),
   CallToAction: useSchema(CallToAction).defineType<CallToActionComponent>('CallToAction'),
   LinkItem: useSchema(LinkItem).defineType<LinkItemComponent>('LinkItem'),
+  Command: useSchema(Command).defineType<CommandComponent>('Command'),
   Feature: useSchema(Feature).defineType<FeatureComponent>('Feature'),
   FeatureDefinition: useSchema(FeatureDefinition).defineType<FeatureDefinitionComponent>('FeatureDefinition'),
   Editor: useSchema(Editor).defineType<EditorComponent>('Editor'),

@@ -1,8 +1,12 @@
 import { ComponentType } from "../interfaces";
 
 export class LinkItem {
-  url: string = '';
   name: string = '';
+  url: string = '';
+}
+
+export class Command {
+  code: string = '';
 }
 
 export interface LinkItemComponent extends ComponentType<LinkItem> {
@@ -11,5 +15,11 @@ export interface LinkItemComponent extends ComponentType<LinkItem> {
     name: 'span' | 'h1' | 'h2' | 'h3' | 'h4' | 'h5' | 'h6',
     url: 'a',
   },
-  refs: {},
+}
+
+export interface CommandComponent extends ComponentType<Command> {
+  tag: 'div',
+  properties: {
+    code: 'code',
+  },
 }
