@@ -11,8 +11,11 @@ class StepsModel extends Model {
   @attribute({ type: SpaceSeparatedNumberList, required: false })
   split: number[];
 
+  @attribute({ type: Number, required: false })
+  headingLevel: number | undefined = undefined;
+
   processChildren(nodes: Node[]) {
-    return super.processChildren(headingsToList()(nodes));
+    return super.processChildren(headingsToList({ level: this.headingLevel })(nodes));
   }
 
   transform() {
