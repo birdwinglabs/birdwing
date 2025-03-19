@@ -2,7 +2,7 @@ import { heading, paragraph, fence, list, item, em, strong, text, link, hardbrea
 
 export { Page } from './documents/page.js';
 import { menu } from './documents/menu.js';
-import { doc } from './documents/doc.js';
+import { DocPage } from './documents/doc.js';
 import { summary, topic } from './documents/summary.js';
 import { footer } from './documents/footer.js';
 
@@ -27,7 +27,7 @@ export const documents = {
   //page,
   menu,
   footer,
-  doc,
+  doc: new DocPage(),
   summary,
 }
 

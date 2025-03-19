@@ -9,8 +9,6 @@ export class Page implements Schema {
   constructor(private options: PageOptions = {}) {}
 
   transform(node: Node, config: Config): MaybePromise<RenderableTreeNodes> {
-    const options = { unwrap: [], ...this.options }
-
     const children = node.transformChildren(config);
     
     function* sections() {
