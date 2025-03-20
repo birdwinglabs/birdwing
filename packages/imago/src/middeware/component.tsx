@@ -1,6 +1,5 @@
 import {
   ComponentFactory,
-  ComponentResolver,
   Element,
   ImagoMiddleware,
   MiddlewareFactory,
@@ -10,11 +9,11 @@ import {
 import { NodeType } from '@birdwing/renderable';
 
 export class ComponentMiddlewareFactory<T extends NodeType> extends MiddlewareFactory<T> {
-  constructor(private componentResolver: ComponentResolver, private fact: ComponentFactory<any>, private parentContext: Record<string, string> = {}) { super(); }
+  constructor(private fact: ComponentFactory<any>, private parentContext: Record<string, string> = {}) { super(); }
 
   createMiddleware(nodes: Record<number, NodeInfo>): ImagoMiddleware<Element<T>> {
     return () => elem => {
-      const template = this.fact.createTemplate(this.componentResolver, nodes, elem.props, this.parentContext);
+      const template = this.fact.createTemplate(nodes, elem.props, this.parentContext);
 
       return (
         <TemplateContext.Provider value={template}>
