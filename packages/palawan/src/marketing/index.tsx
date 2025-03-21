@@ -10,6 +10,7 @@ import { schema } from "@birdwing/renderable";
 import { Layout } from "../Layout";
 import { Container } from '../Common';
 import { Navbar } from '../Menu';
+import { TabGroup } from '../common/TabGroup';
 
 export const Page = createComponent(schema.Page, {
   use: [Tailwind],
@@ -19,4 +20,5 @@ export const Page = createComponent(schema.Page, {
   .useComponent(PageSection)
   .useComponent(CallToAction)
   .useComponent(Feature)
+  .useComponent(TabGroup({ Base: PageSection, Container }))
   .useComponent(Footer({ Container }))
