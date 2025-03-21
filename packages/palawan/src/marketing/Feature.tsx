@@ -28,4 +28,5 @@ export const Feature = PageSection.extend(schema.Feature, node => ({
     p: "mt-6 text-lg leading-8 text-gray-700 dark:text-gray-300",
     dl: "my-12 gap-12",
   },
-}));
+}))
+.useComponent(FeatureDefinition);

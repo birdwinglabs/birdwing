@@ -3,7 +3,7 @@ import { schema } from "@birdwing/renderable";
 
 import * as ui from '../Common';
 
-export const LinkItem = createComponent(schema.LinkItem, {
+export const DocLinkItem = createComponent(schema.LinkItem, {
   properties: {
     name: {
       render: ({ children }) => children,
@@ -27,15 +27,21 @@ export const LinkItem = createComponent(schema.LinkItem, {
   }
 })
 
-export const Topic = createComponent(schema.Topic, {
-  properties: {
-    name: 'dark:text-stone-50 my-4 uppercase text-sm',
-  },
-})
+//export const DocTopic = createComponent(schema.Topic, {
+  //properties: {
+    //name: 'dark:text-stone-50 my-4 uppercase text-sm',
+  //},
+//})
 
-export const TableOfContents = createComponent(schema.TableOfContents, {
+export const DocTableOfContents = createComponent(schema.TableOfContents, {
   class: 'py-8',
   properties: {
     headline: { render: () => '' },
   },
-});
+})
+  .useComponent(schema.Topic, {
+    components: [DocLinkItem],
+    properties: {
+      name: 'dark:text-stone-50 my-4 uppercase text-sm',
+    },
+  })

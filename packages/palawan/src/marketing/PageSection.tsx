@@ -1,4 +1,4 @@
-import { createComponent, createConfiguration } from '@birdwing/imago';
+import { createComponent } from '@birdwing/imago';
 import { schema } from "@birdwing/renderable";
 
 export const PageSection = createComponent(schema.PageSection, {

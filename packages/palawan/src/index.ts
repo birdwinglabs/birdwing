@@ -1,2 +1,2 @@
-export * as docs from './docs';
+export * from './docs';
 export * as marketing from './marketing';

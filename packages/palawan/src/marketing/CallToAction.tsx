@@ -1,27 +1,13 @@
-import { Tailwind, createComponent } from "@birdwing/imago";
+import { Tailwind } from "@birdwing/imago";
 import { schema } from "@birdwing/renderable";
 import { PageSection } from './PageSection';
 import * as ui from '../Common';
-
-export const PrimaryAction = createComponent(schema.LinkItem, {
-  class: ui.buttons.primary,
-})
-
-export const SecondaryAction = createComponent(schema.LinkItem, {
-  class: ui.buttons.secondary,
-  childAfter: <span aria-hidden="true">→</span>,
-})
-
-export const CommandAction = createComponent(schema.Command, {
-  tags: ui.tags,
-});
 
 export const CallToAction = PageSection.extend(schema.CallToAction, cta => ({
   use: [Tailwind],
   properties: {
     eyebrow: 'text-6xl',
     headline: 'text-6xl',
-    action: a => a.firstChild ? PrimaryAction : SecondaryAction,
   },
   tags: {
     pre: `min-h-full ${ui.tags.pre}`,
@@ -47,4 +33,10 @@ export const CallToAction = PageSection.extend(schema.CallToAction, cta => ({
       </ui.Container>
     </div>
   )
-}));
+}))
+  .useComponent(schema.LinkItem, action => {
+    return action.firstChild
+      ? { class: ui.buttons.primary }
+      : { class: ui.buttons.secondary, childAfter: <span aria-hidden="true">→</span> }
+  })
+  .useComponent(schema.Command, { tags: ui.tags })
