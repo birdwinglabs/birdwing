@@ -2,6 +2,7 @@ import { Tailwind } from "@birdwing/imago";
 import { schema } from "@birdwing/renderable";
 import { PageSection } from './PageSection';
 import * as ui from '../Common';
+import { Editor } from "../common/Editor";
 
 export const CallToAction = PageSection.extend(schema.CallToAction, cta => ({
   use: [Tailwind],
@@ -40,3 +41,4 @@ export const CallToAction = PageSection.extend(schema.CallToAction, cta => ({
       : { class: ui.buttons.secondary, childAfter: <span aria-hidden="true">→</span> }
   })
   .useComponent(schema.Command, { tags: ui.tags })
+  .useComponent(Editor)

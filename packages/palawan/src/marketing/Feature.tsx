@@ -2,6 +2,7 @@ import { Tailwind, createComponent } from '@birdwing/imago';
 import { schema } from "@birdwing/renderable";
 import { Container} from '../Common';
 import { PageSection } from './PageSection';
+import { Editor } from '../common/Editor';
 
 export const FeatureDefinition = createComponent(schema.FeatureDefinition, {
   class: "my-8 dark:text-gray-400 relative pl-12",
@@ -29,4 +30,5 @@ export const Feature = PageSection.extend(schema.Feature, node => ({
     dl: "my-12 gap-12",
   },
 }))
-.useComponent(FeatureDefinition);
+  .useComponent(FeatureDefinition)
+  .useComponent(Editor)

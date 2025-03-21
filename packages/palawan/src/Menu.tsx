@@ -4,18 +4,7 @@ import { createComponent } from '@birdwing/imago';
 import { schema } from "@birdwing/renderable";
 import { navLink } from './Common';
 
-const LinkItem = createComponent(schema.LinkItem, {
-  tags: {
-    a: navLink({
-      class: "dark:hover:text-primary-400",
-      classActive: "text-secondary-300 hover:text-primary-500 dark:text-secondary-300",
-      classInactive: "text-stone-900 dark:text-white hover:text-primary-500",
-    })
-  }
-});
-
 export const Navbar = createComponent(schema.Menu, {
-  components: [LinkItem],
   tags: {
     h1: {
       render: ({ Slot }) => (
@@ -50,4 +39,13 @@ export const Navbar = createComponent(schema.Menu, {
       </div>
     </Disclosure>
   )
-});
+})
+  .useComponent(schema.LinkItem, {
+    tags: {
+      a: navLink({
+        class: "dark:hover:text-primary-400",
+        classActive: "text-secondary-300 hover:text-primary-500 dark:text-secondary-300",
+        classInactive: "text-stone-900 dark:text-white hover:text-primary-500",
+      })
+    }
+  })

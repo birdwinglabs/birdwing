@@ -1,5 +1,6 @@
 import { createComponent } from '@birdwing/imago';
 import { schema } from "@birdwing/renderable";
+import { Editor } from '../common/Editor';
 
 export const PageSection = createComponent(schema.PageSection, {
   class: "overflow-hidden dark:bg-primary-950 py-8 sm:py-12 my-12",
@@ -12,4 +13,5 @@ export const PageSection = createComponent(schema.PageSection, {
     h2: "text-base font-semibold leading-7 text-secondary-400 dark:text-primary-300",
     img: "mb-12 border-secondary-400 border-1 rounded-lg shadow-xl",
   }
-});
+})
+  .useComponent(Editor)

@@ -27,11 +27,12 @@ export const DocLinkItem = createComponent(schema.LinkItem, {
   }
 })
 
-//export const DocTopic = createComponent(schema.Topic, {
-  //properties: {
-    //name: 'dark:text-stone-50 my-4 uppercase text-sm',
-  //},
-//})
+export const DocTopic = createComponent(schema.Topic, {
+  properties: {
+    name: 'dark:text-stone-50 my-4 uppercase text-sm',
+  },
+})
+  .useComponent(DocLinkItem)
 
 export const DocTableOfContents = createComponent(schema.TableOfContents, {
   class: 'py-8',
@@ -39,9 +40,4 @@ export const DocTableOfContents = createComponent(schema.TableOfContents, {
     headline: { render: () => '' },
   },
 })
-  .useComponent(schema.Topic, {
-    components: [DocLinkItem],
-    properties: {
-      name: 'dark:text-stone-50 my-4 uppercase text-sm',
-    },
-  })
+  .useComponent(DocTopic)
