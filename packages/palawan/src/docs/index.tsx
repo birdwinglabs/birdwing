@@ -13,6 +13,7 @@ import { Navbar } from '../Menu';
 import { Editor } from '../common/Editor';
 import { Grid } from '../common/Grid';
 import { TabGroup } from '../common/TabGroup';
+import { Steps } from '../common/Steps';
 
 const HeadingAnchor = ({ id, children }: any) => (
   <a className="group relative border-none @5xl:-ml-2 @5xl:pl-2" href={'#' + id}>
@@ -84,3 +85,4 @@ export const DocPage = createComponent(schema.DocPage, node => ({
   .useComponent(Editor)
   .useComponent(Grid)
   .useComponent(TabGroup({ Base: DocPageSection, Container: DocContainer }))
+  .useComponent(Steps({ Container: DocContainer }))
