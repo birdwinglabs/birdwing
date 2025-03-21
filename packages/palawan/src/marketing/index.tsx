@@ -1,18 +1,17 @@
-import { CallToAction } from './CallToAction';
-import { Feature } from './Feature';
-import { Footer } from '../common/Footer';
-
-import { PageSection } from './PageSection';
-export { Feature } from './Feature';
-
 import { createComponent, Tailwind } from '@birdwing/imago';
 import { schema } from "@birdwing/renderable";
+
+import { CallToAction } from './CallToAction';
+import { Feature } from './Feature';
+import { PageSection } from './PageSection';
 import { Layout } from "../Layout";
 import { Container } from '../Common';
 import { Navbar } from '../Menu';
-import { TabGroup } from '../common/TabGroup';
 
-export const Page = createComponent(schema.Page, {
+import { TabGroup } from '../common/TabGroup';
+import { Footer } from '../common/Footer';
+
+export const MarketingPage = createComponent(schema.Page, {
   use: [Tailwind],
   parent: Layout,
 })
