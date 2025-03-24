@@ -48,7 +48,13 @@ function createHeader(title: string, topic?: string, description?: string) {
 }
 
 function createHeadingNav(content: Tag) {
-  const items = new RenderableNodeCursor(content.children)
+  const nodes = new RenderableNodeCursor(content.children)
+    .tag('section')
+    .toArray()
+    .map(s => s.children)
+    .flat()
+
+  const items = new RenderableNodeCursor(nodes)
     .tags('h1', 'h2')
     .toArray()
     .map(heading => {
