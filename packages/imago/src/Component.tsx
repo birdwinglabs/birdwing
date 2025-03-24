@@ -50,7 +50,9 @@ function chain<T extends NodeType>(mw1: ImagoMiddleware<Element<T>>, mw2: ImagoM
 
 type ImagoComponentOptionsFactory<T extends ComponentType<any>> = (node: NodeContext<T["schema"]>) => ImagoComponentOptions<T>;
 
-export class ImagoComponentFactory<T extends ComponentType<any>> extends ComponentFactory<T["tag"]> {
+export class ImagoComponentFactory<T extends ComponentType<object>> extends ComponentFactory<T["tag"]> {
+  private components: ComponentFactory<any>[] = [];
+
   constructor(
     public readonly type: string,
     private context: Record<string, string>,
@@ -71,6 +73,27 @@ export class ImagoComponentFactory<T extends ComponentType<any>> extends Compone
     return new ImagoComponent(this.type, this.createMiddleware(nodes, this.createOptions(nodes, props)), this.context, parentContext);
   }
 
+  useComponent<C extends ComponentType<object>>(fact: ImagoComponentFactory<C>): this;
+  useComponent<C extends ComponentType<object>>(type: Type<C>, options: ImagoComponentOptions<C> | ImagoComponentOptionsFactory<C>): this;
+  useComponent<C extends ComponentType<object>>(typeOrFact: Type<C> | ImagoComponentFactory<C>, options?: ImagoComponentOptions<C> | ImagoComponentOptionsFactory<C>) {
+    if (typeOrFact instanceof ImagoComponentFactory) {
+      this.components.push(typeOrFact);
+    } else if (options) {
+      this.components.push(createComponent(typeOrFact, options));
+    }
+    return this;
+  }
+
+  component<C extends ComponentType<object>>(type: Type<C>): ImagoComponentFactory<C> {
+    let c = this.components.find(c => c.type === type.name) as ImagoComponentFactory<C> | undefined;
+
+    if (!c) {
+      c = createComponent(type, {});
+      this.components.push(c);
+    }
+    return c;
+  }
+
   private createOptions(nodes: Record<number, NodeInfo>, props: TagProps<T["tag"]>): ImagoComponentOptions<T> {
     const options = typeof this.options === 'function'
       ? this.options(new NodeContext(nodes, props))
@@ -85,7 +108,7 @@ export class ImagoComponentFactory<T extends ComponentType<any>> extends Compone
     const middleware: Record<string, ImagoMiddleware<Element>> = {};
 
     // Components
-    for (const c of options.components || []) {
+    for (const c of this.components) {
       const fact = new ComponentMiddlewareFactory(c, this.context);
       middleware[`typeof:${c.type}`] = fact.createMiddleware(nodes);
     }
@@ -104,7 +127,7 @@ export class ImagoComponentFactory<T extends ComponentType<any>> extends Compone
 
     // Properties
     for (const [propName, prop] of Object.entries(options.properties || {})) {
-      middleware[`property:${propName}`] = this.createNodeMiddleware(prop, componentMiddleware, nodes);
+      middleware[`property:${propName}`] = this.createNodeMiddleware(prop as any, componentMiddleware, nodes);
     }
 
     // References

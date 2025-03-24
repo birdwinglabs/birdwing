@@ -94,7 +94,6 @@ export type ComponentRenderFunction<T extends ComponentType<any>> =
 export type ComponentMiddleware = Partial<{[ P in NodeType]: ImagoMiddleware<Element<P>> }>
 
 export interface ImagoComponentOptions<T extends ComponentType<any>> extends TransformOptions<T["tag"], React.FunctionComponent<SlotOptions<T["schema"], T["refs"]>>> {
-  components?: ComponentFactory<any>[],
   properties?: Partial<PropertiesOptions<T>>,
   refs?: Partial<ReferencesOptions<T>>,
   tags?: Partial<TagMap>,
